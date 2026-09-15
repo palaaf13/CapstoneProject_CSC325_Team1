@@ -67,6 +67,11 @@ follow and are not negotiable:
 - **HTMX** for progressive interactivity inside templates (partial updates, infinite
   scroll, inline forms). Small amounts of vanilla JS only where HTMX doesn't fit. No React,
   no SPA framework.
+- **GSAP 3.15 + ScrollTrigger + Lenis 1.3** — **landing page only** (`/`), for its scroll
+  motion. Vendored in `static/vendor/` (see `VERSIONS.txt`) and loaded by `pages/home.html`
+  alone; a test fails if they appear on any other page. Everything else stays htmx + vanilla
+  JS. Motion must respect `prefers-reduced-motion` and the page must be complete with
+  JavaScript off.
 - **Tailwind CSS v4** via the standalone CLI (`npm run tailwind:watch`). Tokens live in
   `static/src/input.css`; the stock color and type scales are cleared on purpose, so add a
   token rather than hardcoding a value. Review the system at `/styleguide`.
@@ -206,6 +211,18 @@ This is a student-facing product that has to look good enough that people want t
 - **Mobile browser is a first-class target.** Test every screen at 375px.
 - **Accessibility:** keyboard navigable, visible focus rings, labeled form controls, AA
   contrast. Run axe before calling a feature done.
+- **The landing page's feature strip** (`static/js/strip.js`) pins and scrolls sideways on
+  tablet and up, and stays a native scroll-snap carousel on phones and with reduced motion.
+  Its cards must link to pages that exist and must describe each section honestly — "live"
+  only where real data is loaded. Never scroll-hijack: the section releases at the end.
+- **The landing page (`/`) is the deliberate exception** to density: fullscreen, cinematic,
+  slow motion. That exception stops at the front door — it never extends to the directories,
+  detail pages, or anything a student uses to look something up.
+- **The mascot is Rambo** (`templates/partials/rambo.html`). He is **original artwork**, never
+  Farmingdale State College's official ram logo, and is labelled as a student project wherever
+  he appears. Ask before using any real college mark. Anything Rambo says must be true of the
+  live database (`services.rambo_lines`), and he must not imply the AI assistant works before
+  it does.
 - **Avoid the generic template look:** no purple-to-blue gradient heroes, no giant centered
   hero text on interior pages, no emoji used as iconography.
 

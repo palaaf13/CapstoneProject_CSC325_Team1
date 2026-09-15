@@ -37,6 +37,13 @@
   --text-h2--line-height: 1.3;
   --text-h1: 1.75rem;       /* 28px — page titles */
   --text-h1--line-height: 1.25;
+  /* Landing page ONLY. The one exception to the four-size scale: a fullscreen
+     hero needs type that scales with the viewport. Never use it on interior
+     pages — CLAUDE.md rules out giant hero text there. */
+  --text-display: clamp(2.75rem, 7.5vw, 6.5rem);
+  --text-display--line-height: 0.98;
+  --text-lede: clamp(1.125rem, 1.6vw, 1.375rem);
+  --text-lede--line-height: 1.55;
 
   /* --- Neutrals (carry everything that is not an action) ----------------- */
   --color-white: #ffffff;
@@ -86,6 +93,12 @@
   /* --- Spacing ---------------------------------------------------------- */
   /* 4px base. Dense layouts use 2/3 (8/12px); page rhythm uses 4/6 (16/24px). */
   --spacing: 0.25rem;
+
+  /* --- Motion (landing page) ------------------------------------------- */
+  /* Slow and smooth on purpose. Reduced-motion users get none of it. */
+  --ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-premium: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ==========================================================================
@@ -298,5 +311,381 @@
   .htmx-request .htmx-indicator,
   .htmx-indicator.htmx-request {
     @apply visible opacity-100;
+  }
+}
+
+
+/* ==========================================================================
+   Landing page
+   Scoped under .landing so none of it can leak into the directories, which
+   stay dense and fast per CLAUDE.md. Motion is driven by static/js/landing.js;
+   everything here renders correctly with JavaScript off or reduced motion on.
+   ========================================================================== */
+@layer components {
+  .landing {
+    @apply bg-neutral-950 text-neutral-100;
+  }
+
+  .landing ::selection {
+    @apply bg-accent-600 text-white;
+  }
+
+  /* --- Sections ---------------------------------------------------------- */
+  .landing-section {
+    @apply relative flex min-h-svh w-full items-center overflow-hidden px-5 sm:px-10;
+  }
+
+  .landing-inner {
+    @apply relative z-10 mx-auto w-full max-w-6xl;
+  }
+
+  .landing-eyebrow {
+    @apply font-mono text-meta uppercase tracking-[0.25em] text-accent-300;
+  }
+
+  .landing-display {
+    @apply text-display font-semibold tracking-[-0.035em] text-white;
+  }
+
+  .landing-lede {
+    @apply text-lede text-neutral-300;
+  }
+
+  /* A line of display type that reveals by rising out of its own mask. */
+  .reveal-line {
+    @apply block overflow-hidden pb-[0.08em];
+  }
+
+  .reveal-line > span {
+    @apply inline-block will-change-transform;
+  }
+
+  /* --- Hero layers ------------------------------------------------------- */
+  .hero-codewall {
+    @apply pointer-events-none absolute inset-0 grid select-none content-center gap-x-8 gap-y-5
+           px-5 font-mono text-meta text-neutral-800 sm:grid-cols-6 grid-cols-3;
+  }
+
+  /* Soft vignette over the code wall so the headline always reads. */
+  .hero-vignette {
+    @apply pointer-events-none absolute inset-0;
+    background:
+      radial-gradient(ellipse at center, transparent 0%, var(--color-neutral-950) 72%);
+  }
+
+  .hero-glow {
+    @apply pointer-events-none absolute left-1/2 top-1/2 h-[60vmin] w-[60vmin] -translate-x-1/2
+           -translate-y-1/2 rounded-full opacity-40 blur-3xl;
+    background: radial-gradient(circle, var(--color-accent-700) 0%, transparent 70%);
+  }
+
+  /* Product "photographs": real records rendered as floating panels. */
+  .float-card {
+    @apply rounded-lg border border-neutral-800 bg-neutral-900 p-4 text-left shadow-2xl;
+  }
+
+  .scroll-cue {
+    @apply absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2
+           font-mono text-meta uppercase tracking-[0.25em] text-neutral-400;
+  }
+
+  .scroll-cue-line {
+    @apply block h-10 w-px origin-top bg-neutral-600;
+  }
+
+  /* --- Expanding panel --------------------------------------------------- */
+  .expand-stage {
+    @apply relative h-[180svh];
+  }
+
+  .expand-sticky {
+    @apply sticky top-0 flex h-svh items-center justify-center overflow-hidden;
+  }
+
+  .expand-panel {
+    @apply relative h-[70svh] w-[min(88vw,68rem)] overflow-hidden rounded-lg border
+           border-neutral-800 bg-neutral-50 text-neutral-900 will-change-transform;
+  }
+
+  .expand-dim {
+    @apply pointer-events-none absolute inset-0 z-10 bg-neutral-950 opacity-0;
+  }
+
+  /* --- Pillars ----------------------------------------------------------- */
+  .pillar {
+    @apply rounded-lg border border-neutral-800 bg-neutral-900/60 p-6 transition-colors duration-500;
+  }
+
+  .pillar:hover {
+    @apply border-neutral-600 bg-neutral-900;
+  }
+
+  .pillar-index {
+    @apply font-mono text-meta text-accent-300;
+  }
+
+  /* --- Calls to action --------------------------------------------------- */
+  .btn-luxe,
+  .btn-luxe-ghost {
+    @apply relative inline-flex items-center gap-3 rounded-md px-6 py-3 text-body font-medium
+           transition-colors duration-500;
+  }
+
+  .btn-luxe {
+    @apply bg-white text-neutral-950 hover:bg-accent-50;
+  }
+
+  .btn-luxe-ghost {
+    @apply border border-neutral-700 text-neutral-100 hover:border-neutral-400 hover:bg-neutral-900;
+  }
+
+  .landing :focus-visible {
+    @apply outline-accent-300;
+  }
+
+  /* --- Cursor follower --------------------------------------------------- */
+  /* Decorative only. The system cursor is never hidden, and the follower is
+     not created at all on touch devices or with reduced motion. */
+  .cursor-follower {
+    @apply pointer-events-none fixed left-0 top-0 z-50 h-8 w-8 rounded-full border
+           border-accent-300 bg-accent-300/0 opacity-0 transition-colors duration-500;
+    transform: translate3d(-100px, -100px, 0);
+  }
+
+  .cursor-follower.is-engaged {
+    @apply bg-accent-300/20;
+  }
+
+  /* --- Feature strip ----------------------------------------------------- */
+  /* Tall stage + sticky inner = the section holds while the strip moves
+     sideways, then releases. With JS off the stage collapses to one screen and
+     the strip is an ordinary horizontal scroller. */
+  .strip-stage {
+    @apply relative;
+  }
+
+  html.strip-pinned .strip-stage {
+    height: 320svh;
+  }
+
+  .strip-sticky {
+    @apply flex min-h-svh w-full flex-col justify-center gap-10 overflow-hidden px-5 py-20 sm:px-10;
+  }
+
+  html.strip-pinned .strip-sticky {
+    @apply sticky top-0;
+  }
+
+  .strip-viewport {
+    @apply w-full overflow-x-auto overflow-y-hidden pb-4;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+
+  /* Once JS drives it from vertical scroll, the native scroller steps aside. */
+  html.strip-pinned .strip-viewport {
+    @apply overflow-hidden pb-0;
+    scroll-snap-type: none;
+  }
+
+  .strip-viewport:focus-visible {
+    @apply outline-2 outline-offset-4 outline-accent-300;
+  }
+
+  .strip-track {
+    @apply flex w-max items-stretch gap-5 px-1;
+  }
+
+  .strip-item {
+    @apply w-[min(78vw,22rem)] shrink-0;
+    scroll-snap-align: center;
+  }
+
+  .strip-card {
+    @apply flex h-full min-h-[22rem] flex-col rounded-lg border border-neutral-800 bg-neutral-900/70 p-6
+           transition-colors duration-500;
+    transition-timing-function: var(--ease-soft);
+  }
+
+  .strip-card:focus-visible {
+    @apply border-accent-300 outline-2 outline-offset-4 outline-accent-300;
+  }
+
+  .strip-card:hover {
+    @apply border-accent-600 bg-neutral-900;
+  }
+
+  .strip-icon {
+    @apply flex h-11 w-11 items-center justify-center rounded-md border border-neutral-800
+           bg-neutral-950 text-accent-300;
+  }
+
+  .strip-badge-live,
+  .strip-badge-building {
+    @apply rounded-full px-2 py-0.5 text-meta font-medium;
+  }
+
+  .strip-badge-live {
+    @apply bg-accent-900 text-accent-200;
+  }
+
+  .strip-badge-building {
+    @apply bg-neutral-800 text-neutral-300;
+  }
+
+  .strip-go {
+    @apply mt-6 inline-flex items-center gap-2 text-meta font-medium text-white;
+  }
+
+  /* --- Interactive background ------------------------------------------ */
+  /* Two gradient washes cross-fade as the cursor moves left to right, and a
+     glow trails the pointer. Only transform and opacity ever animate, so the
+     browser composites these layers rather than repainting the viewport. */
+  .spotlight {
+    @apply pointer-events-none fixed inset-0 z-0 overflow-hidden;
+  }
+
+  .spotlight-wash {
+    @apply absolute inset-0 transition-none;
+  }
+
+  .spotlight-wash-a {
+    background:
+      radial-gradient(ellipse at 18% 28%, var(--color-accent-900) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 90%, var(--color-neutral-900) 0%, transparent 60%);
+    opacity: 0.9;
+  }
+
+  .spotlight-wash-b {
+    background:
+      radial-gradient(ellipse at 82% 24%, var(--color-accent-800) 0%, transparent 55%),
+      radial-gradient(ellipse at 12% 88%, var(--color-accent-950) 0%, transparent 60%);
+    opacity: 0;
+  }
+
+  .spotlight-glow {
+    @apply absolute left-0 top-0 h-[70vmax] w-[70vmax] rounded-full opacity-35;
+    background: radial-gradient(circle, var(--color-accent-600) 0%, transparent 62%);
+    transform: translate(calc(50vw - 50%), calc(50vh - 50%));
+  }
+
+  /* The hero's wall of course codes, brightened under the cursor like a
+     flashlight. --fx/--fy/--fr are written by cursor.js; the defaults below
+     leave the wall evenly dim when there is no pointer to follow. */
+  [data-flashlight] {
+    --fx: 50%;
+    --fy: 50%;
+    --fr: 0px;
+    color: var(--color-neutral-600);
+    -webkit-mask-image: radial-gradient(circle var(--fr) at var(--fx) var(--fy), #000 0%, rgb(0 0 0 / 0.3) 100%);
+    mask-image: radial-gradient(circle var(--fr) at var(--fx) var(--fy), #000 0%, rgb(0 0 0 / 0.3) 100%);
+  }
+
+  /* --- Rambo -------------------------------------------------------------- */
+  .rambo-stage {
+    @apply relative flex flex-col items-center pt-20;
+  }
+
+  .rambo {
+    @apply relative block aspect-[360/275] w-[min(82vw,28rem)] cursor-pointer rounded-lg bg-transparent;
+  }
+
+  .rambo:focus-visible {
+    @apply outline-2 outline-offset-4 outline-accent-300;
+  }
+
+  .rambo-svg {
+    @apply h-full w-full overflow-visible;
+  }
+
+  /* Parts pivot around their own centres, not the SVG origin. */
+  .rambo-svg [data-rambo-body],
+  .rambo-svg [data-rambo-head],
+  .rambo-svg [data-rambo-horns],
+  .rambo-svg [data-rambo-lid],
+  .rambo-svg [data-rambo-brow] {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .rambo-horn {
+    fill: none;
+    stroke: url(#rambo-horn);
+    stroke-width: 17;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .rambo-ridge {
+    fill: none;
+    stroke: var(--color-neutral-950);
+    stroke-opacity: 0.35;
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+
+  .rambo-face {
+    fill: url(#rambo-face);
+    stroke: var(--color-accent-400);
+    stroke-width: 2.5;
+  }
+
+  .rambo-ear,
+  .rambo-snout {
+    fill: var(--color-neutral-800);
+    stroke: var(--color-accent-400);
+    stroke-width: 2.5;
+  }
+
+  .rambo-brow,
+  .rambo-mouth {
+    fill: none;
+    stroke: var(--color-accent-300);
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+
+  .rambo-eye {
+    fill: var(--color-neutral-50);
+  }
+
+  .rambo-pupil,
+  .rambo-nostril {
+    fill: var(--color-neutral-950);
+  }
+
+  .rambo-lid {
+    fill: var(--color-neutral-800);
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+
+  .rambo-bubble {
+    @apply absolute left-1/2 top-0 z-10 w-max max-w-[18rem] -translate-x-1/2 rounded-md bg-white
+           px-4 py-2 text-center text-body text-neutral-900 shadow-2xl;
+  }
+
+  .rambo-bubble::after {
+    @apply absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-8 border-t-8 border-x-transparent
+           border-t-white content-[''];
+  }
+
+  .rambo-credit {
+    @apply mt-4 text-center text-meta text-neutral-400;
+  }
+
+  html.motion-ready [data-rambo-horn] {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+
+  /* Until landing.js takes over, nothing is hidden — so a failed script or
+     reduced motion still shows the whole page. */
+  html.motion-ready [data-reveal] {
+    opacity: 0;
+  }
+
+  html.motion-ready [data-line] {
+    transform: translateY(110%);
   }
 }
