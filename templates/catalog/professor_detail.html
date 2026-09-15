@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{{ professor.full_name }} · RamHub{% endblock %}
+{% block description %}Student reviews and ratings for {{ professor.full_name }}, {{ professor.department }} at Farmingdale State College.{% endblock %}
+
+{% block content %}
+  <nav aria-label="Breadcrumb" class="mb-3 text-meta">
+    <a href="{% url 'catalog:professors' %}" class="rounded text-neutral-500 hover:text-neutral-900 hover:underline">
+      &larr; All professors
+    </a>
+  </nav>
+
+  <div class="card card-pad mb-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
+        <h1 class="text-h1">{{ professor.full_name }}</h1>
+        <p class="mt-1 text-meta text-neutral-500">
+          {% if professor.title %}{{ professor.title }} &middot; {% endif %}{{ professor.department }}
+        </p>
+      </div>
+
+      {% comment %}
+      Only RamHub's own three axes belong in this header. RMP figures get their
+      own labelled panel below rather than being dressed up as ours.
+      {% endcomment %}
+      {% if professor.rating_summary.has_ratings and not professor.rating_summary.is_from_rmp %}
+        <div class="grid grid-cols-3 gap-3 sm:flex sm:shrink-0 sm:gap-8">
+          {% include "partials/rating_stat_lg.html" with value=professor.rating_summary.avg_clarity caption="Clarity" %}
+          {% include "partials/rating_stat_lg.html" with value=professor.rating_summary.avg_helpfulness caption="Helpfulness" %}
+          {% include "partials/rating_stat_lg.html" with value=professor.rating_summary.avg_fairness caption="Fairness" %}
+        </div>
+      {% endif %}
+    </div>
+
+    {# Stacks on phones: side by side, the sentence gets squeezed to one word per line. #}
+    <div class="mt-4 flex flex-col items-start gap-3 border-t border-neutral-200 pt-3 sm:flex-row sm:items-center">
+      <p class="text-meta text-neutral-500 sm:flex-1">
+        {% if professor.rating_summary.has_ratings and not professor.rating_summary.is_from_rmp %}
+          Overall {{ professor.rating_summary.avg_overall|floatformat:1 }} / 5, averaged from
+          {{ professor.rating_summary.count }} student review{{ professor.rating_summary.count|pluralize }}.
+        {% else %}
+          No one has reviewed this professor on RamHub yet.
+        {% endif %}
+      </p>
+      {% if not professor.rmp_num_ratings %}
+        {% include "catalog/partials/rmp_link.html" with professor=professor %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <div class="space-y-6 lg:col-span-2">
+      {% if professor.rmp_num_ratings %}
+        {% include "catalog/partials/rmp_panel.html" with professor=professor %}
+      {% endif %}
+
+      {% if professor.bio %}
+        <section class="card card-pad">
+          <h2 class="text-h3">About</h2>
+          <p class="mt-2 text-neutral-700">{{ professor.bio }}</p>
+        </section>
+      {% endif %}
+
+      <section aria-labelledby="reviews-heading">
+        <h2 id="reviews-heading" class="sr-only">Student reviews</h2>
+        <div class="card flex flex-col items-center justify-center px-6 py-12 text-center">
+          <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-accent-50 text-accent-700">
+            {% include "partials/icons/chat.html" %}
+          </div>
+          <h3 class="text-h3">Reviews are not open yet</h3>
+          <p class="mt-1.5 max-w-md text-body text-neutral-500">
+            Once accounts are live, students who took a class with this instructor can
+            review how they teach. Until RamHub has reviews of its own, Rate My Professors
+            is the next best place to look.
+          </p>
+          <div class="mt-5">
+            {% include "catalog/partials/rmp_link.html" with professor=professor %}
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="space-y-6">
+      <section class="card">
+        <h2 class="border-b border-neutral-200 px-4 py-3 text-h3">From the college directory</h2>
+        <dl class="divide-y divide-neutral-200">
+          {% if professor.office %}
+            <div class="flex gap-3 px-4 py-2.5">
+              <dt class="w-20 shrink-0 text-meta text-neutral-500">Office</dt>
+              <dd class="min-w-0 flex-1 text-meta text-neutral-800">{{ professor.office }}</dd>
+            </div>
+          {% endif %}
+          {% if professor.phone %}
+            <div class="flex gap-3 px-4 py-2.5">
+              <dt class="w-20 shrink-0 text-meta text-neutral-500">Phone</dt>
+              <dd class="min-w-0 flex-1 text-meta text-neutral-800">
+                <a href="tel:{{ professor.phone }}" class="rounded hover:text-accent-700 hover:underline">{{ professor.phone }}</a>
+              </dd>
+            </div>
+          {% endif %}
+          {% if professor.profile_url %}
+            <div class="flex gap-3 px-4 py-2.5">
+              <dt class="w-20 shrink-0 text-meta text-neutral-500">Faculty page</dt>
+              <dd class="min-w-0 flex-1 text-meta">
+                <a href="{{ professor.profile_url }}" target="_blank" rel="noopener noreferrer"
+                   class="rounded text-accent-700 hover:underline">
+                  farmingdale.edu<span class="sr-only"> (opens in a new tab)</span>
+                </a>
+              </dd>
+            </div>
+          {% endif %}
+          {% if professor.department_url %}
+            <div class="flex gap-3 px-4 py-2.5">
+              <dt class="w-20 shrink-0 text-meta text-neutral-500">Department</dt>
+              <dd class="min-w-0 flex-1 text-meta">
+                <a href="{{ professor.department_url }}" target="_blank" rel="noopener noreferrer"
+                   class="rounded text-accent-700 hover:underline">
+                  {{ professor.department }}<span class="sr-only"> (opens in a new tab)</span>
+                </a>
+              </dd>
+            </div>
+          {% endif %}
+        </dl>
+        {% if professor.directory_retrieved %}
+          <p class="border-t border-neutral-200 px-4 py-2.5 text-meta text-neutral-500">
+            Directory data last updated {{ professor.directory_retrieved|date:"F j, Y" }}.
+          </p>
+        {% endif %}
+      </section>
+
+      <section class="card">
+        <h2 class="border-b border-neutral-200 px-4 py-3 text-h3">Courses taught</h2>
+        {% for course in courses %}
+          <a href="{% url 'catalog:course_detail' course.slug %}" class="row-link">
+            {% include "partials/rating_stat.html" with value=course.rating_summary.avg_difficulty caption="Diff" %}
+            <span class="min-w-0 flex-1">
+              <span class="block font-mono text-meta font-semibold text-accent-700">{{ course.code }}</span>
+              <span class="block font-medium text-neutral-900">{{ course.title }}</span>
+            </span>
+          </a>
+        {% empty %}
+          <p class="px-4 py-6 text-center text-meta text-neutral-500">
+            The campus directory lists who works here, not who teaches what. Course
+            assignments arrive with real schedule data.
+          </p>
+        {% endfor %}
+      </section>
+    </aside>
+  </div>
+{% endblock %}
