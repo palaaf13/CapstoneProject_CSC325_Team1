@@ -5,8 +5,10 @@ Kept here deliberately so INSTALLED_APPS matches the layout in CLAUDE.md
 exactly — no extra "core"/"pages" app.
 """
 
+from django.conf import settings
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import LoginView
+from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -49,6 +51,11 @@ def guidelines(request: HttpRequest) -> HttpResponse:
 class RamHubAuthenticationForm(AuthenticationForm):
     """Apply the shared form controls to Django's authentication fields."""
 
+    error_messages = {
+        "invalid_login": "The email or password you entered is incorrect.",
+        "inactive": "This account is inactive.",
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["username"].widget.attrs.update(
@@ -57,6 +64,15 @@ class RamHubAuthenticationForm(AuthenticationForm):
         self.fields["password"].widget.attrs.update(
             {"class": "field-input", "autocomplete": "current-password"}
         )
+
+    def clean_username(self):
+        email = self.cleaned_data["username"]
+        domain = settings.COLLEGE_EMAIL_DOMAIN.lower()
+        if not email.lower().endswith(f"@{domain}"):
+            raise ValidationError(
+                f"Please use a valid @{domain} college email address."
+            )
+        return email
 
 
 class RamHubLoginView(LoginView):

@@ -71,3 +71,14 @@ def test_sign_in_page_uses_authentication_form(client):
     assert b'name="username"' in response.content
     assert b'name="password"' in response.content
     assert response.content.count(b'class="field-input"') == 2
+
+
+@pytest.mark.django_db
+def test_sign_in_rejects_email_outside_college_domain(client):
+    response = client.post(
+        reverse("login"),
+        {"username": "student@example.com", "password": "password"},
+    )
+
+    assert response.status_code == 200
+    assert b"Please use a valid @farmingdale.edu college email address." in response.content
