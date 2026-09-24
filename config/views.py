@@ -5,6 +5,8 @@ Kept here deliberately so INSTALLED_APPS matches the layout in CLAUDE.md
 exactly — no extra "core"/"pages" app.
 """
 
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.views import LoginView
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -42,3 +44,27 @@ def about(request: HttpRequest) -> HttpResponse:
 
 def guidelines(request: HttpRequest) -> HttpResponse:
     return render(request, "pages/guidelines.html")
+
+
+class RamHubAuthenticationForm(AuthenticationForm):
+    """Apply the shared form controls to Django's authentication fields."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].widget.attrs.update(
+            {"class": "field-input", "autocomplete": "username"}
+        )
+        self.fields["password"].widget.attrs.update(
+            {"class": "field-input", "autocomplete": "current-password"}
+        )
+
+
+class RamHubLoginView(LoginView):
+    """Render the shared sign-in screen and authenticate submitted credentials."""
+
+    template_name = "pages/sign_in.html"
+    form_class = RamHubAuthenticationForm
+    redirect_authenticated_user = True
+
+
+sign_in = RamHubLoginView.as_view()
