@@ -69,9 +69,7 @@ class RamHubAuthenticationForm(AuthenticationForm):
         email = self.cleaned_data["username"]
         domain = settings.COLLEGE_EMAIL_DOMAIN.lower()
         if not email.lower().endswith(f"@{domain}"):
-            raise ValidationError(
-                f"Please use a valid @{domain} college email address."
-            )
+            raise ValidationError(f"Please use a valid @{domain} college email address.")
         return email
 
 
