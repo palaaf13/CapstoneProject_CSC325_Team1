@@ -53,6 +53,27 @@ follow and are not negotiable:
   not outrank a 4.9 from 226. `rank_score` is a stored Bayesian average; the displayed
   number stays the true average.
 
+**Clubs are real data too.** ~107 student organizations come from RamCentral, the college's
+own club directory (`manage.py import_clubs`; see `apps/campus/seed_data/`). The same rules
+apply, in club-shaped form:
+
+- **Only what RamCentral shows the public.** Its page data also carries each club's officers,
+  which the page hides behind a sign-in. They are never scraped, stored, or shown.
+- **No meeting times.** RamCentral does not publish any, so `Club.meeting_info` stays blank
+  and the club page says so and links out. Do not fill it with a guess.
+- **RamCentral's `/engage/api/` is off limits** — its `robots.txt` disallows it. The scraper
+  reads the public organization pages only.
+- **Club logos are stored but not displayed.** Several contain the college's marks; ask
+  before turning them on.
+- **"Technology" and "Other" are RamHub's grouping, not RamCentral's.** RamCentral has no
+  technology category, so `seed_data/ramhub_categories.json` adds one, by slug, to twelve
+  computing and engineering clubs. "Other" is not stored at all — it is the filter for
+  clubs in no category. This is the only place RamHub adds to a club's data. Keep it that
+  way, keep the file small, and say "RamHub's grouping" wherever it is documented.
+- **Club search is ranked in Python** (`services.search_clubs`), because a substring match
+  cannot tell "AI" the club from the "ai" in "training". Fine for ~100 clubs; do not copy
+  the pattern to the course or professor directories.
+
 ## Tech stack — fixed by the course, do not propose alternatives
 
 - **Python 3.12+** (developed on 3.13)
@@ -206,6 +227,9 @@ This is a student-facing product that has to look good enough that people want t
   text (advice posts are read, not skimmed).
 - **Ratings are the visual anchor** on directory rows and detail headers. Make them
   instantly legible — a number plus a compact bar or dot scale, never five-star clip art.
+- **Clubs are the one directory that is a card grid, not rows.** They are browsed by
+  category rather than ranked by a rating, so the anchor is a monogram tile and the filter
+  is a category rail. Still dense, still tokens only — see `/styleguide#clubs`.
 - Real loading states (HTMX indicators), real empty states with a call to action, real
   error states. Never a bare spinner on a blank page.
 - **Mobile browser is a first-class target.** Test every screen at 375px.
@@ -278,7 +302,14 @@ Vote          FK user, target_type, target_id, value
               UniqueConstraint(user, target_type, target_id)
 HelpfulMark   FK user, FK post — UniqueConstraint(user, post)
 
-Club          name, description, category, meeting_info, contact_email, links: ArrayField
+Club          slug(unique)                          # RamCentral's key; also the URL
+              name, sort_name, short_name, summary, description
+              org_type, categories: ArrayField(str)  # a club can sit in several;
+                                                     # RamCentral's + RamHub's "Technology"
+              meeting_info                           # blank: RamCentral publishes none
+              contact_email, phone, location, website, links: ArrayField(url)
+              logo_url                               # stored, not displayed
+              source_url, source_retrieved           # imported facts, never edited in-app
 Job           title, employer, type, description, pay_info, link,
               FK posted_by?, expires_at
 ParkingLot    name, permit_types: ArrayField, location, rules_text, tips

@@ -316,6 +316,148 @@
 
 
 /* ==========================================================================
+   Club directory
+   Clubs are browsed by category, not ranked by rating, so the Clubs tab needs
+   three things the course and professor rows do not: a monogram tile, a card,
+   and a category filter. Everything is built from the tokens above — nothing
+   here introduces a colour.
+   ========================================================================== */
+@layer components {
+
+  /* --- Monogram: stands in for a logo ----------------------------------- */
+  /* Club logos are not shown (several carry the college's own marks), so each
+     club gets its initials on one of four tiles. The tone is decoration: it
+     breaks up a grid of a hundred cards and means nothing about the club. */
+  .club-mark {
+    @apply flex h-11 w-11 shrink-0 select-none items-center justify-center rounded-md border
+           font-mono text-meta font-semibold;
+  }
+
+  .club-mark-lg {
+    @apply h-16 w-16 rounded-lg text-h3;
+  }
+
+  .club-mark-1 { @apply border-transparent bg-accent-600 text-white; }
+  .club-mark-2 { @apply border-accent-200 bg-accent-50 text-accent-800; }
+  .club-mark-3 { @apply border-transparent bg-neutral-900 text-white; }
+  .club-mark-4 { @apply border-neutral-300 bg-neutral-100 text-neutral-800; }
+
+  /* --- Card: the unit of the club grid ---------------------------------- */
+  .club-card {
+    @apply flex w-full flex-col rounded-md border border-neutral-200 bg-white p-4
+           transition-[border-color,box-shadow] duration-150
+           hover:border-accent-600 hover:shadow-md;
+  }
+
+  .club-card-name {
+    @apply line-clamp-2 font-medium text-neutral-900 transition-colors duration-150;
+  }
+
+  .club-card:hover .club-card-name {
+    @apply text-accent-700;
+  }
+
+  .club-card-summary {
+    @apply mt-3 line-clamp-3 text-meta text-neutral-600;
+  }
+
+  /* Pinned to the bottom so the footers line up across a row of cards. */
+  .club-card-foot {
+    @apply mt-auto flex items-center justify-between gap-3 pt-4 text-meta text-neutral-500;
+  }
+
+  .club-card-go {
+    @apply shrink-0 font-medium text-neutral-400 transition-colors duration-150;
+  }
+
+  .club-card:hover .club-card-go {
+    @apply text-accent-700;
+  }
+
+  /* --- Filter form ------------------------------------------------------- */
+  /* Search box plus categories. From lg up it is a sticky rail beside the grid,
+     and it scrolls on its own when the window is too short to show every
+     category. The 4px of padding, cancelled by the negative margin, is room
+     for focus rings — a scroll container clips anything drawn outside it. */
+  .club-filter {
+    @apply mb-5 lg:sticky lg:top-20 lg:-m-1 lg:max-h-[calc(100svh-6rem)] lg:overflow-y-auto lg:p-1;
+    scrollbar-width: thin;
+  }
+
+  /* --- Category filter --------------------------------------------------- */
+  /* One radio group, three layouts: a sideways chip scroller on phones, which
+     bleeds to the screen edge so a cut-off chip shows there is more; wrapped
+     chips on tablets; and a rail beside the grid from lg up. Radios, because
+     they are keyboard-operable and announce their state without any script. */
+  .club-filter-list {
+    @apply -mx-4 flex gap-2 overflow-x-auto px-4 py-1
+           sm:mx-0 sm:flex-wrap sm:overflow-visible sm:p-0
+           lg:flex-col lg:flex-nowrap lg:gap-0.5;
+    scrollbar-width: none;
+  }
+
+  .club-filter-item {
+    @apply relative shrink-0;
+  }
+
+  .club-filter-option {
+    @apply flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border
+           border-neutral-300 bg-white px-3 py-2 text-meta font-medium text-neutral-700
+           transition-colors duration-100
+           hover:border-neutral-400 hover:bg-neutral-50
+           lg:justify-between lg:rounded-md lg:border-transparent lg:bg-transparent lg:py-1.5
+           lg:text-body lg:font-normal lg:hover:border-transparent lg:hover:bg-neutral-100;
+  }
+
+  .club-filter-count {
+    @apply font-mono text-meta tabular-nums text-neutral-500;
+  }
+
+  /* Selected: a solid fill on the chip, and on the rail a tint plus a bar down
+     the left edge — so the selection is never carried by hue alone. */
+  .club-filter-input:checked + .club-filter-option {
+    @apply border-accent-600 bg-accent-600 text-white
+           hover:border-accent-700 hover:bg-accent-700
+           lg:border-transparent lg:bg-accent-50 lg:font-medium lg:text-accent-800
+           lg:shadow-[inset_2px_0_0_var(--color-accent-600)]
+           lg:hover:border-transparent lg:hover:bg-accent-50;
+  }
+
+  .club-filter-input:checked + .club-filter-option .club-filter-count {
+    @apply text-accent-100 lg:text-accent-700;
+  }
+
+  /* The radio itself is visually hidden, so its label carries the focus ring. */
+  .club-filter-input:focus-visible + .club-filter-option {
+    @apply outline-2 outline-offset-2 outline-accent-600;
+  }
+
+  /* --- Results region ---------------------------------------------------- */
+  /* Dims while a search is in flight; htmx adds .htmx-request via hx-indicator.
+     The scroll margin is for static/js/ui.js, which scrolls a new set of results
+     back into view: it has to stop below the 56px sticky header, not under it. */
+  .club-results {
+    @apply min-w-0 scroll-mt-20 transition-opacity duration-150;
+  }
+
+  .club-results.htmx-request {
+    @apply opacity-50;
+  }
+
+  /* --- A club's own About text ------------------------------------------ */
+  /* Rendered by |urlize|linebreaks: paragraphs and bare links, nothing else. */
+  .club-prose {
+    @apply space-y-3 text-neutral-700;
+    overflow-wrap: anywhere;
+  }
+
+  .club-prose a {
+    @apply rounded-sm text-accent-700 underline hover:text-accent-800;
+  }
+}
+
+
+/* ==========================================================================
    Landing page
    Scoped under .landing so none of it can leak into the directories, which
    stay dense and fast per CLAUDE.md. Motion is driven by static/js/landing.js;

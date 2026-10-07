@@ -1,8 +1,94 @@
 {% extends "base.html" %}
 
 {% block title %}Clubs · RamHub{% endblock %}
+{% block description %}Student clubs and organizations at Farmingdale State College — what each one does and how to reach it.{% endblock %}
 
 {% block content %}
-  {% include "partials/page_header.html" with title="Clubs" subtitle="Registered student organizations — what they do, when they meet, and how to join." %}
-  {% include "partials/empty_state.html" with icon="flag" headline="No clubs listed yet" description="Club listings come from the official organization directory, with a discussion thread on each one for the things the official page never mentions." action_label="" %}
+  {% include "partials/page_header.html" with title="Clubs" count=club_count subtitle="Student organizations at Farmingdale State College &mdash; what each one does and how to get in touch." %}
+
+  {% if club_count %}
+    {% comment %}
+    Say where the listings come from, that RamHub is not where you join, and
+    which two filters are ours rather than the college's.
+    {% endcomment %}
+    <p class="mb-5 rounded-md border border-neutral-200 bg-neutral-100 px-3 py-2 text-meta text-neutral-600">
+      Listings come from
+      <a href="https://farmingdale.campuslabs.com/engage/organizations" target="_blank" rel="noopener noreferrer"
+         class="rounded-sm font-medium text-accent-700 underline hover:text-accent-800">RamCentral<span class="sr-only"> (opens in a new tab)</span></a>,
+      the college&rsquo;s own club directory{% if retrieved %}, as of {{ retrieved|date:"F j, Y" }}{% endif %}.
+      RamCentral is also where you join a club and see when it meets.
+      The Technology and Other filters are RamHub&rsquo;s own grouping.
+    </p>
+
+    <div class="lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-8">
+      {% comment %}
+      Same plain-GET-then-HTMX approach as catalog/courses.html. Two differences:
+      the search trigger is scoped to the text box (a keyup anywhere in the form
+      would otherwise fire as you arrow through the categories), and hx-history
+      is off so the back button re-renders this form from the server — a snapshot
+      would restore the results but not which category is ticked.
+      {% endcomment %}
+      <form id="club-filter"
+            method="get"
+            action="{% url 'campus:clubs' %}"
+            role="search"
+            aria-label="Clubs"
+            class="club-filter"
+            hx-get="{% url 'campus:clubs' %}"
+            hx-target="#club-results"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+            hx-history="false"
+            hx-indicator="#club-search-indicator, #club-results"
+            hx-trigger="submit, change, input changed delay:300ms from:#club-q">
+
+        <div class="flex items-baseline justify-between gap-2">
+          <label for="club-q" class="field-label">Search clubs</label>
+          <span id="club-search-indicator" class="htmx-indicator text-meta text-neutral-500" aria-hidden="true">
+            Searching&hellip;
+          </span>
+        </div>
+        <div class="relative">
+          <span class="pointer-events-none absolute inset-y-0 left-2 flex items-center text-neutral-500">
+            {% include "partials/icons/search.html" %}
+          </span>
+          <input type="search" id="club-q" name="q" value="{{ query.q }}"
+                 class="field-input pl-9" autocomplete="off"
+                 placeholder="Try dance or SGA">
+        </div>
+
+        {# min-w-0: a fieldset is as wide as its content by default, which would stretch the page on a phone. #}
+        <fieldset class="mt-4 min-w-0 lg:mt-5">
+          <legend class="field-label">Category</legend>
+          <div class="club-filter-list">
+            <label class="club-filter-item">
+              <input type="radio" name="category" value="" class="club-filter-input sr-only"
+                     {% if not query.category %}checked{% endif %}>
+              <span class="club-filter-option">
+                All clubs
+                <span class="club-filter-count">{{ club_count }}<span class="sr-only"> clubs</span></span>
+              </span>
+            </label>
+            {% for name, count in categories %}
+              <label class="club-filter-item">
+                <input type="radio" name="category" value="{{ name }}" class="club-filter-input sr-only"
+                       {% if name == query.category %}checked{% endif %}>
+                <span class="club-filter-option">
+                  {{ name }}
+                  <span class="club-filter-count">{{ count }}<span class="sr-only"> club{{ count|pluralize }}</span></span>
+                </span>
+              </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+
+        {# Submit is the no-JS path; HTMX handles it otherwise. #}
+        <noscript><button type="submit" class="btn-primary mt-4">Search</button></noscript>
+      </form>
+
+      {% include "campus/partials/club_results.html" %}
+    </div>
+  {% else %}
+    {% include "partials/empty_state.html" with icon="flag" headline="No clubs listed yet" description="Club listings come from RamCentral, the college&rsquo;s own club directory. They have not been loaded into this copy of RamHub yet." %}
+  {% endif %}
 {% endblock %}

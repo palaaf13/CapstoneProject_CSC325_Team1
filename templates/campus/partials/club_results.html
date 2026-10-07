@@ -1,0 +1,23 @@
+{% comment %}
+The results region of the club directory. Rendered inside the full page and
+returned on its own to an HTMX search, which swaps it by id.
+{% endcomment %}
+<div id="club-results" class="club-results">
+  {% if total %}
+    <p class="mb-3 flex flex-wrap items-baseline gap-x-2 text-meta text-neutral-500">
+      <span role="status" aria-live="polite">
+        {{ total }} club{{ total|pluralize }}{% if is_other %} in no category{% elif query.category %} in {{ query.category }}{% endif %}{% if query.q %} matching &ldquo;{{ query.q }}&rdquo;{% endif %}
+      </span>
+      {% if is_filtered %}
+        <a href="{{ clear_url }}" class="rounded-sm font-medium text-accent-700 hover:underline">Clear</a>
+      {% endif %}
+    </p>
+    <ul role="list" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {% include "campus/partials/club_cards.html" %}
+    </ul>
+  {% else %}
+    <div role="status" aria-live="polite">
+      {% include "partials/empty_state.html" with icon="search" headline="No clubs match that search" description="Try a shorter keyword, or look in a different category." action_label="Clear search and filters" action_url=clear_url %}
+    </div>
+  {% endif %}
+</div>

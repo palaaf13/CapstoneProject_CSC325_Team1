@@ -15,6 +15,7 @@
       <a href="#components" class="badge-neutral hover:bg-neutral-200">Cards & rows</a>
       <a href="#ratings" class="badge-neutral hover:bg-neutral-200">Ratings</a>
       <a href="#badges" class="badge-neutral hover:bg-neutral-200">Badges</a>
+      <a href="#clubs" class="badge-neutral hover:bg-neutral-200">Clubs</a>
       <a href="#header" class="badge-neutral hover:bg-neutral-200">Page header</a>
       <a href="#empty" class="badge-neutral hover:bg-neutral-200">Empty state</a>
       <a href="#htmx" class="badge-neutral hover:bg-neutral-200">HTMX</a>
@@ -465,6 +466,68 @@
       <span class="badge-accent">Advice</span>
       <span class="badge-accent">Most helpful</span>
       <span class="badge-danger">Reported</span>
+    </div>
+  </section>
+
+  <section id="clubs" class="scroll-mt-20">
+    <h2 class="text-h2">Clubs</h2>
+    <p class="mt-1 mb-4 max-w-2xl text-neutral-500">Clubs are browsed by category, not ranked by a rating, so the Clubs tab uses a card grid and a category filter instead of directory rows. All of it is built from the tokens above.</p>
+    <div class="card card-pad space-y-6">
+      <div>
+        <p class="field-label">Monogram &mdash; <code class="font-mono">campus/partials/club_mark.html</code></p>
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="club-mark club-mark-1" aria-hidden="true">SGA</span>
+          <span class="club-mark club-mark-2" aria-hidden="true">IEEE</span>
+          <span class="club-mark club-mark-3" aria-hidden="true">GC</span>
+          <span class="club-mark club-mark-4" aria-hidden="true">ADC</span>
+          <span class="club-mark club-mark-lg club-mark-1" aria-hidden="true">SGA</span>
+        </div>
+        <p class="mt-2 text-meta text-neutral-500">
+          A club&rsquo;s initials stand in for its logo. The four tones are decoration &mdash; they
+          break up a long grid and say nothing about the club.
+        </p>
+      </div>
+      <div>
+        <p class="field-label">Card &mdash; <code class="font-mono">.club-card</code>, hover it</p>
+        <ul role="list" class="grid gap-3 sm:grid-cols-2">
+          <li class="flex min-w-0">
+            <a href="#clubs" class="club-card">
+              <span class="flex items-start gap-3">
+                <span class="club-mark club-mark-3" aria-hidden="true">GC</span>
+                <span class="min-w-0 flex-1">
+                  <span class="club-card-name">Gaming Club</span>
+                  <span class="mt-0.5 block truncate text-meta text-neutral-500">Special Interest</span>
+                </span>
+              </span>
+              <span class="club-card-summary">Video games, board games, and everything in between, in a relaxed room after class.</span>
+              <span class="club-card-foot">
+                <span class="min-w-0 truncate">Discord · Email</span>
+                <span class="club-card-go" aria-hidden="true">&rarr;</span>
+              </span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <p class="field-label">Category filter &mdash; radios styled as chips; a rail beside the grid from 1024px</p>
+        <fieldset class="min-w-0">
+          <legend class="sr-only">Example category filter</legend>
+          <div class="club-filter-list">
+            <label class="club-filter-item">
+              <input type="radio" name="sg-club-category" class="club-filter-input sr-only" checked>
+              <span class="club-filter-option">All clubs <span class="club-filter-count">107</span></span>
+            </label>
+            <label class="club-filter-item">
+              <input type="radio" name="sg-club-category" class="club-filter-input sr-only">
+              <span class="club-filter-option">Academic <span class="club-filter-count">24</span></span>
+            </label>
+            <label class="club-filter-item">
+              <input type="radio" name="sg-club-category" class="club-filter-input sr-only">
+              <span class="club-filter-option">Performing Arts <span class="club-filter-count">10</span></span>
+            </label>
+          </div>
+        </fieldset>
+      </div>
     </div>
   </section>
 

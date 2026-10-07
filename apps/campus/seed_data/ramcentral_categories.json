@@ -1,0 +1,52 @@
+{
+  "_meta": {
+    "source": "https://farmingdale.campuslabs.com/engage/organizations (the Categories filter)",
+    "captured": "2026-10-06",
+    "note": "Which organizations RamCentral lists under each of its categories. An organization can sit in several, and 34 sit in none. Input for scrape_clubs.py, which explains how to refresh it."
+  },
+  "Academic": [
+    "accounting", "alpha-eta-rho", "fsc-aaae", "asme", "actclub", "asce", "biology-club",
+    "businesssociety", "ciao", "csc", "economics-club", "fura", "flagfootballclub", "ieee",
+    "horticulture-club", "mlsc", "nw", "pre-health", "prelaw", "pre-pa-club",
+    "psychology-club", "sport-management-club", "sadha", "swic"
+  ],
+  "Club Sports": [
+    "wrestling-club", "cheerleading", "clubbasketball", "farmingdale-esports", "cricket",
+    "ice-hockey", "roller-hockey", "farmingdale-state-volleyball-club"
+  ],
+  "Committees & Programs": ["campus-life-awards", "ramchella-committee"],
+  "Community Service": ["basicneeds", "bestbuddies", "professionalsalesclub"],
+  "Cultural / Religious": [
+    "afro-caribbean", "afrocaribbeandance", "bangladeshisa", "cru", "ciao",
+    "farmingdale-fusion", "farmingdale_hellenic_society",
+    "international-student-association", "laso", "msa", "nepalesestudentassociation",
+    "pakistanisa", "sasa", "whw"
+  ],
+  "Offices / Departments": [
+    "campus-recreation-intramurals", "distancelearning", "fsc_events", "ramprogram",
+    "res-life", "student-employees", "travel"
+  ],
+  "Performing Arts": [
+    "afrocaribbeandance", "bstc", "farmingdale-xpressions", "bangladeshisa", "book-club",
+    "dance-team", "farmingdale-fusion", "fsc_film_club", "fscmusicclub", "ram-nation-radio"
+  ],
+  "Pre-Professional Organizations": [
+    "alpha-eta-rho", "fsc-aaae", "asme", "actclub", "ieee", "fscnsbe", "sadha"
+  ],
+  "Recreational": [
+    "campus-recreation-intramurals", "dance-team", "fscmusicclub", "ski-snowboard-club",
+    "farmingdale-state-volleyball-club"
+  ],
+  "Social Awareness": [
+    "bestbuddies", "bsu", "csc", "disability_coalition", "farmingdaleprideclub", "naacp",
+    "fscnsbe", "nepalesestudentassociation", "nw", "swic", "womeninbusinessfsc",
+    "womens-empowerment", "whw"
+  ],
+  "Special Interest": [
+    "art-design-club", "bestbuddies", "bsu", "book-club", "crochet", "the-dale-news",
+    "fsceasa", "fsc_film_club", "naacp", "gaming-club",
+    "international-student-association", "prept", "professionalsalesclub",
+    "ram_motor_sports", "ram-nation-radio", "rambots", "sva", "stylus", "focus"
+  ],
+  "Student Governance": ["greek-council", "student-government-association"]
+}

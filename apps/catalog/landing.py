@@ -8,6 +8,8 @@ landing page must never show a number or a claim the database cannot back up.
 
 from django.db.models import F
 
+from apps.campus.models import Club
+
 from .models import Course, Professor
 from .services import course_departments
 
@@ -77,9 +79,14 @@ def landing_features(course_count: int, department_count: int) -> list[dict[str,
     while the campus tabs render an empty state until their data is imported.
     Saying "coming soon" about a page that is already live, or implying data
     that is not there, both count as lying to a prospective user.
+
+    Clubs is the one card whose status is read from the database: it is "live"
+    once import_clubs has loaded the directory and "building" on a clone where
+    it has not, so the card is true either way.
     """
     professor_count = Professor.objects.count()
     rated = Professor.objects.exclude(rating_summary__count=0).count()
+    club_count = Club.objects.count()
     return [
         {
             "label": "Courses",
@@ -109,9 +116,13 @@ def landing_features(course_count: int, department_count: int) -> list[dict[str,
             "label": "Clubs",
             "url_name": "campus:clubs",
             "icon": "flag",
-            "detail": "Awaiting the club directory",
-            "blurb": "Every registered organisation: what it does, when it meets, how to join.",
-            "status": "building",
+            "detail": (
+                f"{club_count:,} student organisations"
+                if club_count
+                else "Awaiting the club directory"
+            ),
+            "blurb": "The organisations on RamCentral: what each one does and how to reach it.",
+            "status": "live" if club_count else "building",
         },
         {
             "label": "Jobs",
