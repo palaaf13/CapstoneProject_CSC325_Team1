@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}{{ club.name }} · RamHub{% endblock %}
+{% block description %}{{ club.name }} at Farmingdale State College — what the club does and how to reach it.{% endblock %}
+
+{% block content %}
+  <nav aria-label="Breadcrumb" class="mb-3 text-meta">
+    <a href="{% url 'campus:clubs' %}" class="rounded-sm text-neutral-500 hover:text-neutral-900 hover:underline">
+      &larr; All clubs
+    </a>
+  </nav>
+
+  <div class="card card-pad mb-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+      {% include "campus/partials/club_mark.html" with size="lg" %}
+
+      <div class="min-w-0 flex-1">
+        <h1 class="text-h1">{{ club.name }}</h1>
+        {% if club.type_label or club.abbreviation %}
+          <p class="mt-1 text-meta text-neutral-500">
+            {% if club.abbreviation %}{{ club.abbreviation }}{% if club.type_label %} &middot; {% endif %}{% endif %}{{ club.type_label }}
+          </p>
+        {% endif %}
+        {% if club.categories %}
+          <ul role="list" class="mt-3 flex flex-wrap gap-2" aria-label="Categories">
+            {% for category in club.categories %}
+              <li>
+                <a href="{% url 'campus:clubs' %}?category={{ category|urlencode }}"
+                   class="badge-neutral hover:bg-neutral-200">{{ category }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      {% comment %}The one primary action: RamCentral is where a student actually joins.{% endcomment %}
+      {% if club.source_url %}
+        <a href="{{ club.source_url }}" target="_blank" rel="noopener noreferrer" class="btn-primary shrink-0">
+          {% include "partials/icons/external.html" %}
+          <span>View on RamCentral</span>
+          <span class="sr-only"> (opens in a new tab)</span>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% comment %}
+  Three grid items rather than two column wrappers, so the contact card sits
+  between About and the discussion on a phone — where reaching the club matters
+  more than an empty thread — and beside both from lg up. The 1fr second row
+  takes up the slack when the sidebar is the tallest thing on the page.
+  {% endcomment %}
+  <div class="grid gap-6 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:items-start">
+    <section class="card card-pad lg:col-span-2">
+      <h2 class="text-h3">About</h2>
+      {% if club.about %}
+        {# The club's own words. urlize escapes the text before it links anything. #}
+        <div class="club-prose mt-2">{{ club.about|urlize|linebreaks }}</div>
+      {% else %}
+        <p class="mt-2 text-neutral-500">This club has not written a description on RamCentral.</p>
+      {% endif %}
+    </section>
+
+    <aside class="space-y-6 lg:row-span-2">
+      <section class="card">
+        <h2 class="border-b border-neutral-200 px-4 py-3 text-h3">From RamCentral</h2>
+        {% if club.contact_email or club.phone or club.location or club.link_items %}
+          <dl class="divide-y divide-neutral-200">
+            {% if club.contact_email %}
+              <div class="flex gap-3 px-4 py-2.5">
+                <dt class="w-20 shrink-0 text-meta text-neutral-500">Email</dt>
+                <dd class="min-w-0 flex-1 break-words text-meta">
+                  <a href="mailto:{{ club.contact_email }}" class="rounded-sm text-accent-700 hover:underline">{{ club.contact_email }}</a>
+                </dd>
+              </div>
+            {% endif %}
+            {% if club.phone %}
+              <div class="flex gap-3 px-4 py-2.5">
+                <dt class="w-20 shrink-0 text-meta text-neutral-500">Phone</dt>
+                <dd class="min-w-0 flex-1 text-meta text-neutral-800">
+                  <a href="tel:{{ club.phone }}" class="rounded-sm hover:text-accent-700 hover:underline">{{ club.phone }}</a>
+                </dd>
+              </div>
+            {% endif %}
+            {% if club.location %}
+              <div class="flex gap-3 px-4 py-2.5">
+                <dt class="w-20 shrink-0 text-meta text-neutral-500">Location</dt>
+                <dd class="min-w-0 flex-1 text-meta text-neutral-800">{{ club.location }}</dd>
+              </div>
+            {% endif %}
+            {% for link in club.link_items %}
+              <div class="flex gap-3 px-4 py-2.5">
+                <dt class="w-20 shrink-0 text-meta text-neutral-500">{{ link.label }}</dt>
+                <dd class="min-w-0 flex-1 break-words text-meta">
+                  <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer nofollow"
+                     class="rounded-sm text-accent-700 hover:underline">
+                    {{ link.display }}<span class="sr-only"> (opens in a new tab)</span>
+                  </a>
+                </dd>
+              </div>
+            {% endfor %}
+          </dl>
+        {% else %}
+          <p class="px-4 py-6 text-center text-meta text-neutral-500">
+            This club lists no contact details on RamCentral.
+          </p>
+        {% endif %}
+        {% if club.source_retrieved %}
+          <p class="border-t border-neutral-200 px-4 py-2.5 text-meta text-neutral-500">
+            RamCentral data last updated {{ club.source_retrieved|date:"F j, Y" }}.
+          </p>
+        {% endif %}
+      </section>
+
+      <section class="card card-pad">
+        <h2 class="text-h3">Meetings and events</h2>
+        {% if club.meeting_info %}
+          <p class="mt-2 text-neutral-700">{{ club.meeting_info }}</p>
+        {% else %}
+          {# Never guessed: RamCentral has no meeting-time field to import. #}
+          <p class="mt-2 text-meta text-neutral-500">
+            RamCentral does not list a regular meeting time for clubs. Upcoming meetings and
+            events are posted on
+            {% if club.source_url %}
+              <a href="{{ club.source_url }}" target="_blank" rel="noopener noreferrer"
+                 class="rounded-sm text-accent-700 underline hover:text-accent-800">this club&rsquo;s RamCentral page<span class="sr-only"> (opens in a new tab)</span></a>.
+            {% else %}
+              RamCentral.
+            {% endif %}
+          </p>
+        {% endif %}
+      </section>
+    </aside>
+
+    <section aria-labelledby="discussion-heading" class="lg:col-span-2">
+      <h2 id="discussion-heading" class="sr-only">Student discussion</h2>
+      {% include "partials/empty_state.html" with icon="chat" headline="Discussion is not open yet" description="Once accounts are live, members can post what the official page never mentions: how active the club really is, and what a meeting is actually like." %}
+    </section>
+  </div>
+{% endblock %}

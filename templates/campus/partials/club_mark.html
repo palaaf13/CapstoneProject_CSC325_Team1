@@ -1,0 +1,9 @@
+{% comment %}
+A club's monogram tile — its initials, standing in for a logo.
+
+  {% include "campus/partials/club_mark.html" with club=club %}
+  {% include "campus/partials/club_mark.html" with club=club size="lg" %}
+
+Hidden from screen readers: the club's name is always right beside it.
+{% endcomment %}
+<span class="club-mark club-mark-{{ club.monogram_tone }}{% if size == 'lg' %} club-mark-lg{% endif %}" aria-hidden="true">{{ club.monogram }}</span>

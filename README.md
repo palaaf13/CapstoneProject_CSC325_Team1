@@ -45,24 +45,27 @@ npm run tailwind:build
 # 5. Create the collections Django needs
 python manage.py migrate
 
-# 6. Load real courses and faculty (runs both imports below)
+# 6. Load real courses, faculty and clubs (runs the imports below)
 python manage.py seed_demo
 ```
 
 Everything is idempotent — run it as often as you like. `seed_demo` is a
-convenience wrapper; you can run either import on its own:
+convenience wrapper; you can run any import on its own:
 
 | command | source | records |
 |---|---|---|
 | `import_catalog` | published [2025–26 course catalog](https://www.farmingdale.edu/course-offerings/catalog_2025_2026.html) | ~1,785 courses |
 | `import_directory` | public [campus directory](https://www.farmingdale.edu/directory/) | ~913 teaching staff |
 | `import_rmp` | [RateMyProfessors](https://www.ratemyprofessors.com/school/14046) export | ratings for ~517 of them |
+| `import_clubs` | [RamCentral](https://farmingdale.campuslabs.com/engage/organizations), the college's club directory | ~107 student organizations |
 
-Both exports live in `apps/catalog/seed_data/` with a `.README.md` documenting
+The course, faculty and ratings exports live in `apps/catalog/seed_data/` and the
+club export in `apps/campus/seed_data/`, each with a `.README.md` documenting
 provenance and caveats. `scrape_catalog.py` regenerates the course export when a
-new catalog year is published.
+new catalog year is published; `scrape_clubs.py` regenerates the club export,
+which wants refreshing every semester because clubs re-register each term.
 
-Two rules neither import will bend:
+Rules the imports will not bend:
 
 - **Courses are never rated by an import.** No course has a rating until a
   student leaves one.
@@ -74,6 +77,19 @@ Two rules neither import will bend:
 - **They never invent relationships.** A directory says who works here; a catalog
   says a course exists. Neither says who teaches what, so courses are not linked
   to professors. That needs real section/schedule data.
+- **Clubs carry only what RamCentral shows the public.** No officers or members
+  (RamCentral hides those behind a sign-in), and no meeting times (it does not
+  publish any) — the club page says so and links to RamCentral instead of
+  guessing. College offices listed there are skipped unless you pass
+  `--include-offices`.
+- **Two club filters are RamHub's grouping, not RamCentral's.** RamCentral has no
+  technology category, so `apps/campus/seed_data/ramhub_categories.json` lists,
+  by slug, the twelve computing, AI and engineering clubs that RamHub files
+  under **Technology** — on top of whatever RamCentral gave them, never instead
+  of it. **Other** is the filter for the clubs that are in no category at all,
+  so that every club can be reached through one. Everything else about a club
+  is RamCentral's data as published; this is the only place we add our own.
+  The reasoning is in `apps/campus/seed_data/farmingdale_clubs.README.md`.
 
 Use `--prune --yes` to drop records no longer in the exports.
 
@@ -223,6 +239,8 @@ apps/catalog/        Course + Professor, the two directories, and the detail
   services.py        pages. Query logic lives here, never in a view.
   forms.py           query-string validation for the directories
   seed_data/         demo_catalog.json — see its _meta block
+apps/campus/         Club, the club directory at /clubs/ and the club pages.
+  seed_data/         the RamCentral export, and the scraper that regenerates it
 
 templates/           base.html, partials/, one directory per app
 static/src/          input.css — every design token lives here
@@ -247,7 +265,8 @@ so if a utility does not exist, add the token first.
 Shared patterns: `.btn-primary` `.btn-secondary` `.btn-ghost` `.btn-danger`,
 `.field-input` `.field-input-error` `.field-label` `.field-hint` `.field-error`,
 `.card` `.card-pad` `.row-link`, `.badge-neutral` `.badge-accent` `.badge-danger`,
-`.rating-value`.
+`.rating-value`. The Clubs tab adds `.club-card`, `.club-mark` and the
+`.club-filter-*` category filter.
 
 Reusable partials: `partials/page_header.html`, `partials/empty_state.html`,
 and the icon set in `partials/icons/`.
