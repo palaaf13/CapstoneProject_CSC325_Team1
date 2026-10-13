@@ -7,7 +7,7 @@ admin had no coverage, so nothing failed until someone opened the page.
 """
 
 import pytest
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 pytestmark = pytest.mark.django_db
@@ -15,7 +15,9 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def admin_client_(client):
-    user = User.objects.create_superuser("staff", "staff@farmingdale.edu", "pw-not-a-real-secret")
+    user = get_user_model().objects.create_superuser(
+        "staff", "staff@farmingdale.edu", "pw-not-a-real-secret"
+    )
     client.force_login(user)
     return client
 
