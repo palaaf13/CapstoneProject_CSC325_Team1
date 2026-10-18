@@ -11,6 +11,99 @@ decisions, MongoDB constraints, and conventions this project is built on.
 
 ---
 
+## Architecture
+
+RamHub is a **server-rendered, layered web application**. There is no separate
+frontend: Django renders HTML, HTMX swaps fragments of it, and the browser never
+holds application state. One deployment serves everything.
+
+```
+Browser
+   │  HTML over HTTP, plus HTMX fragment requests
+   ▼
+URL routing            config/urls.py → apps/<app>/urls.py
+   ▼
+Presentation           templates/ · Tailwind tokens in static/src/input.css
+   ▼
+Views                  apps/<app>/views.py — parse the request, call a service,
+                       render a template. No business logic lives here.
+   ▼
+Validation             apps/<app>/forms.py — every query string and form body
+                       is validated before it reaches a query
+   ▼
+Services               apps/<app>/services.py — all business logic: search,
+                       filtering, sorting, resolving relationships
+   ▼
+Models                 apps/<app>/models.py — documents, embedded summaries,
+                       indexes, constraints
+   ▼
+MongoDB Atlas          via django-mongodb-backend
+```
+
+**The layering rule:** a view may call a service; a service may touch models; a
+template only displays what it is handed. A query in a view or logic in a
+template is a bug, not a shortcut.
+
+### Applications
+
+The project is split by domain rather than by technical role, so each feature
+owns its models, views, services, and tests together.
+
+| App | Responsibility | State |
+| --- | --- | --- |
+| `catalog` | Course and Professor, both directories, detail pages, data imports | Built |
+| `accounts` | Custom user, FSC email verification, profiles | Planned |
+| `ratings` | Course and professor ratings, summary recomputation | Planned |
+| `community` | Posts, embedded comments, votes, tags, the feed | Planned |
+| `campus` | Clubs, jobs, parking, facilities | Placeholder pages |
+| `saved` | The filing cabinet: collections and saved items | Planned |
+| `assistant` | Retrieval index and the Rambo assistant | Planned |
+| `moderation` | Reports, moderator actions, the queue | Planned |
+
+`config/` holds settings (split into `base`, `dev`, `prod`), the root URL
+configuration, and the site-level pages.
+
+### Data layer
+
+MongoDB is a document store, so the model design is not relational:
+
+- **Embedding over joins.** A course's rating summary lives inside the course
+  document, because it is always read with it.
+- **ObjectId arrays instead of many-to-many tables.** `Course.professor_ids` and
+  `Professor.course_ids` hold each other's ids, resolved in a single query.
+- **Denormalized summaries.** Averages are stored and recomputed on write, never
+  aggregated live on a list page.
+
+`CLAUDE.md` records the backend constraints that forced these choices, including
+several that fail silently rather than erroring.
+
+### Request styles
+
+| Style | Returns | Used for |
+| --- | --- | --- |
+| Full page | A rendered template | Any normal navigation |
+| HTMX partial | An HTML fragment | Live search, "Load more", inline updates |
+| DRF endpoint under `/api/` | JSON | Reserved for voting, autocomplete, and the assistant |
+
+Each feature picks one and stays consistent. Everything degrades without
+JavaScript: the directories are plain GET forms, and the landing page is
+complete with scripts blocked.
+
+### Deployment
+
+| Piece | Where it runs |
+| --- | --- |
+| Application | Vercel, as a single Python function on Fluid Compute |
+| Static files | Collected at build time, served from Vercel's CDN |
+| Database | MongoDB Atlas (free M0 replica set), shared by the team |
+| CI | GitHub Actions: lint, Django checks, and the test suite on every push and PR |
+
+Because the application runs serverless, there is no writable disk and no
+long-running process. Migrations and data imports are run from a developer's
+machine against Atlas, not on the server.
+
+---
+
 ## Prerequisites
 
 | Tool | Version | Notes |
@@ -223,6 +316,88 @@ python manage.py check          # Django system checks
 ruff format .                   # apply formatting
 python manage.py createsuperuser
 ```
+
+---
+
+## Test Plan Overview
+
+Four categories of automated test, plus the manual checks that cover what we do
+not yet automate. Everything runs with `pytest`, against a **real MongoDB** in a
+throwaway `test_` database — never a mock and never your development data.
+
+### 1. Unit tests — one function or model at a time
+
+Scope: a single service function or model behaviour, with its data created
+directly in the test.
+
+| File | Cases | What it proves |
+| --- | --- | --- |
+| `apps/catalog/tests/test_services.py` | 29 | Search matches a code and a title, department filtering, every sort order, and both directions of the course↔professor link |
+| `apps/catalog/tests/test_models.py` | 13 | ObjectId primary keys, embedded summaries, the unique constraint on course code, the Bayesian ranking score |
+
+Example: a 5.0 rating from one student must not outrank a 4.9 from 226, so the
+ranking function is tested directly rather than through a page.
+
+### 2. Integration tests — a whole request, end to end
+
+Scope: a real HTTP request through routing, the view, the service layer, the
+database, and template rendering, using Django's test client.
+
+| File | Cases | What it proves |
+| --- | --- | --- |
+| `apps/catalog/tests/test_views.py` | 21 | Both directories render, search narrows results, bad query strings degrade instead of erroring, unknown records return 404 |
+| `tests/test_landing.py` | 22 | The landing page renders real counts, motion libraries load only there, the page works with JavaScript off |
+| `tests/test_smoke.py` | 5 | Every page in the navigation returns 200 and the active tab is correct |
+| `apps/catalog/tests/test_admin.py` | 4 | The admin renders for rated and unrated records |
+
+These catch the failures unit tests cannot see: a template referencing a field
+that no longer exists, or a URL that stopped resolving.
+
+### 3. Data integrity tests — the imports
+
+Scope: the commands that load official college data. This category exists
+because the data describes **real people**, so the rules about it are enforced
+by tests rather than by memory.
+
+| File | Cases | What it proves |
+| --- | --- | --- |
+| `apps/catalog/tests/test_import_rmp.py` | 16 | Imported ratings are always tagged as RateMyProfessors data, student ratings are never overwritten, "no data" never renders as a zero |
+| `apps/catalog/tests/test_import_directory.py` | 13 | Faculty import is idempotent, never writes ratings, never invents course assignments |
+| `apps/catalog/tests/test_import_catalog.py` | 12 | Course import is idempotent, courses without a published credit value stay null |
+| `apps/catalog/tests/test_seed_demo.py` | 5 | Running the full seed twice leaves identical data |
+
+### 4. System and accessibility checks — currently manual
+
+| Check | How | When |
+| --- | --- | --- |
+| Accessibility | axe (WCAG 2.1 A/AA) on each new page | Before a feature is called done |
+| Responsive | Every screen at 375px and desktop | Before a feature is called done |
+| Keyboard | Tab through the page; focus must always be visible | Before a feature is called done |
+| Contrast | Ratios computed against the design tokens | When a colour token changes |
+
+### Continuous integration
+
+Every push and pull request runs `ruff check`, `ruff format --check`, Django's
+system checks, and the full suite against MongoDB 8.0 started as a single-node
+replica set. A dedicated step asserts that transactions are available, because a
+standalone MongoDB would let the suite pass while silently weakening test
+isolation.
+
+### Known gaps
+
+Stated plainly, because a test plan that claims full coverage is not useful:
+
+- **No browser-level end-to-end tests.** Nothing drives a real browser, so the
+  HTMX swaps and the landing page motion are verified by hand.
+- **No load or performance testing.** Page timings have only been measured
+  informally.
+- **Accessibility is not automated.** axe is run manually; it should move into
+  CI.
+- **No tests for features not yet built** — accounts, ratings, the feed, and the
+  assistant. Each should arrive with its own tests, per the definition of done.
+- **Run the suite against a local MongoDB, not Atlas.** Pointing `.env` at the
+  shared cluster makes every test a network round trip and slows the suite by
+  roughly an order of magnitude.
 
 ---
 
