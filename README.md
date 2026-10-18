@@ -104,6 +104,57 @@ machine against Atlas, not on the server.
 
 ---
 
+## Prototype
+
+**Figma:** [RamHub Prototype](https://www.figma.com/design/YPd5HXGVtHgMErfYGxEDvd/RamHub-Prototype?node-id=0-1)
+**Walkthrough video (1:50):** [RamHub — Figma UI/UX Prototype Walkthrough](https://www.youtube.com/watch?v=8xP8z4f6uhE)
+
+The prototype follows our product goal: **a private, `@farmingdale.edu`-only
+platform where FSC students look up courses and professors, read and share
+honest advice from classmates, and find campus info in one place, so class
+knowledge doesn't disappear when students graduate.**
+
+### Personas
+
+| Persona | Role | What they need |
+| --- | --- | --- |
+| **Maya Rios** (primary) | Transfer student | Does not know which professors to take, and has no classmates to ask |
+| **Jordan Kim** (secondary) | Trained student moderator | Keeps content honest and safe |
+
+### Context diagram
+
+RamHub sits at the centre, surrounded by:
+
+- **Actors:** Student, Moderator, Administrator, Advisor / prospective student
+- **External systems:** FSC email and identity, AI language model service, Google
+  Calendar API, cloud media storage, campus info sources and the LMS
+
+### UI screens
+
+Sign up · Check email · Home feed · Search results (CSC 325) · Professor page ·
+Course advice thread · Filing cabinet · Clubs · Moderation queue
+
+### UX flow
+
+Maya's journey, clickable end to end in the Figma prototype:
+
+```
+Sign up → verify email → search CSC 325 → compare professors →
+read the advice thread → save to the filing cabinet →
+post her own tip after the semester
+```
+
+Each screen earns its place in that journey, and the two personas sit on either
+side of the same goal: Maya puts knowledge in and takes it out, Jordan keeps it
+trustworthy.
+
+The design is built against the real system rather than ahead of it. The colours,
+type scale, and components come from the design system in
+`static/src/input.css`, which you can review at `/styleguide` on a running
+instance.
+
+---
+
 ## Prerequisites
 
 | Tool | Version | Notes |
