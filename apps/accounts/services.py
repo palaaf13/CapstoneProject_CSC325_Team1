@@ -1,9 +1,24 @@
 """Account-related business operations."""
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core.mail import EmailMessage, mailers
 
 from apps.accounts.models import User, validate_college_email
+
+
+class EmailConfirmationTokenGenerator(PasswordResetTokenGenerator):
+    """Issue tokens only for RamHub email verification, not password resets."""
+
+    def _make_hash_value(self, user: User, timestamp: int) -> str:
+        return f"email-confirmation:{super()._make_hash_value(user, timestamp)}:{user.is_active}"
+
+
+email_confirmation_token = EmailConfirmationTokenGenerator()
+
+
+class EmailDeliveryError(RuntimeError):
+    """Raised when the configured backend does not accept the confirmation email."""
 
 
 def register_user(
@@ -25,6 +40,16 @@ def register_user(
     )
 
 
+def activate_user(user: User, token: str) -> bool:
+    """Activate an inactive account if its email-confirmation token is valid."""
+    if user.is_active or not email_confirmation_token.check_token(user, token):
+        return False
+
+    user.is_active = True
+    user.save(update_fields=["is_active"])
+    return True
+
+
 def send_registration_confirmation(user: User, confirmation_url: str) -> None:
     """Email an activation link to a newly registered, inactive student."""
     greeting = user.display_name or user.username
@@ -35,10 +60,14 @@ def send_registration_confirmation(user: User, confirmation_url: str) -> None:
         "This link expires after a limited time. If you did not request this "
         "account, you can ignore this email."
     )
-    send_mail(
-        subject="Confirm your RamHub account",
-        message=message,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
+    email = EmailMessage(
+        "Confirm your RamHub account",
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
     )
+    sent_count = mailers.default.send_messages([email])
+    if sent_count != 1:
+        raise EmailDeliveryError(
+            "The registration confirmation email was not accepted for delivery."
+        )

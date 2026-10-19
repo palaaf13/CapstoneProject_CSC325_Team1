@@ -21,4 +21,9 @@ urlpatterns = [
     path("guidelines/", views.guidelines, name="guidelines"),
     path("login/", views.login, name="login"),
     path("register/", account_views.register, name="register"),
+    path(
+        "confirm-email/<str:uidb64>/<str:token>/",
+        account_views.confirm_email,
+        name="confirm_email",
+    ),
 ]
