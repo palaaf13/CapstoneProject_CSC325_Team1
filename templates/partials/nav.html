@@ -49,6 +49,9 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
         {% include "partials/icons/user.html" %}
         <span>Sign in</span>
       </a>
+      <a href="{% url 'register' %}" class="btn-primary hidden shrink-0 xl:inline-flex">
+        <span>Join</span>
+      </a>
 
       {# Mobile menu toggle #}
       <button type="button"
@@ -87,6 +90,9 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
         <a href="{% url 'login' %}" class="btn-secondary w-full">
           {% include "partials/icons/user.html" %}
           <span>Sign in</span>
+        </a>
+        <a href="{% url 'register' %}" class="btn-primary mt-2 w-full">
+          <span>Create account</span>
         </a>
       </div>
     </nav>

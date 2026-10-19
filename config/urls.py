@@ -3,6 +3,8 @@
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.accounts import views as account_views
+
 from . import views
 
 urlpatterns = [
@@ -18,4 +20,5 @@ urlpatterns = [
     path("about/", views.about, name="about"),
     path("guidelines/", views.guidelines, name="guidelines"),
     path("login/", views.login, name="login"),
+    path("register/", account_views.register, name="register"),
 ]
