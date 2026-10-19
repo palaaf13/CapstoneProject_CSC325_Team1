@@ -18,8 +18,18 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture(autouse=True)
-def use_in_memory_email_backend(settings):
-    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+def use_in_memory_email_backend():
+    test_mailers = {
+        "default": {
+            "BACKEND": "django.core.mail.backends.locmem.EmailBackend",
+        }
+    }
+    with override_settings(MAILERS=test_mailers):
+        if hasattr(mail, "outbox"):
+            mail.outbox.clear()
+        yield
+        if hasattr(mail, "outbox"):
+            mail.outbox.clear()
 
 
 def valid_registration_data(email: str) -> dict[str, str]:
