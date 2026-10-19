@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 
 from apps.accounts.forms import RegistrationForm
 from apps.accounts.services import register_user
@@ -65,4 +66,26 @@ def test_registration_service_rejects_non_college_email():
             password=data["password1"],
         )
 
+    assert not get_user_model().objects.filter(username=data["username"]).exists()
+
+
+def test_registration_view_creates_and_signs_in_student(client):
+    data = valid_registration_data("student@farmingdale.edu")
+
+    response = client.post(reverse("register"), data)
+
+    assert response.status_code == 302
+    assert response.url == reverse("home")
+    user = get_user_model().objects.get(username=data["username"])
+    assert client.session["_auth_user_id"] == str(user.pk)
+    assert client.get(reverse("register")).status_code == 302
+
+
+def test_registration_view_shows_error_for_non_college_email(client):
+    data = valid_registration_data("student@example.com")
+
+    response = client.post(reverse("register"), data)
+
+    assert response.status_code == 200
+    assert b"Use your Farmingdale State College email address." in response.content
     assert not get_user_model().objects.filter(username=data["username"]).exists()
