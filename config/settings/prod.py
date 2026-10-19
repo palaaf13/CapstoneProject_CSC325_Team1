@@ -10,8 +10,18 @@ SECRET_KEY = env.str("SECRET_KEY")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
 # Production account verification must use a configured SMTP relay and sender.
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = env.str("EMAIL_HOST")
+MAILERS = {
+    "default": {
+        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+        "OPTIONS": {
+            "host": env.str("EMAIL_HOST"),
+            "port": env.int("EMAIL_PORT", default=587),
+            "username": env.str("EMAIL_HOST_USER", default=""),
+            "password": env.str("EMAIL_HOST_PASSWORD", default=""),
+            "use_tls": env.bool("EMAIL_USE_TLS", default=True),
+        },
+    }
+}
 DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL")
 
 SECURE_SSL_REDIRECT = True
