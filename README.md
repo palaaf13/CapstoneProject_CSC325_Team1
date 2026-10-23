@@ -288,6 +288,16 @@ settings file.
 | `MONGODB_URI` | **yes** | The full Atlas connection string. |
 | `MONGODB_NAME` | no | Database name inside the cluster. Defaults to `ramhub`. |
 | `COLLEGE_EMAIL_DOMAIN` | no | Domain allowed to register. Defaults to `farmingdale.edu`. |
+| `EMAIL_HOST` | prod | SMTP server used to send confirmation emails. |
+| `EMAIL_PORT` | no | SMTP port. Defaults to `587`. |
+| `EMAIL_HOST_USER` | no | SMTP username, if required by the provider. |
+| `EMAIL_HOST_PASSWORD` | no | SMTP password, if required by the provider. |
+| `EMAIL_USE_TLS` | no | Whether SMTP uses TLS. Defaults to `True`. |
+| `DEFAULT_FROM_EMAIL` | prod | Sender address authorized by the mail provider. |
+
+In development, registration confirmation emails print in the `runserver`
+terminal. Production uses SMTP and requires `EMAIL_HOST` and
+`DEFAULT_FROM_EMAIL`; keep any SMTP credentials in the gitignored `.env`.
 
 Generate a key for `.env` with:
 

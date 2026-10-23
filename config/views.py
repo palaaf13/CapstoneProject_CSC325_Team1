@@ -17,6 +17,11 @@ def home(request: HttpRequest) -> HttpResponse:
     return render(request, "pages/home.html", catalog_landing.landing_snapshot())
 
 
+def login(request: HttpRequest) -> HttpResponse:
+    """Render the non-functional demo sign-in page."""
+    return render(request, "pages/login.html")
+
+
 def styleguide(request: HttpRequest) -> HttpResponse:
     """Every shared UI pattern on one page. Review the visual system here."""
     return render(request, "pages/styleguide.html")

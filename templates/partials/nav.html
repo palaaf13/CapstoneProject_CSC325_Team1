@@ -45,9 +45,12 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
       </a>
 
       {# Account menu — a placeholder until auth lands in Phase 2 #}
-      <a href="#" class="btn-secondary hidden shrink-0 md:inline-flex">
+      <a href="{% url 'login' %}" class="btn-secondary hidden shrink-0 md:inline-flex">
         {% include "partials/icons/user.html" %}
         <span>Sign in</span>
+      </a>
+      <a href="{% url 'register' %}" class="btn-primary hidden shrink-0 xl:inline-flex">
+        <span>Join</span>
       </a>
 
       {# Mobile menu toggle #}
@@ -84,9 +87,12 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
       {% endfor %}
 
       <div class="border-t border-neutral-200 pt-3">
-        <a href="#" class="btn-secondary w-full">
+        <a href="{% url 'login' %}" class="btn-secondary w-full">
           {% include "partials/icons/user.html" %}
           <span>Sign in</span>
+        </a>
+        <a href="{% url 'register' %}" class="btn-primary mt-2 w-full">
+          <span>Create account</span>
         </a>
       </div>
     </nav>
