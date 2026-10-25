@@ -1,0 +1,33 @@
+{% comment %}
+The whole results region. Swapped wholesale when the filters change and
+rendered inline on first load, so both paths produce identical markup.
+{% endcomment %}
+<div id="feed-results">
+  {% if rows %}
+    <p class="mb-2 text-meta text-neutral-500" role="status" aria-live="polite">
+      {{ total }} post{{ total|pluralize }}{% if query.tag %} tagged #{{ query.tag }}{% endif %}{% if query.q %} matching &ldquo;{{ query.q }}&rdquo;{% endif %}
+    </p>
+    <div class="card overflow-hidden">
+      {% for row in rows %}
+        {% include "community/partials/post_row.html" with post=row.post my_vote=row.my_vote %}
+      {% endfor %}
+    </div>
+
+    {% if prev_url or next_url %}
+      <nav class="mt-4 flex items-center justify-between" aria-label="Pages">
+        {% if prev_url %}<a href="{{ prev_url }}" class="btn-secondary">Newer</a>{% else %}<span></span>{% endif %}
+        <span class="text-meta text-neutral-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if next_url %}<a href="{{ next_url }}" class="btn-secondary">Older</a>{% else %}<span></span>{% endif %}
+      </nav>
+    {% endif %}
+  {% elif is_filtered %}
+    <div role="status" aria-live="polite">
+      {% include "partials/empty_state.html" with icon="search" headline="No posts match" description="Nothing fits these filters yet. Try another word, tag, or post type." action_label="Clear filters" action_url=clear_url %}
+    </div>
+  {% else %}
+    <div role="status" aria-live="polite">
+      {% url 'community:post_create' as new_post_url %}
+      {% include "partials/empty_state.html" with icon="chat" headline="Nothing in the feed yet" description="Posts, questions, and shared notes from across campus show up here. Start the first thread." action_label="Write a post" action_url=new_post_url %}
+    </div>
+  {% endif %}
+</div>
