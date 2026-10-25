@@ -1,0 +1,360 @@
+:root{--color-accent-300:#6fbd91;--color-neutral-950:#0d0f12} *{box-sizing:border-box}body{margin:0;background:#0d0f12;font:15px/1.5 system-ui,sans-serif}a{color:inherit}.demo-nav{height:58px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;background:#05160f;border-bottom:1px solid #17553a;color:#f3fff7}.demo-nav b{font-size:20px}.demo-nav b span{color:#43d68b}.demo-nav small{color:#9cbbae}
+
+/* RamHub animated login preview. All class names start rh- to avoid
+   changing any shared website styles. Colors reuse RamHub's CSS tokens. */
+.rh-login-page {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background: var(--color-neutral-950, #0d0f12);
+  color: #fff;
+}
+
+.rh-login-layout {
+  width: min(1400px, 100%);
+  min-height: min(790px, 84vh);
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(350px, .82fr);
+  overflow: hidden;
+  border: 1px solid #216b43;
+  border-radius: 18px;
+  background: #021a10;
+  box-shadow: 0 28px 80px #0009, 0 0 35px #00693e26;
+}
+
+.rh-art {
+  position: relative;
+  overflow: hidden;
+  min-height: 640px;
+  background: #03130c;
+  isolation: isolate;
+}
+
+.rh-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  animation: rh-scene-drift 9s ease-in-out infinite alternate;
+}
+
+/* A separate glow, placed over the picture, makes the portal pulse. */
+.rh-halo {
+  position: absolute;
+  left: 58%;
+  top: 40%;
+  width: 43%;
+  height: 43%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #77ffd848, #33d88714 45%, transparent 70%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: rh-halo-pulse 3.5s ease-in-out infinite;
+}
+
+/* Separate, moving geometry sits above the static image. */
+.rh-orbit {
+  position: absolute;
+  border: 1px dashed #8af6b6a3;
+  border-radius: 50%;
+  box-shadow: 0 0 12px #6afa893b;
+  pointer-events: none;
+}
+.rh-orbit::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  left: 13%;
+  top: 15%;
+  border-radius: 50%;
+  background: #9afac0;
+  box-shadow: 0 0 17px #9afac0;
+}
+.rh-orbit-top {
+  left: 23%;
+  top: 10%;
+  width: 24%;
+  aspect-ratio: 1.25;
+  animation: rh-orbit-turn 15s linear infinite;
+}
+.rh-orbit-bottom {
+  right: 12%;
+  bottom: 11%;
+  width: 21%;
+  aspect-ratio: 1.5;
+  opacity: .65;
+  animation: rh-orbit-turn 18s linear infinite reverse;
+}
+.rh-float {
+  position: absolute;
+  color: #bdffd1;
+  font-size: 40px;
+  text-shadow: 0 0 16px #43d875;
+  pointer-events: none;
+}
+.rh-float-one {
+  top: 27%; left: 7%;
+  animation: rh-float 3.2s ease-in-out infinite alternate;
+}
+.rh-float-two {
+  top: 21%; right: 13%;
+  animation: rh-float 4.7s ease-in-out infinite alternate-reverse;
+}
+.rh-float-three {
+  bottom: 18%; left: 44%;
+  font-size: 25px;
+  animation: rh-float 4s ease-in-out infinite alternate;
+}
+.rh-scan {
+  position: absolute;
+  inset: -50% 0 auto;
+  height: 70px;
+  background: linear-gradient(transparent, #73ffd112, transparent);
+  transform: rotate(-10deg);
+  pointer-events: none;
+  animation: rh-scan 10s linear infinite;
+}
+
+.rh-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(26px, 3.5vw, 54px);
+  border-left: 1px solid #216b43;
+  background: linear-gradient(145deg, #052316, #0a1511 55%, #07100d);
+  box-shadow: inset 12px 0 50px #0004;
+  color: #f8fff9;
+}
+.rh-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 34px;
+  width: 82px;
+  height: 2px;
+  background: #75e9a2;
+  box-shadow: 0 0 15px #75e9a2;
+}
+.rh-kicker {
+  color: var(--color-accent-300, #6fbd91);
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+.rh-panel h1 {
+  margin: 20px 0 6px;
+  color: #fff;
+  font-size: clamp(30px, 3.5vw, 48px);
+  line-height: 1.12;
+  font-weight: 800;
+  letter-spacing: -.03em;
+}
+.rh-panel h1 span,
+.rh-panel h2 { color: #5be79a; }
+.rh-panel h2 {
+  margin: 4px 0 0;
+  font-size: clamp(16px, 1.8vw, 21px);
+  font-weight: 700;
+}
+.rh-description {
+  margin: 14px 0 24px;
+  color: #b4c7ba;
+  line-height: 1.7;
+}
+.rh-fields { display: grid; gap: 10px; }
+.rh-fields label {
+  color: #b5dfc4;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .045em;
+}
+.rh-fields input {
+  width: 100%;
+  min-height: 49px;
+  padding: 13px;
+  color: #fff;
+  background: #0f241c;
+  border: 1px solid #41614c;
+  border-radius: 9px;
+}
+.rh-fields input:disabled { opacity: 1; cursor: not-allowed; }
+.rh-fields input::placeholder { color: #9aac9f; }
+.rh-sign-in {
+  min-height: 50px;
+  margin-top: 12px;
+  padding: 13px;
+  border-radius: 9px;
+  background: #00693e;
+  color: #fff;
+  font-weight: 700;
+  opacity: .7;
+  cursor: not-allowed;
+}
+.rh-notice { margin: 15px 0 12px; color: #b9cabb; font-size: 12px; }
+.rh-actions { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; }
+.rh-motion-toggle, .rh-home {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #a3d7b8;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.rh-motion-toggle:focus-visible, .rh-home:focus-visible {
+  outline: 2px solid #86eeb0;
+  outline-offset: 4px;
+}
+
+/* Animations: these are executed by the browser, not by AI image generation. */
+@keyframes rh-scene-drift {
+  from { transform: translate3d(0, 0, 0) scale(1.025); }
+  to { transform: translate3d(-12px, -8px, 0) scale(1.065); }
+}
+@keyframes rh-halo-pulse {
+  50% { opacity: .3; transform: scale(1.20); }
+}
+@keyframes rh-orbit-turn {
+  to { transform: rotate(360deg); }
+}
+@keyframes rh-float {
+  to { transform: translate3d(11px, -23px, 0) rotate(12deg); }
+}
+@keyframes rh-scan {
+  to { top: 135%; }
+}
+
+/* JS toggles this class; every animated layer pauses at once. */
+.rh-motion-paused .rh-scene,
+.rh-motion-paused .rh-halo,
+.rh-motion-paused .rh-orbit,
+.rh-motion-paused .rh-float,
+.rh-motion-paused .rh-scan { animation-play-state: paused; }
+
+/* Keep the artwork LEFT and the form RIGHT even in a half-width
+   browser window (such as the ChatGPT file preview). */
+@media (max-width: 980px) and (min-width: 611px) {
+  .rh-login-page { padding: 14px 12px; }
+  .rh-login-layout {
+    grid-template-columns: minmax(0, 1.06fr) minmax(270px, .94fr);
+    min-height: 585px;
+  }
+  .rh-art { min-height: 585px; }
+  .rh-scene { object-position: 60% center; }
+  .rh-panel { padding: 24px 21px; }
+  .rh-panel h1 { font-size: clamp(25px, 3.6vw, 34px); }
+  .rh-panel h2 { font-size: 16px; }
+  .rh-description { font-size: 13px; margin: 12px 0 18px; }
+  .rh-fields input { min-height: 43px; }
+  .rh-sign-in { min-height: 44px; }
+  .rh-notice { font-size: 11px; }
+}
+/* Actual phone screens stack intentionally; otherwise the form gets too narrow. */
+@media (max-width: 610px) {
+  .rh-login-page { padding: 12px; }
+  .rh-login-layout { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .rh-art { min-height: 340px; }
+  .rh-scene { object-position: center; }
+  .rh-panel { padding: 27px 22px; border-left: 0; border-top: 1px solid #216b43; }
+}
+@media (max-width: 400px) {
+  .rh-art { min-height: 300px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rh-scene, .rh-halo, .rh-orbit, .rh-float, .rh-scan { animation: none; }
+}
+
+
+
+:root{color-scheme:dark}
+body {background:#05100c}
+.demo-nav{height:68px;padding:0 clamp(20px,4vw,64px);background:#030d09;box-shadow:0 1px 20px #007d3e2b}
+.brand{font-size:25px;font-weight:800;letter-spacing:-.07em;text-decoration:none;display:flex;align-items:center;gap:5px}
+.brand span:not(.brand-orbit){color:#4be79b}
+.brand-orbit{font-size:29px;margin-right:7px;color:#61fab0;filter:drop-shadow(0 0 6px #43c97d)}
+.nav-caption{font-size:10px;letter-spacing:.06em;font-weight:600;color:#9ac0a9;text-align:right}
+.rh-login-page{padding:24px clamp(14px,2vw,36px);background:radial-gradient(ellipse at 60% 10%, #06351b,#080e0c 58%)}
+.rh-login-layout{max-width:1480px;min-height:min(805px,85vh);grid-template-columns:minmax(0,1.16fr) minmax(360px,.84fr);border:1px solid #148553;border-radius:20px;box-shadow:0 25px 85px #000a, 0 0 35px #02b86826}
+.rh-art{min-height:640px}
+.rh-scene{object-position:center}
+.scene-footer{position:absolute;bottom:18px;left:20px;right:20px;padding:12px 16px;border:1px solid #b0f9b238;border-radius:8px;background:#061a13b8;color:#c0f5d5;backdrop-filter:blur(8px);letter-spacing:.2em;font-size:10px;font-weight:800;display:flex;align-items:center;gap:10px;pointer-events:none}
+.scene-bullet,.rh-mini-led{width:7px;height:7px;display:inline-block;flex:0 0 7px;border-radius:50%;background:#48ef9e;box-shadow:0 0 12px #31ef8b}
+.scene-cross{margin-left:auto;font-size:17px;color:#75eba4}
+.rh-panel{padding:clamp(25px,4vw,58px);background:radial-gradient(circle at 100% 0%,#07371f 0%,transparent 53%),linear-gradient(145deg,#061a11,#07120e 66%,#04100c);border-left-color:#216b43}
+.rh-panel::before{left:clamp(25px,4vw,58px);height:3px;background:linear-gradient(90deg,#72ffc0,transparent);width:135px;box-shadow:0 0 24px #79ecb3}
+.panel-top{font-weight:750;letter-spacing:.17em;color:#8bdbac;font-size:10px;display:flex;align-items:center;gap:10px}
+.panel-top-trail{margin-left:auto;color:#719783;font-size:10px}
+.rh-panel h1{font-size:clamp(34px,3.45vw,56px);line-height:1.13;margin:30px 0 12px;letter-spacing:-.055em}
+.rh-panel h1 span{color:#46dd92}.rh-panel .punct{color:white}
+.rh-tagline{font-size:clamp(17px,1.6vw,22px);color:#b7f6cc;font-weight:700;margin:0 0 28px}
+.rh-description{font-size:15px;line-height:1.55;margin:14px 0 28px;color:#aec9b8}
+.rh-fields{gap:9px}
+.rh-fields label{letter-spacing:.09em;color:#c7e5d1;font-size:11px}
+.rh-field-wrap{position:relative;display:flex;align-items:center;margin-bottom:12px}
+.rh-fields input{padding:14px 47px 14px 45px;border:1px solid #37654c;border-radius:11px;transition:border-color .2s ease,box-shadow .2s ease;background:#10261b;min-height:54px;font-size:14px}
+.rh-fields input:focus{outline:none;border-color:#4cde96;box-shadow:0 0 0 3px #28ed8d21,0 0 24px #18b36a30}
+.rh-fields input::placeholder{color:#9ab1a3}
+.field-icon{position:absolute;left:16px;color:#93d7af;z-index:2;font-size:19px}
+.lock-icon{font-size:23px}
+.password-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rh-forgot{font-size:12px;background:none;border:none;color:#5bf3a5;cursor:pointer;text-decoration:underline;text-underline-offset:4px;padding:0}
+.eye-toggle{position:absolute;right:13px;width:31px;height:31px;border:0;background:transparent;color:#addcc0;cursor:pointer;display:grid;place-items:center}
+.eye-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.eye-toggle:hover{color:#55f5aa}
+.rh-sign-in{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:15px;min-height:55px;border:1px solid #34df92;border-radius:11px;box-shadow:0 8px 28px #00693e66;background:linear-gradient(115deg,#007f48,#1aaf6a);opacity:1;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;font-size:15px;font-weight:800;letter-spacing:.02em}
+.rh-sign-in:hover{transform:translateY(-2px);box-shadow:0 12px 35px #16c97a55}
+.rh-arrow{font-size:21px;font-weight:400}
+.rh-after-form{margin:25px 0 22px;color:#9dc5aa;text-align:center;font-size:12px;letter-spacing:.03em}
+.rh-spark{color:#5cfda6;margin-right:5px}
+.rh-typing-section { margin: 26px 0 17px; padding: 17px 16px 18px; border: 1px solid #2c6347; border-radius: 12px; background: linear-gradient(110deg, #0c2b1c, #082018); box-shadow: inset 0 1px 0 #20654160; }
+.rh-typing-heading { color: #8fd7ac; font-size: 10px; line-height: 1.3; letter-spacing: .12em; font-weight: 800; margin-bottom: 13px; }
+.rh-type-line { display:flex;align-items:flex-start;gap:8px; min-height:46px; color:#edfff3; font-family: ui-monospace,SFMono-Regular,Consolas,monospace; font-size: clamp(13px, 1.2vw, 17px); font-weight:600; line-height:1.5; }
+.rh-type-prompt { color: #50ed9a; flex-shrink: 0; }
+#rh-type-text { overflow-wrap:anywhere; }
+.rh-type-cursor { width:2px; height:1.18em; flex-shrink:0; background:#72f9ae; box-shadow:0 0 9px #6cffa0; margin-top:2px; animation: rh-caret 1s steps(1,end) infinite; }
+@keyframes rh-caret { 50%{opacity:0} }
+.rh-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+@media(prefers-reduced-motion:reduce){.rh-type-cursor{animation:none}}
+.rh-bottom-line{border-top:1px solid #346b4d;padding-top:19px;display:flex;gap:9px;justify-content:center;align-items:center;font-size:10px;color:#72b08d;letter-spacing:.18em;font-weight:700}
+.tiny-connector{color:#357d54}
+.rh-info{border:1px solid #3d8e63;border-radius:9px;background:#122c1e;color:#dcffea;padding:12px 14px;font-size:13px;line-height:1.6;margin-top:16px}
+.rh-info a{color:#74ffb6;font-weight:700}
+.rh-info[hidden]{display:none}
+@media(max-width:980px) and (min-width:611px){.rh-login-layout{grid-template-columns:minmax(0,1.06fr) minmax(275px,.94fr);min-height:600px}.rh-panel{padding:25px}.rh-panel h1{font-size:clamp(29px,4vw,38px)}.rh-description{font-size:12px}.rh-fields input{min-height:46px}.panel-top-trail{display:none}}
+@media(max-width:610px){.rh-login-page{padding:12px}.rh-login-layout{grid-template-columns:1fr}.rh-art{min-height:320px}.rh-panel{padding:27px 22px}.rh-panel h1{margin-top:21px}.rh-description{font-size:13px}.nav-caption{display:none}.scene-footer{font-size:8px;bottom:8px}}
+@media(prefers-reduced-motion:reduce){.rh-sign-in{transition:none}}
+
+
+/* Added RamHub account screens. These styles are scoped to the prototype. */
+.rh-view[hidden] { display: none !important; }
+.rh-view { animation: rh-panel-appear .26s ease-out; }
+@keyframes rh-panel-appear { from { opacity: .5; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.rh-fields { gap: 7px; }
+.rh-field-wrap { margin-bottom: 9px; }
+.rh-panel h1 { margin-top: 20px; }
+.rh-tagline { margin-bottom: 20px; }
+.rh-panel .rh-fields input { padding-right: 49px; }
+.rh-text-link { background: transparent; padding: 2px 0; color: #67f7ae; font: inherit; font-weight: 700; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.rh-text-link:hover { color: white; }
+.rh-text-link:focus-visible, .eye-toggle:focus-visible, .rh-sign-in:focus-visible { outline: 2px solid #94ffc2; outline-offset: 3px; }
+.rh-account-prompt { margin: 17px 0 0; text-align: center; color: #b7ceb9; font-size: 13px; }
+.rh-reset-copy { margin: 0 0 22px; color: #b5cbbc; line-height: 1.6; font-size: 14px; }
+.rh-hint { margin: -3px 0 3px; color: #a6b9a9; font-size: 12px; line-height: 1.4; }
+.rh-demo-note { margin: 17px 0 0; color: #85aa91; font-size: 11px; text-align: center; }
+.rh-info { margin-top: 14px; }
+.rh-panel .rh-typing-section { margin-top: 19px; }
+.rh-panel .rh-bottom-line { margin-top: 3px; }
+.rh-sign-in { width: 100%; font-family: inherit; }
+@media (max-width: 980px) and (min-width: 611px) {
+ .rh-panel h1 { font-size: clamp(28px,3.2vw,38px); }
+ .rh-panel .rh-fields input { min-height: 46px; }
+ .rh-panel .rh-tagline { font-size: 16px; }
+ .rh-panel .rh-typing-section { margin-top: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .rh-view { animation: none; } }
