@@ -49,6 +49,7 @@ def test_feed_tab_is_not_active_on_other_pages(client):
     assert tabs["Parking"] is True
 
 
+@pytest.mark.django_db  # the feed now reads posts
 def test_base_template_sends_csrf_token_with_htmx_requests(client):
     response = client.get(reverse("community:feed"))
     assert b"hx-headers" in response.content
