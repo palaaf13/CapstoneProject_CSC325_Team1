@@ -71,3 +71,20 @@ def send_registration_confirmation(user: User, confirmation_url: str) -> None:
         raise EmailDeliveryError(
             "The registration confirmation email was not accepted for delivery."
         )
+
+
+PROFILE_FIELDS = ("display_name", "major", "grad_year", "bio", "is_profile_public")
+
+
+def update_profile(user: User, changes: dict) -> User:
+    """Save a student's own profile edits.
+
+    Only the fields in PROFILE_FIELDS are applied; anything else in
+    ``changes`` is ignored, so this can never change an email, role, or
+    password.
+    """
+    for field in PROFILE_FIELDS:
+        if field in changes:
+            setattr(user, field, changes[field])
+    user.save(update_fields=list(PROFILE_FIELDS))
+    return user

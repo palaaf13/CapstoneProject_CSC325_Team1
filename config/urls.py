@@ -26,4 +26,7 @@ urlpatterns = [
         account_views.confirm_email,
         name="confirm_email",
     ),
+    # Always the signed-in student's own profile: no id in the URL to tamper with.
+    path("profile/", account_views.profile, name="profile"),
+    path("profile/edit/", account_views.profile_edit, name="profile_edit"),
 ]

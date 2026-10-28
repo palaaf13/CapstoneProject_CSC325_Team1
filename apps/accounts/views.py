@@ -4,6 +4,7 @@ import logging
 from smtplib import SMTPException
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
@@ -12,7 +13,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
 from apps.accounts import services
-from apps.accounts.forms import RegistrationForm
+from apps.accounts.forms import ProfileForm, RegistrationForm
 from apps.accounts.models import User
 
 logger = logging.getLogger(__name__)
@@ -85,3 +86,28 @@ def confirm_email(request: HttpRequest, uidb64: str, token: str) -> HttpResponse
             "was already confirmed.",
         )
     return redirect("login")
+
+
+@login_required
+def profile(request: HttpRequest) -> HttpResponse:
+    """Show the signed-in student their own profile."""
+    return render(request, "accounts/profile.html", {"profile_user": request.user})
+
+
+@login_required
+def profile_edit(request: HttpRequest) -> HttpResponse:
+    """Let the signed-in student edit their own profile.
+
+    The account edited is always request.user; no id is read from the request,
+    so a student cannot edit anyone else.
+    """
+    if request.method == "POST":
+        form = ProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            services.update_profile(request.user, form.cleaned_data)
+            messages.success(request, "Your profile is saved.")
+            return redirect("profile")
+    else:
+        form = ProfileForm(instance=request.user)
+
+    return render(request, "accounts/profile_edit.html", {"form": form})
