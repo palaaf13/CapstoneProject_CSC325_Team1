@@ -29,12 +29,24 @@ jobs:
         # them — a standalone mongod still passes but silently degrades every
         # test to truncate-between-tests. `services:` cannot pass --replSet, so
         # the container is started by hand here.
+        #
+        # The image is pinned by digest: the mongo:8.0 build published around
+        # 2026-10-25 (sha256:b9924c33…) exits on start on the runner, while
+        # this one passed every run before it. Bump it deliberately, not by
+        # whatever the tag points at today.
         run: |
           set -euo pipefail
-          docker run -d --name mongo -p 27017:27017 mongo:8.0 --replSet rs0 --bind_ip_all
+          docker run -d --name mongo -p 27017:27017 \
+            mongo:8.0@sha256:4a4ab5d4834207389e0d7270fac988e21ffedccecba77991a552f755df229907 \
+            --replSet rs0 --bind_ip_all
 
           echo "Waiting for mongod to accept connections..."
           for _ in $(seq 1 60); do
+            if [ "$(docker inspect -f '{{.State.Running}}' mongo)" != "true" ]; then
+              echo "mongod exited during startup. Container logs:"
+              docker logs mongo
+              exit 1
+            fi
             if docker exec mongo mongosh --quiet --eval 'db.adminCommand({ping:1}).ok' >/dev/null 2>&1; then
               break
             fi
