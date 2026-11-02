@@ -29,28 +29,78 @@ jobs:
         # them — a standalone mongod still passes but silently degrades every
         # test to truncate-between-tests. `services:` cannot pass --replSet, so
         # the container is started by hand here.
+        #
+        # Every wait below fails loudly with the mongod log instead of falling
+        # through to a confusing error further down, and the steps that hit the
+        # network or a still-starting server are retried.
+        #
+        # The image is pinned to a patch release. The floating `mongo:8.0` tag
+        # moved to 8.0.34 in late October 2026 and that container exits on
+        # startup on the runner. Bump this deliberately and watch the first run.
+        timeout-minutes: 10
+        env:
+          MONGO_IMAGE: mongo:8.0.32
         run: |
           set -euo pipefail
-          docker run -d --name mongo -p 27017:27017 mongo:8.0 --replSet rs0 --bind_ip_all
+
+          fail() {
+            echo "::error::$1"
+            docker logs mongo 2>&1 | tail -n 50 || true
+            exit 1
+          }
+
+          # Retry the pull: a Docker Hub hiccup should not fail the build.
+          for attempt in 1 2 3; do
+            docker pull "$MONGO_IMAGE" && break
+            [ "$attempt" = 3 ] && fail "Could not pull $MONGO_IMAGE after 3 attempts."
+            sleep $((attempt * 10))
+          done
+
+          docker run -d --name mongo -p 27017:27017 "$MONGO_IMAGE" --replSet rs0 --bind_ip_all
 
           echo "Waiting for mongod to accept connections..."
-          for _ in $(seq 1 60); do
+          ready=""
+          for _ in $(seq 1 120); do
             if docker exec mongo mongosh --quiet --eval 'db.adminCommand({ping:1}).ok' >/dev/null 2>&1; then
+              ready=1
               break
+            fi
+            # A container that has exited will never answer; stop waiting.
+            if [ "$(docker inspect -f '{{.State.Running}}' mongo)" != "true" ]; then
+              fail "The mongo container exited during startup."
             fi
             sleep 1
           done
+          [ -n "$ready" ] || fail "mongod did not accept connections within 120s."
 
-          docker exec mongo mongosh --quiet --eval \
-            'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:27017"}]})'
+          # Retried because mongod can answer ping a moment before it accepts
+          # rs.initiate. A retry after a success reports AlreadyInitialized,
+          # which counts as done.
+          initiated=""
+          for _ in $(seq 1 10); do
+            if docker exec mongo mongosh --quiet --eval '
+              try {
+                rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:27017"}]});
+              } catch (e) {
+                if (e.codeName !== "AlreadyInitialized") throw e;
+              }'; then
+              initiated=1
+              break
+            fi
+            sleep 2
+          done
+          [ -n "$initiated" ] || fail "rs.initiate did not succeed after 10 attempts."
 
           echo "Waiting for the member to become PRIMARY..."
-          for _ in $(seq 1 60); do
-            if [ "$(docker exec mongo mongosh --quiet --eval 'rs.status().myState')" = "1" ]; then
+          primary=""
+          for _ in $(seq 1 120); do
+            if [ "$(docker exec mongo mongosh --quiet --eval 'rs.status().myState' 2>/dev/null)" = "1" ]; then
+              primary=1
               break
             fi
             sleep 1
           done
+          [ -n "$primary" ] || fail "The replica set member did not become PRIMARY within 120s."
 
           docker exec mongo mongosh --quiet --eval \
             'print("replica set ready: " + db.adminCommand("hello").setName)'
