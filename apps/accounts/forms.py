@@ -42,7 +42,9 @@ class RegistrationForm(UserCreationForm):
 class SignInForm(forms.Form):
     """Sign in with a college email and password.
 
-    On success, ``get_user()`` returns the authenticated account. The error for
+    Pass ``locked_out=True`` while the visitor's IP is locked out; the form is
+    then always invalid. On success, ``get_user()`` returns the authenticated
+    account. The error for
     a wrong email and a wrong password is the same, so the form never reveals
     whether an email is registered.
     """
@@ -65,12 +67,20 @@ class SignInForm(forms.Form):
         ),
     )
 
-    def __init__(self, request: HttpRequest, *args, **kwargs):
+    def __init__(self, request: HttpRequest, *args, locked_out: bool = False, **kwargs):
         self.request = request
         self.user = None
+        self.locked_out = locked_out
         super().__init__(*args, **kwargs)
 
     def clean(self) -> dict:
+        if self.locked_out:
+            # Checked first, so a locked-out IP gets no answer about the password.
+            raise forms.ValidationError(
+                f"Too many sign-in attempts. Try again in "
+                f"{services.SIGN_IN_LOCKOUT_SECONDS // 60} minutes."
+            )
+
         cleaned_data = super().clean()
         email = cleaned_data.get("email")
         password = cleaned_data.get("password")

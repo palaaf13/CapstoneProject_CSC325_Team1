@@ -112,11 +112,22 @@ def sign_in(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect(_safe_next_url(request) or "profile")
 
+    ip = services.client_ip(request)
+    status = 200
     if request.method == "POST":
-        form = SignInForm(request, data=request.POST)
+        locked_out = services.is_sign_in_locked(ip)
+        form = SignInForm(request, data=request.POST, locked_out=locked_out)
         if form.is_valid():
+            services.clear_failed_sign_ins(ip)
             auth_login(request, form.get_user())
             return redirect(_safe_next_url(request) or "profile")
+        if not locked_out and services.record_failed_sign_in(ip):
+            # That was the last allowed try: show the lockout instead.
+            locked_out = True
+            form = SignInForm(request, data=request.POST, locked_out=True)
+            form.is_valid()
+        if locked_out:
+            status = 429
     else:
         form = SignInForm(request)
 
@@ -124,6 +135,7 @@ def sign_in(request: HttpRequest) -> HttpResponse:
         request,
         "accounts/login.html",
         {"form": form, "next": _safe_next_url(request) or ""},
+        status=status,
     )
 
 
