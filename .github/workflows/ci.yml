@@ -7,7 +7,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Not ubuntu-latest: from late October 2026 the 24.04 runners use Linux
+    # kernel 7.0, and MongoDB 8.0 before 8.0.37 refuses to start on it
+    # (SERVER-121912 / SERVER-131779). The 22.04 runners are on kernel 6.8.
+    # Move back once mongo:8.0 on Docker Hub is 8.0.37 or newer.
+    runs-on: ubuntu-22.04
 
     env:
       # directConnection avoids replica-set host-advertisement mismatches: the
@@ -29,16 +33,9 @@ jobs:
         # them — a standalone mongod still passes but silently degrades every
         # test to truncate-between-tests. `services:` cannot pass --replSet, so
         # the container is started by hand here.
-        #
-        # The image is pinned by digest: the mongo:8.0 build published around
-        # 2026-10-25 (sha256:b9924c33…) exits on start on the runner, while
-        # this one passed every run before it. Bump it deliberately, not by
-        # whatever the tag points at today.
         run: |
           set -euo pipefail
-          docker run -d --name mongo -p 27017:27017 \
-            mongo:8.0@sha256:4a4ab5d4834207389e0d7270fac988e21ffedccecba77991a552f755df229907 \
-            --replSet rs0 --bind_ip_all
+          docker run -d --name mongo -p 27017:27017 mongo:8.0 --replSet rs0 --bind_ip_all
 
           echo "Waiting for mongod to accept connections..."
           for _ in $(seq 1 60); do
