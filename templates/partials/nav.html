@@ -44,14 +44,25 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
         {% include "partials/icons/search.html" %}
       </a>
 
-      {# Account menu — a placeholder until auth lands in Phase 2 #}
-      <a href="{% url 'login' %}" class="btn-secondary hidden shrink-0 md:inline-flex">
-        {% include "partials/icons/user.html" %}
-        <span>Sign in</span>
-      </a>
-      <a href="{% url 'register' %}" class="btn-primary hidden shrink-0 xl:inline-flex">
-        <span>Join</span>
-      </a>
+      {# Account #}
+      {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="btn-secondary hidden shrink-0 md:inline-flex">
+          {% include "partials/icons/user.html" %}
+          <span>Profile</span>
+        </a>
+        <form action="{% url 'logout' %}" method="post" class="hidden shrink-0 xl:block">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn-secondary hidden shrink-0 md:inline-flex">
+          {% include "partials/icons/user.html" %}
+          <span>Sign in</span>
+        </a>
+        <a href="{% url 'register' %}" class="btn-primary hidden shrink-0 xl:inline-flex">
+          <span>Join</span>
+        </a>
+      {% endif %}
 
       {# Mobile menu toggle #}
       <button type="button"
@@ -87,13 +98,24 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
       {% endfor %}
 
       <div class="border-t border-neutral-200 pt-3">
-        <a href="{% url 'login' %}" class="btn-secondary w-full">
-          {% include "partials/icons/user.html" %}
-          <span>Sign in</span>
-        </a>
-        <a href="{% url 'register' %}" class="btn-primary mt-2 w-full">
-          <span>Create account</span>
-        </a>
+        {% if user.is_authenticated %}
+          <a href="{% url 'profile' %}" class="btn-secondary w-full">
+            {% include "partials/icons/user.html" %}
+            <span>Profile</span>
+          </a>
+          <form action="{% url 'logout' %}" method="post" class="mt-2">
+            {% csrf_token %}
+            <button type="submit" class="btn-ghost w-full">Sign out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}" class="btn-secondary w-full">
+            {% include "partials/icons/user.html" %}
+            <span>Sign in</span>
+          </a>
+          <a href="{% url 'register' %}" class="btn-primary mt-2 w-full">
+            <span>Create account</span>
+          </a>
+        {% endif %}
       </div>
     </nav>
   </div>
