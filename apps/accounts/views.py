@@ -1,19 +1,26 @@
-"""Student account registration views."""
+"""Student account views: registration, sign-in, and profiles."""
 
 import logging
 from smtplib import SMTPException
 
 from django.contrib import messages
+from django.contrib.auth import login as auth_login
+from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.http import (
+    url_has_allowed_host_and_scheme,
+    urlsafe_base64_decode,
+    urlsafe_base64_encode,
+)
+from django.views.decorators.http import require_POST
 
 from apps.accounts import services
-from apps.accounts.forms import ProfileForm, RegistrationForm
+from apps.accounts.forms import ProfileForm, RegistrationForm, SignInForm
 from apps.accounts.models import User
 
 logger = logging.getLogger(__name__)
@@ -86,6 +93,45 @@ def confirm_email(request: HttpRequest, uidb64: str, token: str) -> HttpResponse
             "was already confirmed.",
         )
     return redirect("login")
+
+
+def _safe_next_url(request: HttpRequest) -> str | None:
+    """The ?next= page to return to, only if it points back into RamHub."""
+    next_url = request.POST.get("next") or request.GET.get("next")
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return next_url
+    return None
+
+
+def sign_in(request: HttpRequest) -> HttpResponse:
+    """Sign a confirmed student in with their college email and password."""
+    if request.user.is_authenticated:
+        return redirect(_safe_next_url(request) or "profile")
+
+    if request.method == "POST":
+        form = SignInForm(request, data=request.POST)
+        if form.is_valid():
+            auth_login(request, form.get_user())
+            return redirect(_safe_next_url(request) or "profile")
+    else:
+        form = SignInForm(request)
+
+    return render(
+        request,
+        "accounts/login.html",
+        {"form": form, "next": _safe_next_url(request) or ""},
+    )
+
+
+@require_POST
+def sign_out(request: HttpRequest) -> HttpResponse:
+    """Sign out. POST-only so a link or image on another site can't sign you out."""
+    auth_logout(request)
+    return redirect("home")
 
 
 @login_required

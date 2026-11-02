@@ -1,9 +1,12 @@
-"""Forms for creating verified student accounts and editing their profiles."""
+"""Forms for creating, signing in to, and editing verified student accounts."""
 
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
+from django.http import HttpRequest
 from django.utils import timezone
+
+from apps.accounts import services
 
 # A sanity range, not a policy: it catches typos like 225 or 20026 while
 # allowing alumni and students several years from finishing.
@@ -34,6 +37,58 @@ class RegistrationForm(UserCreationForm):
 
     def clean_email(self) -> str:
         return self.cleaned_data["email"].strip().casefold()
+
+
+class SignInForm(forms.Form):
+    """Sign in with a college email and password.
+
+    On success, ``get_user()`` returns the authenticated account. The error for
+    a wrong email and a wrong password is the same, so the form never reveals
+    whether an email is registered.
+    """
+
+    email = forms.EmailField(
+        label="College email",
+        widget=forms.EmailInput(
+            attrs={
+                "class": "field-input",
+                "autocomplete": "email",
+                "placeholder": "name@farmingdale.edu",
+            }
+        ),
+    )
+    password = forms.CharField(
+        label="Password",
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={"class": "field-input", "autocomplete": "current-password"}
+        ),
+    )
+
+    def __init__(self, request: HttpRequest, *args, **kwargs):
+        self.request = request
+        self.user = None
+        super().__init__(*args, **kwargs)
+
+    def clean(self) -> dict:
+        cleaned_data = super().clean()
+        email = cleaned_data.get("email")
+        password = cleaned_data.get("password")
+        if not email or not password:
+            return cleaned_data
+
+        self.user = services.authenticate_by_email(self.request, email, password)
+        if self.user is None:
+            if services.is_unconfirmed_account(email, password):
+                raise forms.ValidationError(
+                    "Confirm your email before signing in. Check your Farmingdale inbox "
+                    "for the confirmation link."
+                )
+            raise forms.ValidationError("That email and password don't match an account.")
+        return cleaned_data
+
+    def get_user(self):
+        return self.user
 
 
 class ProfileForm(forms.ModelForm):

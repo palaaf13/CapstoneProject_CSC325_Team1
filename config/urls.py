@@ -19,7 +19,8 @@ urlpatterns = [
     path("styleguide/htmx-demo/", views.styleguide_htmx_demo, name="styleguide_htmx_demo"),
     path("about/", views.about, name="about"),
     path("guidelines/", views.guidelines, name="guidelines"),
-    path("login/", views.login, name="login"),
+    path("login/", account_views.sign_in, name="login"),
+    path("logout/", account_views.sign_out, name="logout"),
     path("register/", account_views.register, name="register"),
     path(
         "confirm-email/<str:uidb64>/<str:token>/",

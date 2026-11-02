@@ -1,8 +1,10 @@
 """Account-related business operations."""
 
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import EmailMessage, mailers
+from django.http import HttpRequest
 
 from apps.accounts.models import User, validate_college_email
 
@@ -48,6 +50,25 @@ def activate_user(user: User, token: str) -> bool:
     user.is_active = True
     user.save(update_fields=["is_active"])
     return True
+
+
+def authenticate_by_email(request: HttpRequest, email: str, password: str) -> User | None:
+    """Return the active account matching this email and password, or None.
+
+    Students sign in with their college email, but Django's ModelBackend looks
+    accounts up by username, so the email is translated first. An unknown email
+    still goes through authenticate() so it costs the same password-hash time
+    as a wrong password and doesn't reveal which emails have accounts.
+    """
+    user = User.objects.filter(email=email.strip().casefold()).first()
+    username = user.username if user else ""
+    return authenticate(request, username=username, password=password)
+
+
+def is_unconfirmed_account(email: str, password: str) -> bool:
+    """True when the email and password are right but the email isn't confirmed yet."""
+    user = User.objects.filter(email=email.strip().casefold(), is_active=False).first()
+    return user is not None and user.check_password(password)
 
 
 def send_registration_confirmation(user: User, confirmation_url: str) -> None:

@@ -11,7 +11,13 @@
         </h1>
         <p class="mt-1 text-body text-neutral-500">@{{ profile_user.username }}</p>
       </div>
-      <a href="{% url 'profile_edit' %}" class="btn-primary shrink-0">Edit profile</a>
+      <div class="flex shrink-0 items-center gap-2">
+        <form action="{% url 'logout' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost">Sign out</button>
+        </form>
+        <a href="{% url 'profile_edit' %}" class="btn-primary">Edit profile</a>
+      </div>
     </div>
 
     <div class="card card-pad sm:p-6">
