@@ -1,7 +1,6 @@
 // The landing page's opening scene: about 50,000 graduation caps in a slowly
 // turning spiral galaxy in RamHub green: soft mint at the core shading to
-// Farmingdale green at the rim. A hologram graduate in cap and gown stands at
-// the centre, and every few seconds a cap streaks across the sky.
+// Farmingdale green at the rim, with graduation caps streaking across the sky.
 //
 //   * Drag to rotate. Pinch (or Ctrl + scroll) to zoom. A plain scroll wheel
 //     is left alone, so the page always scrolls past the hero.
@@ -21,13 +20,10 @@ const mount = stage && stage.querySelector("[data-galaxy-canvas]");
 const CORE = new THREE.Color("#a3d7b8"); // --color-accent-200
 const RIM = new THREE.Color("#3f9e6d"); // --color-accent-400
 const BACKGROUND = 0x0d0f12; // --color-neutral-950, the landing page background
-const HOLOGRAM = new THREE.Color("#d0ebda"); // --color-accent-100
 const STREAK = new THREE.Color("#d0ebda"); // --color-accent-100
 const SHAPE = { radius: 6, arms: 4, spin: 1.05, scatter: 0.38, scatterPower: 3 };
 // Sit the core below the headline, like a horizon, so the text stays clear.
-const GALAXY_Y = -3.8;
-// Radius of the empty centre where the hologram graduate stands.
-const EYE = 1.0;
+const GALAXY_Y = -1.9;
 
 
 // A white mortarboard on a soft glow. The shader tints it per particle.
@@ -89,8 +85,8 @@ function buildGalaxy(count) {
     Math.pow(Math.random(), SHAPE.scatterPower) * (Math.random() < 0.5 ? 1 : -1) * SHAPE.scatter * r;
 
   for (let i = 0; i < count; i++) {
-    // Denser toward the core, but with a small empty eye for the hologram.
-    const r = EYE + Math.pow(Math.random(), 1.35) * (SHAPE.radius - EYE);
+    // Denser toward the core, like a real galaxy.
+    const r = Math.pow(Math.random(), 1.35) * SHAPE.radius;
     const arm = ((i % SHAPE.arms) / SHAPE.arms) * Math.PI * 2;
     const twist = r * SHAPE.spin;
 
@@ -103,10 +99,8 @@ function buildGalaxy(count) {
     colors[i * 3 + 1] = color.g;
     colors[i * 3 + 2] = color.b;
 
-    // A handful of big caps so the shape is recognisable before you zoom;
-    // caps near the eye are smaller, so the hologram glows against dark space.
-    const nearEye = Math.min(1, (r - EYE) / 1.4);
-    scales[i] = (0.55 + Math.random() * 1.05) * (Math.random() < 0.004 ? 2.6 : 1) * (0.35 + 0.65 * nearEye);
+    // A handful of big caps so the shape is recognisable before you zoom.
+    scales[i] = (0.55 + Math.random() * 1.05) * (Math.random() < 0.004 ? 2.6 : 1);
     angles[i] = Math.random() * Math.PI * 2;
   }
 
@@ -156,137 +150,13 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-// ── Hologram graduate ───────────────────────────────────────────────────────
-// Built from simple shapes (gown, arms, head, mortarboard, diploma) and drawn
-// with one hologram shader: glowing edges, rolling scan lines, a rare flicker.
-const hologramVertex = /* glsl */ `
-  varying vec3 vNormal;
-  varying vec3 vView;
-  void main() {
-    vec4 world = modelMatrix * vec4(position, 1.0);
-    vNormal = normalize(mat3(modelMatrix) * normal);
-    vView = normalize(cameraPosition - world.xyz);
-    gl_Position = projectionMatrix * viewMatrix * world;
-  }
-`;
-
-const hologramFragment = /* glsl */ `
-  uniform vec3 uColor;
-  uniform float uTime;
-  uniform float uOpacity;
-  varying vec3 vNormal;
-  varying vec3 vView;
-
-  float random(float n) { return fract(sin(n) * 43758.5453); }
-
-  void main() {
-    float rim = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.2);
-    float scan = 0.6 + 0.4 * sin(gl_FragCoord.y * 0.7 - uTime * 5.0);
-    float glitch = step(0.94, random(floor(uTime * 9.0)));
-    float flicker = 1.0 - glitch * (0.35 + 0.35 * sin(uTime * 80.0));
-    float alpha = (0.22 + rim * 1.6) * scan * flicker * uOpacity;
-    gl_FragColor = vec4(uColor * (0.7 + rim * 1.8), alpha);
-    #include <colorspace_fragment>
-  }
-`;
-
-const beamFragment = /* glsl */ `
-  uniform vec3 uColor;
-  uniform float uOpacity;
-  varying vec2 vUv;
-  void main() {
-    // Brightest at the pad, fading out as the light rises.
-    float alpha = pow(1.0 - vUv.y, 1.6) * 0.22 * uOpacity;
-    gl_FragColor = vec4(uColor, alpha);
-    #include <colorspace_fragment>
-  }
-`;
-
-function buildHologram(uniforms) {
-  const material = new THREE.ShaderMaterial({
-    uniforms,
-    vertexShader: hologramVertex,
-    fragmentShader: hologramFragment,
-    transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
-  });
-  const figure = new THREE.Group();
-  const part = (geometry, x, y, z) => {
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(x, y, z);
-    figure.add(mesh);
-    return mesh;
-  };
-
-  // Gown: a bell shape from the hem up to the shoulders.
-  const gownProfile = [
-    [0.0, 0.0], [0.44, 0.0], [0.42, 0.08], [0.35, 0.55], [0.29, 0.92],
-    [0.27, 1.08], [0.24, 1.2], [0.13, 1.29], [0.0, 1.31],
-  ].map(([radius, height]) => new THREE.Vector2(radius, height));
-  part(new THREE.LatheGeometry(gownProfile, 40), 0, 0, 0);
-
-  // Arms hang from pivots at the shoulders. The right one raises the diploma.
-  const arm = (side, lift) => {
-    const pivot = new THREE.Group();
-    pivot.position.set(0.25 * side, 1.18, 0);
-    pivot.rotation.z = lift * side;
-    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.11, 0.56, 16, 1, true), material);
-    sleeve.position.y = -0.28;
-    pivot.add(sleeve);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), material);
-    hand.position.y = -0.6;
-    pivot.add(hand);
-    figure.add(pivot);
-    return pivot;
-  };
-  arm(-1, 0.32); // left arm relaxed at the side
-  const raised = arm(1, 2.55); // right arm up, holding the diploma
-  const diploma = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.32, 14), material);
-  diploma.position.set(0, -0.62, 0);
-  diploma.rotation.z = Math.PI / 2;
-  raised.add(diploma);
-
-  part(new THREE.CylinderGeometry(0.06, 0.07, 0.1, 14), 0, 1.34, 0); // neck
-  part(new THREE.SphereGeometry(0.15, 24, 18), 0, 1.52, 0); // head
-  part(new THREE.CylinderGeometry(0.155, 0.15, 0.09, 24), 0, 1.63, 0); // cap
-
-  const board = part(new THREE.BoxGeometry(0.48, 0.022, 0.48), 0, 1.69, 0); // mortarboard
-  board.rotation.set(0.06, Math.PI / 4, 0);
-  part(new THREE.SphereGeometry(0.022, 10, 8), 0, 1.705, 0); // button
-  part(new THREE.CylinderGeometry(0.008, 0.008, 0.2, 6), 0.33, 1.6, 0); // tassel cord
-  part(new THREE.CylinderGeometry(0.025, 0.012, 0.07, 10), 0.33, 1.48, 0); // tassel
-
-  // Projector: a glowing pad and a soft beam rising through the figure.
-  const pad = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.56, 48), material);
-  pad.rotation.x = -Math.PI / 2;
-  figure.add(pad);
-  const beam = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.62, 0.5, 2.1, 40, 1, true),
-    new THREE.ShaderMaterial({
-      uniforms: { uColor: uniforms.uColor, uOpacity: uniforms.uOpacity },
-      vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-      fragmentShader: beamFragment,
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
-    })
-  );
-  beam.position.y = 1.05;
-  figure.add(beam);
-
-  return figure;
-}
-
 // ── Shooting caps ──────────────────────────────────────────────────────────
-// A few caps that streak across the sky with a fading tail. They live in the
-// camera's own space, so they always cross the screen however you orbit.
+// Caps that streak across the sky with a fading tail, at different depths,
+// sizes, and speeds; now and then a small shower of several at once. They live
+// in the camera's own space, so they always cross the screen however you orbit.
 function createShootingCaps(camera, texture) {
   const group = new THREE.Group();
   camera.add(group);
-  const DEPTH = 14;
 
   const trailMaterial = () =>
     new THREE.ShaderMaterial({
@@ -309,7 +179,7 @@ function createShootingCaps(camera, texture) {
       blending: THREE.AdditiveBlending,
     });
 
-  const pool = Array.from({ length: 3 }, () => {
+  const pool = Array.from({ length: 12 }, () => {
     const head = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: texture,
@@ -320,38 +190,50 @@ function createShootingCaps(camera, texture) {
         opacity: 0,
       })
     );
-    head.scale.setScalar(0.75);
     const trail = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), trailMaterial());
     group.add(head, trail);
-    return { head, trail, life: 0, duration: 0, active: false, x: 0, y: 0, dx: 0, dy: 0, length: 0 };
+    return {
+      head, trail, life: 0, duration: 0, active: false,
+      x: 0, y: 0, dx: 0, dy: 0, length: 0, depth: 14, spin: 5,
+    };
   });
 
-  let wait = 1.5;
+  let wait = 0.8;
 
-  function launch(cap) {
-    const halfHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * DEPTH;
+  function launch(cap, shower) {
+    // Farther caps are smaller and slower, which gives the sky some depth.
+    cap.depth = 10 + Math.random() * 12;
+    const near = 1 - (cap.depth - 10) / 12;
+    const halfHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * cap.depth;
     const halfWidth = halfHeight * camera.aspect;
-    const fromLeft = Math.random() < 0.5;
-    const angle = THREE.MathUtils.degToRad(18 + Math.random() * 20);
-    const speed = 13 + Math.random() * 6;
-    cap.x = (fromLeft ? -1 : 1) * halfWidth * (0.4 + Math.random() * 0.7);
-    cap.y = halfHeight * (0.15 + Math.random() * 0.75);
+    const fromLeft = shower ? shower.fromLeft : Math.random() < 0.5;
+    const angle = THREE.MathUtils.degToRad((shower ? shower.angle : 12 + Math.random() * 30) + (Math.random() - 0.5) * 6);
+    const speed = (9 + near * 9) * (0.85 + Math.random() * 0.3);
+    cap.x = (fromLeft ? -1 : 1) * halfWidth * (0.3 + Math.random() * 0.8);
+    cap.y = halfHeight * (0.05 + Math.random() * 0.9);
     cap.dx = (fromLeft ? 1 : -1) * Math.cos(angle) * speed;
     cap.dy = -Math.sin(angle) * speed;
-    cap.length = 2.6 + Math.random() * 1.6;
-    cap.duration = 1.1 + Math.random() * 0.6;
+    cap.length = (1.8 + Math.random() * 2) * (0.6 + near * 0.6);
+    cap.duration = 1 + Math.random() * 0.8;
+    cap.spin = (Math.random() < 0.5 ? -1 : 1) * (3 + Math.random() * 5);
     cap.life = 0;
     cap.active = true;
+    cap.head.scale.setScalar(0.45 + near * 0.55);
     cap.trail.rotation.z = Math.atan2(cap.dy, cap.dx);
-    cap.trail.scale.set(cap.length, 0.07, 1);
+    cap.trail.scale.set(cap.length, 0.04 + near * 0.05, 1);
   }
 
   return function update(delta, visibility) {
     wait -= delta;
     if (wait <= 0) {
-      const idle = pool.find((cap) => !cap.active);
-      if (idle) launch(idle);
-      wait = 2.2 + Math.random() * 3.5;
+      // Usually one cap; about one launch in five is a shower of three to five.
+      const shower =
+        Math.random() < 0.2
+          ? { fromLeft: Math.random() < 0.5, angle: 15 + Math.random() * 25 }
+          : null;
+      const count = shower ? 3 + Math.floor(Math.random() * 3) : 1;
+      pool.filter((cap) => !cap.active).slice(0, count).forEach((cap) => launch(cap, shower));
+      wait = shower ? 2.4 + Math.random() * 1.6 : 0.5 + Math.random() * 1.3;
     }
     for (const cap of pool) {
       if (!cap.active) continue;
@@ -367,13 +249,13 @@ function createShootingCaps(camera, texture) {
       cap.y += cap.dy * delta;
       const fade = Math.sin(Math.PI * t) * visibility;
       const dir = Math.hypot(cap.dx, cap.dy);
-      cap.head.position.set(cap.x, cap.y, -DEPTH);
+      cap.head.position.set(cap.x, cap.y, -cap.depth);
       cap.head.material.opacity = fade;
-      cap.head.material.rotation += delta * 5; // the cap tumbles as it falls
+      cap.head.material.rotation += delta * cap.spin; // the cap tumbles as it falls
       cap.trail.position.set(
         cap.x - (cap.dx / dir) * cap.length * 0.5,
         cap.y - (cap.dy / dir) * cap.length * 0.5,
-        -DEPTH
+        -cap.depth
       );
       cap.trail.material.uniforms.uOpacity.value = fade;
     }
@@ -417,21 +299,12 @@ function start() {
   });
   const galaxy = new THREE.Points(buildGalaxy(count), material);
 
-  // The galaxy and the hologram share one "world", so the dive scales both.
+  // The galaxy sits in a "world" group that the dive scales and lifts.
   const world = new THREE.Group();
   world.rotation.x = 0.08;
   world.position.y = GALAXY_Y;
   world.add(galaxy);
   scene.add(world);
-
-  const hologramUniforms = {
-    uColor: { value: HOLOGRAM },
-    uTime: uniforms.uTime,
-    uOpacity: { value: 1 },
-  };
-  const hologram = buildHologram(hologramUniforms);
-  hologram.scale.setScalar(2.1);
-  world.add(hologram);
 
   // Camera-space effects need the camera in the scene graph.
   scene.add(camera);
@@ -507,17 +380,12 @@ function start() {
     const delta = Math.min(clock.getDelta(), 0.05);
     uniforms.uTime.value += delta;
     galaxy.rotation.y += delta * 0.045;
-    // The graduate turns slowly and floats on the beam.
-    hologram.rotation.y += delta * 0.35;
-    hologram.position.y = 0.06 + Math.sin(uniforms.uTime.value * 1.3) * 0.04;
 
     fly += (flyTarget - fly) * 0.08;
     // The world swells past the camera, so the dive reads as flying in.
     world.scale.setScalar(1 + fly * fly * 7);
     // Rise to meet the camera while diving in.
     world.position.y = GALAXY_Y * (1 - fly);
-    // The hologram fades as you pass through it.
-    hologramUniforms.uOpacity.value = Math.max(0, 1 - fly * 1.6);
     if (shootingCaps) shootingCaps(delta, Math.max(0, 1 - fly * 2));
     stage.style.setProperty("--fly", fly.toFixed(4));
 

@@ -880,8 +880,7 @@
   .galaxy-overlay {
     @apply pointer-events-none relative z-10 flex flex-col items-center px-5 text-center;
     opacity: clamp(0, calc(1 - var(--fly) * 1.8), 1);
-    /* Lifted into the upper half so the hologram graduate stands clear below. */
-    transform: translateY(-19svh) scale(calc(1 + var(--fly) * 0.6));
+    transform: scale(calc(1 + var(--fly) * 0.6));
   }
 
   /* A soft dark pool behind the text so it reads over the bright core. */
