@@ -831,3 +831,163 @@
     transform: translateY(110%);
   }
 }
+
+/* ==========================================================================
+   Landing page: the galaxy, the drum roll, and the impact flash
+   Added on top of the landing page above. Scroll-driven pieces only grow tall
+   (and so pin) when JavaScript adds .galaxy-pinned / .roll-pinned; without it
+   each section is one screen and everything is visible. Reduced motion stops
+   every animation here.
+   ========================================================================== */
+@layer components {
+  /* --- Galaxy hero ------------------------------------------------------- */
+  .galaxy-stage {
+    @apply relative w-full;
+    height: 100svh;
+    --fly: 0;
+  }
+
+  .galaxy-stage.galaxy-pinned { height: 230svh; }
+
+  .galaxy-sticky {
+    @apply sticky top-0 flex h-svh w-full items-center justify-center overflow-hidden;
+    background:
+      radial-gradient(circle at 50% 62%,
+        color-mix(in srgb, var(--color-accent-300) 22%, transparent) 0%,
+        color-mix(in srgb, var(--color-accent-600) 14%, transparent) 30%, transparent 62%),
+      var(--color-neutral-950);
+  }
+
+  /* Blend into the page below as the dive finishes. */
+  .galaxy-sticky::after {
+    content: "";
+    @apply pointer-events-none absolute inset-x-0 bottom-0 h-1/3;
+    background: linear-gradient(to bottom, transparent, var(--color-neutral-950));
+    opacity: calc(0.35 + var(--fly) * 0.65);
+  }
+
+  .galaxy-mount { @apply absolute inset-0; }
+
+  .galaxy-canvas {
+    @apply block h-full w-full cursor-grab active:cursor-grabbing;
+    opacity: 0;
+    transition: opacity 1.4s var(--ease-soft);
+  }
+
+  .galaxy-ready .galaxy-canvas { opacity: 1; }
+
+  /* Lets the galaxy be dragged through the text; the button opts back in. */
+  .galaxy-overlay {
+    @apply pointer-events-none relative z-10 flex flex-col items-center px-5 text-center;
+    opacity: clamp(0, calc(1 - var(--fly) * 1.8), 1);
+    /* Lifted into the upper half so the hologram graduate stands clear below. */
+    transform: translateY(-19svh) scale(calc(1 + var(--fly) * 0.6));
+  }
+
+  /* A soft dark pool behind the text so it reads over the bright core. */
+  .galaxy-overlay::before {
+    content: "";
+    @apply pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[150%] w-[130%] -translate-x-1/2 -translate-y-1/2;
+    background: radial-gradient(ellipse at center,
+      color-mix(in srgb, var(--color-neutral-950) 70%, transparent) 0%,
+      color-mix(in srgb, var(--color-neutral-950) 40%, transparent) 40%, transparent 68%);
+  }
+
+  .galaxy-title {
+    @apply mt-4 text-display font-semibold tracking-[-0.045em] text-white;
+    text-shadow: 0 0 60px color-mix(in srgb, var(--color-accent-300) 35%, transparent),
+                 0 0 120px color-mix(in srgb, var(--color-accent-600) 30%, transparent);
+  }
+
+  .galaxy-subline { @apply mt-6 max-w-xl text-lede text-neutral-300; }
+  .galaxy-cta { @apply pointer-events-auto mt-10; }
+  .galaxy-hint { @apply mt-5 font-mono text-meta uppercase tracking-[0.2em] text-neutral-500; }
+
+  /* Scroll hint shaped like a mouse, its wheel rolling downward. */
+  .mouse-cue {
+    @apply pointer-events-none absolute bottom-7 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center
+           gap-2 font-mono text-meta uppercase tracking-[0.25em] text-neutral-400;
+    opacity: clamp(0, calc(1 - var(--fly) * 4), 1);
+  }
+
+  .mouse-cue-body {
+    @apply relative block h-9 w-6 rounded-full border-2 border-neutral-400;
+  }
+
+  .mouse-cue-wheel {
+    @apply absolute left-1/2 top-1.5 block h-2 w-1 -translate-x-1/2 rounded-full bg-neutral-300;
+    animation: mouse-wheel 1.8s var(--ease-soft) infinite;
+  }
+
+  @keyframes mouse-wheel {
+    0% { opacity: 0; transform: translate(-50%, -2px); }
+    30% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, 12px); }
+  }
+
+  /* --- Drum roll ---------------------------------------------------------- */
+  .roll-stage { @apply relative w-full; }
+  .roll-stage.roll-pinned { height: 320svh; }
+
+  .roll-sticky {
+    @apply sticky top-0 flex min-h-svh w-full items-center overflow-hidden px-5 py-24 sm:px-10;
+  }
+
+  .roll-words {
+    @apply mt-6 flex flex-col items-center font-semibold tracking-[-0.04em] text-white;
+    /* Scales with height too, so four lines and the subline fit short screens. */
+    font-size: clamp(2.5rem, min(11vw, 12svh), 9rem);
+    line-height: 0.95;
+    perspective: 900px;
+  }
+
+  .roll-word {
+    @apply block will-change-transform;
+    transform-origin: 50% 50% -0.5em; /* turn like the face of a drum */
+    backface-visibility: hidden;
+  }
+
+  .roll-word-accent { @apply text-accent-300; }
+  .roll-word-soft { @apply text-accent-100; }
+
+  /* The span takes the scroll parallax (landing.js); the icon inside drifts,
+     so the two transforms stack instead of fighting. */
+  .roll-cap {
+    @apply pointer-events-none absolute block;
+    --drift-delay: 0s;
+  }
+
+  .roll-cap svg {
+    width: 100%;
+    height: 100%;
+    animation: cap-drift 7s ease-in-out var(--drift-delay) infinite alternate;
+  }
+
+  .roll-cap-1 { left: 8%;  top: 16%; width: 3.5rem; color: var(--color-accent-300); opacity: 0.7; }
+  .roll-cap-2 { right: 10%; top: 12%; width: 2.25rem; color: var(--color-accent-100); opacity: 0.6; --drift-delay: -2s; }
+  .roll-cap-3 { left: 18%; bottom: 14%; width: 2rem; color: var(--color-accent-300); opacity: 0.55; --drift-delay: -4s; }
+  .roll-cap-4 { right: 16%; bottom: 20%; width: 4rem; color: var(--color-accent-300); opacity: 0.5; --drift-delay: -1s; }
+  .roll-cap-5 { left: 4%;  top: 52%; width: 1.75rem; color: var(--color-accent-100); opacity: 0.5; --drift-delay: -3s; }
+  .roll-cap-6 { right: 4%; top: 46%; width: 2.5rem; color: var(--color-accent-300); opacity: 0.6; --drift-delay: -5s; }
+  .roll-cap-7 { left: 34%; top: 6%;  width: 1.5rem; color: var(--color-accent-300); opacity: 0.45; --drift-delay: -6s; }
+  .roll-cap-8 { right: 32%; bottom: 6%; width: 2.75rem; color: var(--color-accent-100); opacity: 0.55; --drift-delay: -2.5s; }
+
+  @keyframes cap-drift {
+    from { transform: translate3d(0, 0, 0) rotate(-8deg); }
+    to { transform: translate3d(14px, -22px, 0) rotate(10deg); }
+  }
+
+  /* --- Impact flash ------------------------------------------------------- */
+  .impact-flash {
+    @apply pointer-events-none absolute inset-0 z-0 opacity-0;
+    background: radial-gradient(circle at 50% 50%, var(--color-white) 0%,
+      color-mix(in srgb, var(--color-accent-200) 60%, transparent) 35%, transparent 75%);
+    mix-blend-mode: screen;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .galaxy-canvas { transition: none; }
+    .mouse-cue-wheel, .roll-cap svg { animation: none; }
+    .impact-flash { display: none; }
+  }
+}

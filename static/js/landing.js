@@ -52,9 +52,13 @@
   });
 
   // ── Hero: headline rises out of its mask, then the rest fades in ─────────
+  // The galaxy now opens the page, so the hero plays as you arrive at it.
   var hero = document.querySelector("[data-hero]");
   if (hero) {
-    var intro = gsap.timeline({ defaults: { ease: EASE } });
+    var intro = gsap.timeline({
+      defaults: { ease: EASE },
+      scrollTrigger: { trigger: hero, start: "top 70%", once: true },
+    });
     intro
       .to(hero.querySelectorAll("[data-line]"), { yPercent: 0, y: 0, duration: 1.8, stagger: 0.14 }, 0.2)
       .to(hero.querySelectorAll("[data-reveal]"), { opacity: 1, duration: 2.2, stagger: 0.12 }, 0.7)
@@ -163,6 +167,47 @@
         scrollTrigger: { trigger: stage, start: "top top", end: "60% bottom", scrub: 1.4 },
       }
     );
+  }
+
+  // ── Drum roll: each word turns up into place, scrubbed by the scroll ─────
+  // Like the rolling type on deathbyscroll.com. The stage only becomes tall
+  // (and so pinned) once this runs; without it the words sit still.
+  var roll = document.querySelector("[data-roll]");
+  if (roll) {
+    roll.classList.add("roll-pinned");
+    var words = roll.querySelectorAll("[data-roll-word]");
+    var rollTl = gsap.timeline({
+      scrollTrigger: { trigger: roll, start: "top top", end: "bottom bottom", scrub: 1.2 },
+    });
+    words.forEach(function (word, i) {
+      rollTl.fromTo(
+        word,
+        { rotationX: -95, yPercent: 55, opacity: 0 },
+        { rotationX: 0, yPercent: 0, opacity: 1, duration: 1, ease: "power3.out" },
+        i * 0.75
+      );
+    });
+    rollTl.fromTo(
+      roll.querySelector("[data-roll-sub]"),
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 1, ease: "power2.out" },
+      ">-0.3"
+    );
+    rollTl.to({}, { duration: 0.6 }); // hold the finished line before releasing
+  }
+
+  // ── Impact: one soft flash as the closing call to action arrives ──────────
+  // Scrubbed, so it only happens while you scroll through it, and it never
+  // repeats on its own.
+  var impactSection = document.querySelector("[data-impact-section]");
+  var flash = document.querySelector("[data-impact]");
+  if (impactSection && flash) {
+    gsap
+      .timeline({
+        scrollTrigger: { trigger: impactSection, start: "top 75%", end: "top 15%", scrub: 0.6 },
+      })
+      .fromTo(flash, { opacity: 0 }, { opacity: 0.55, duration: 0.3, ease: "power2.in" })
+      .to(flash, { opacity: 0, duration: 0.7, ease: "power2.out" });
   }
 
   // Cursor, background spotlight and magnetic buttons live in cursor.js;
