@@ -5,6 +5,7 @@
 //   * Drag to rotate. Pinch (or Ctrl + scroll) to zoom. A plain scroll wheel
 //     is left alone, so the page always scrolls past the hero.
 //   * On phones, one finger scrolls the page and two fingers rotate and zoom.
+//   * Caps part around the cursor like water and glow as it passes over them.
 //   * Scrolling flies the camera into the galaxy, then hands over to the
 //     existing hero. Reduced motion keeps a still galaxy you can still drag.
 //   * Drawing stops while the galaxy is off screen or the tab is hidden.
@@ -116,16 +117,27 @@ const vertexShader = /* glsl */ `
   uniform float uSize;
   uniform float uPixelRatio;
   uniform float uTime;
+  uniform vec3 uPointer;        // cursor position, in the galaxy's own space
+  uniform float uPointerForce;  // 0 when the cursor is away, eased up to 1
   attribute float aScale;
   attribute float aAngle;
   varying vec3 vColor;
   varying float vAngle;
 
   void main() {
-    vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+    // Caps near the cursor are pushed outward and lifted a little, so the
+    // galaxy parts around it. The push fades smoothly to nothing at the edge.
+    vec3 p = position;
+    vec2 away = p.xz - uPointer.xz;
+    float reach = length(away);
+    float influence = (1.0 - smoothstep(0.0, 2.0, reach)) * uPointerForce;
+    p.xz += normalize(away + 1e-4) * influence * 1.4;
+    p.y += influence * 0.45;
+
+    vec4 viewPosition = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * viewPosition;
     gl_PointSize = min(uSize * aScale * uPixelRatio / -viewPosition.z, 96.0);
-    vColor = color;
+    vColor = color * (1.0 + influence * 0.9); // brighter where the cursor is
     // Each cap rocks gently around its own tilt.
     vAngle = aAngle + sin(uTime * 0.7 + aAngle * 5.0) * 0.22;
   }
@@ -287,6 +299,8 @@ function start() {
     uSize: { value: 26 },
     uPixelRatio: { value: renderer.getPixelRatio() },
     uMap: { value: capTexture() },
+    uPointer: { value: new THREE.Vector3(999, 0, 999) },
+    uPointerForce: { value: 0 },
   };
   const material = new THREE.ShaderMaterial({
     uniforms,
@@ -335,6 +349,50 @@ function start() {
   });
   // OrbitControls sets touch-action: none, which would trap phones in the hero.
   renderer.domElement.style.touchAction = "pan-y";
+
+  // ── Cursor: caps part around it ──────────────────────────────────────────
+  // Track the mouse over the hero (the overlay text ignores the pointer, so
+  // this works over the headline too). Each frame, cast the cursor into the
+  // galaxy's plane in its own rotating space, so the effect stays under the
+  // cursor while the galaxy turns. Mouse and pen only: touch has no hover.
+  const pointer = { x: 0, y: 0, over: false };
+  const raycaster = new THREE.Raycaster();
+  const galaxyPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const toGalaxy = new THREE.Matrix4();
+  const hit = new THREE.Vector3();
+  const pointerTarget = new THREE.Vector3(999, 0, 999);
+  let forceTarget = 0;
+
+  if (!reducedMotion) {
+    stage.addEventListener("pointermove", (event) => {
+      if (event.pointerType === "touch") return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      pointer.over = true;
+    });
+    stage.addEventListener("pointerleave", () => {
+      pointer.over = false;
+    });
+  }
+
+  function followPointer() {
+    forceTarget = 0;
+    if (pointer.over) {
+      raycaster.setFromCamera(pointer, camera);
+      toGalaxy.copy(galaxy.matrixWorld).invert();
+      raycaster.ray.applyMatrix4(toGalaxy);
+      if (raycaster.ray.intersectPlane(galaxyPlane, hit)) {
+        pointerTarget.copy(hit);
+        forceTarget = 1;
+      }
+    }
+    // Ease both, so the caps flow rather than snap. When the effect has
+    // faded out, jump straight to the cursor so it never sweeps in from afar.
+    if (uniforms.uPointerForce.value < 0.02) uniforms.uPointer.value.copy(pointerTarget);
+    else uniforms.uPointer.value.lerp(pointerTarget, 0.12);
+    uniforms.uPointerForce.value += (forceTarget - uniforms.uPointerForce.value) * 0.06;
+  }
 
   // ── Size ─────────────────────────────────────────────────────────────────
   function resize() {
@@ -390,6 +448,8 @@ function start() {
     stage.style.setProperty("--fly", fly.toFixed(4));
 
     controls.update();
+    galaxy.updateMatrixWorld();
+    followPointer();
     render();
   }
 
