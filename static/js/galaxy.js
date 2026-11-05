@@ -5,7 +5,8 @@
 //   * Drag to rotate. Pinch (or Ctrl + scroll) to zoom. A plain scroll wheel
 //     is left alone, so the page always scrolls past the hero.
 //   * On phones, one finger scrolls the page and two fingers rotate and zoom.
-//   * Caps part gently around the cursor, trailing a little behind it.
+//   * The galaxy leans toward the cursor, so near caps sweep further than far
+//     ones, and caps part gently around it, trailing a little behind.
 //   * Scrolling flies the camera into the galaxy, then hands over to the
 //     existing hero. Reduced motion keeps a still galaxy you can still drag.
 //   * Drawing stops while the galaxy is off screen or the tab is hidden.
@@ -380,6 +381,9 @@ function start() {
   // longer trail: at 2.5 it covers most of the gap in about half a second.
   const FOLLOW_RATE = 2.5;
   const FADE_RATE = 2;
+  // The whole galaxy leans toward the cursor, slowly, like a heavy object.
+  const LEAN_RATE = 1.6;
+  const lean = { x: 0, y: 0 };
 
   function followPointer(delta) {
     forceTarget = 0;
@@ -400,6 +404,13 @@ function start() {
     if (uniforms.uPointerForce.value < 0.02) uniforms.uPointer.value.copy(pointerTarget);
     else uniforms.uPointer.value.lerp(pointerTarget, follow);
     uniforms.uPointerForce.value += (forceTarget - uniforms.uPointerForce.value) * fade;
+
+    const ease = 1 - Math.exp(-LEAN_RATE * delta);
+    lean.x += ((pointer.over ? pointer.x : 0) - lean.x) * ease;
+    lean.y += ((pointer.over ? pointer.y : 0) - lean.y) * ease;
+    world.rotation.x = 0.08 - lean.y * 0.14;
+    world.rotation.z = -lean.x * 0.1;
+    world.position.x = lean.x * 0.4;
   }
 
   // ── Size ─────────────────────────────────────────────────────────────────
