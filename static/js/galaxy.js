@@ -5,7 +5,7 @@
 //   * Drag to rotate. Pinch (or Ctrl + scroll) to zoom. A plain scroll wheel
 //     is left alone, so the page always scrolls past the hero.
 //   * On phones, one finger scrolls the page and two fingers rotate and zoom.
-//   * Caps part around the cursor like water and glow as it passes over them.
+//   * Caps part gently around the cursor, trailing a little behind it.
 //   * Scrolling flies the camera into the galaxy, then hands over to the
 //     existing hero. Reduced motion keeps a still galaxy you can still drag.
 //   * Drawing stops while the galaxy is off screen or the tab is hidden.
@@ -130,14 +130,14 @@ const vertexShader = /* glsl */ `
     vec3 p = position;
     vec2 away = p.xz - uPointer.xz;
     float reach = length(away);
-    float influence = (1.0 - smoothstep(0.0, 2.0, reach)) * uPointerForce;
-    p.xz += normalize(away + 1e-4) * influence * 1.4;
-    p.y += influence * 0.45;
+    float influence = (1.0 - smoothstep(0.0, 1.1, reach)) * uPointerForce;
+    p.xz += normalize(away + 1e-4) * influence * 0.55;
+    p.y += influence * 0.18;
 
     vec4 viewPosition = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * viewPosition;
     gl_PointSize = min(uSize * aScale * uPixelRatio / -viewPosition.z, 96.0);
-    vColor = color * (1.0 + influence * 0.9); // brighter where the cursor is
+    vColor = color * (1.0 + influence * 0.5); // a little brighter where the cursor is
     // Each cap rocks gently around its own tilt.
     vAngle = aAngle + sin(uTime * 0.7 + aAngle * 5.0) * 0.22;
   }
@@ -376,7 +376,12 @@ function start() {
     });
   }
 
-  function followPointer() {
+  // How quickly the effect catches up with the cursor, per second. Lower is a
+  // longer trail: at 2.5 it covers most of the gap in about half a second.
+  const FOLLOW_RATE = 2.5;
+  const FADE_RATE = 2;
+
+  function followPointer(delta) {
     forceTarget = 0;
     if (pointer.over) {
       raycaster.setFromCamera(pointer, camera);
@@ -387,11 +392,14 @@ function start() {
         forceTarget = 1;
       }
     }
-    // Ease both, so the caps flow rather than snap. When the effect has
-    // faded out, jump straight to the cursor so it never sweeps in from afar.
+    // Ease both by elapsed time (the same feel at 60 or 120 Hz), so the effect
+    // trails the cursor rather than sitting on it. When it has faded out, jump
+    // straight to the cursor so it never sweeps in from afar.
+    const follow = 1 - Math.exp(-FOLLOW_RATE * delta);
+    const fade = 1 - Math.exp(-FADE_RATE * delta);
     if (uniforms.uPointerForce.value < 0.02) uniforms.uPointer.value.copy(pointerTarget);
-    else uniforms.uPointer.value.lerp(pointerTarget, 0.12);
-    uniforms.uPointerForce.value += (forceTarget - uniforms.uPointerForce.value) * 0.06;
+    else uniforms.uPointer.value.lerp(pointerTarget, follow);
+    uniforms.uPointerForce.value += (forceTarget - uniforms.uPointerForce.value) * fade;
   }
 
   // ── Size ─────────────────────────────────────────────────────────────────
@@ -449,7 +457,7 @@ function start() {
 
     controls.update();
     galaxy.updateMatrixWorld();
-    followPointer();
+    followPointer(delta);
     render();
   }
 
