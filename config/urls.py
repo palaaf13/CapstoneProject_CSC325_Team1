@@ -19,11 +19,15 @@ urlpatterns = [
     path("styleguide/htmx-demo/", views.styleguide_htmx_demo, name="styleguide_htmx_demo"),
     path("about/", views.about, name="about"),
     path("guidelines/", views.guidelines, name="guidelines"),
-    path("login/", views.login, name="login"),
+    path("login/", account_views.sign_in, name="login"),
+    path("logout/", account_views.sign_out, name="logout"),
     path("register/", account_views.register, name="register"),
     path(
         "confirm-email/<str:uidb64>/<str:token>/",
         account_views.confirm_email,
         name="confirm_email",
     ),
+    # Always the signed-in student's own profile: no id in the URL to tamper with.
+    path("profile/", account_views.profile, name="profile"),
+    path("profile/edit/", account_views.profile_edit, name="profile_edit"),
 ]

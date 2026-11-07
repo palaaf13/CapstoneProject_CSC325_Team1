@@ -7,7 +7,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Not ubuntu-latest: from late October 2026 the 24.04 runners use Linux
+    # kernel 7.0, and MongoDB 8.0 before 8.0.37 refuses to start on it
+    # (SERVER-121912 / SERVER-131779). The 22.04 runners are on kernel 6.8.
+    # Move back once mongo:8.0 on Docker Hub is 8.0.37 or newer.
+    runs-on: ubuntu-22.04
 
     env:
       # directConnection avoids replica-set host-advertisement mismatches: the
@@ -35,6 +39,11 @@ jobs:
 
           echo "Waiting for mongod to accept connections..."
           for _ in $(seq 1 60); do
+            if [ "$(docker inspect -f '{{.State.Running}}' mongo)" != "true" ]; then
+              echo "mongod exited during startup. Container logs:"
+              docker logs mongo
+              exit 1
+            fi
             if docker exec mongo mongosh --quiet --eval 'db.adminCommand({ping:1}).ok' >/dev/null 2>&1; then
               break
             fi
