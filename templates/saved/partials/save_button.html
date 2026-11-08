@@ -5,8 +5,33 @@ Save / Saved toggle for a course, professor, or club page.
 
 A plain POST form, so it works without JavaScript; HTMX swaps it in place.
 Signed-out visitors get a link to sign in and come straight back.
+
+compact=True gives a small text button instead, for rows in a list (club
+events). The flag is posted along so HTMX swaps back the same style.
 {% endcomment %}
-{% if user.is_authenticated %}
+{% if compact %}
+  {% if user.is_authenticated %}
+    <form method="post" action="{% url 'saved:toggle' %}" class="inline"
+          hx-post="{% url 'saved:toggle' %}" hx-target="this" hx-swap="outerHTML">
+      {% csrf_token %}
+      <input type="hidden" name="kind" value="{{ kind }}">
+      <input type="hidden" name="object_id" value="{{ item.pk }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <input type="hidden" name="compact" value="1">
+      <button type="submit" aria-pressed="{{ is_saved|yesno:'true,false' }}"
+              class="inline-flex items-center gap-1.5 rounded-sm text-meta font-medium text-accent-700 hover:underline">
+        {% include "partials/icons/bookmark.html" %}
+        <span>{% if is_saved %}Saved{% else %}Save{% endif %}</span>
+      </button>
+    </form>
+  {% else %}
+    <a href="{% url 'login' %}?next={{ next|urlencode }}"
+       class="inline-flex items-center gap-1.5 rounded-sm text-meta font-medium text-accent-700 hover:underline">
+      {% include "partials/icons/bookmark.html" %}
+      <span>Sign in to save</span>
+    </a>
+  {% endif %}
+{% elif user.is_authenticated %}
   <form method="post" action="{% url 'saved:toggle' %}" class="flex flex-wrap items-center gap-3"
         hx-post="{% url 'saved:toggle' %}" hx-target="this" hx-swap="outerHTML">
     {% csrf_token %}

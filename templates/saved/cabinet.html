@@ -10,7 +10,7 @@ reuse the directories' own markup; Remove is a plain POST beside each row.
 <section aria-labelledby="cabinet-title">
   <h1 id="cabinet-title" class="text-h1 font-semibold tracking-tight text-neutral-900">Filing cabinet</h1>
   <p class="mt-1 text-body text-neutral-500">
-    Courses, professors, and clubs you&rsquo;ve saved. Only you can see this.
+    Events, courses, professors, and clubs you&rsquo;ve saved. Only you can see this.
   </p>
 
   {% if not sections %}
@@ -33,6 +33,14 @@ reuse the directories' own markup; Remove is a plain POST beside each row.
                     {% include "catalog/partials/course_row.html" with course=item %}
                   {% elif section.kind == "professor" %}
                     {% include "catalog/partials/professor_row.html" with professor=item %}
+                  {% elif section.kind == "event" %}
+                    <a href="{% url 'campus:club_detail' item.club.slug %}" class="row-link">
+                      <span class="min-w-0 flex-1">
+                        <span class="block text-meta font-medium text-accent-700">{{ item.starts_at|date:"D, M j · g:i A" }}</span>
+                        <span class="block font-medium text-neutral-900">{{ item.title }}</span>
+                        <span class="mt-0.5 block truncate text-meta text-neutral-500">{{ item.club.name }} &middot; {{ item.location }}</span>
+                      </span>
+                    </a>
                   {% else %}
                     <a href="{% url 'campus:club_detail' item.slug %}" class="row-link">
                       {% include "campus/partials/club_mark.html" with club=item %}
@@ -51,7 +59,7 @@ reuse the directories' own markup; Remove is a plain POST beside each row.
                   <input type="hidden" name="object_id" value="{{ item.pk }}">
                   <input type="hidden" name="next" value="{% url 'saved:cabinet' %}">
                   <button type="submit" class="btn-ghost btn-sm">
-                    Remove<span class="sr-only"> {% firstof item.code item.full_name item.name %}</span>
+                    Remove<span class="sr-only"> {% firstof item.code item.full_name item.name item.title %}</span>
                   </button>
                 </form>
               </li>
