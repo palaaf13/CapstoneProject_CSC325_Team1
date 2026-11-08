@@ -14,12 +14,12 @@ Works as a plain GET form; no JavaScript needed.
   </h1>
   {% if q %}
     <p class="mt-1 text-meta text-neutral-500" role="status">
-      {% if total %}{{ total }} match{{ total|pluralize:"es" }} across courses, professors, and clubs{% else %}No matches{% endif %}
+      {% if total %}{{ total }} match{{ total|pluralize:"es" }} across courses, professors, clubs, and events{% else %}No matches{% endif %}
     </p>
   {% endif %}
 
   <form action="{% url 'search' %}" method="get" role="search" class="mt-5 flex max-w-xl gap-2">
-    <label for="search-page-q" class="sr-only">Search courses, professors, and clubs</label>
+    <label for="search-page-q" class="sr-only">Search courses, professors, clubs, and events</label>
     <input type="search" id="search-page-q" name="q" value="{{ q }}" maxlength="100"
            placeholder="Try CSC 325, a professor's name, or a club" class="field-input" autocomplete="off"
            {% if not q %}autofocus{% endif %}>
@@ -55,6 +55,14 @@ Works as a plain GET form; no JavaScript needed.
                 {% include "catalog/partials/course_row.html" with course=item %}
               {% elif section.key == "professors" %}
                 {% include "catalog/partials/professor_row.html" with professor=item %}
+              {% elif section.key == "events" %}
+                <a href="{% url 'campus:club_detail' item.club.slug %}" class="row-link">
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-meta font-medium text-accent-700">{{ item.starts_at|date:"D, M j · g:i A" }}</span>
+                    <span class="block font-medium text-neutral-900">{{ item.title }}</span>
+                    <span class="mt-0.5 block truncate text-meta text-neutral-500">{{ item.club.name }} &middot; {{ item.location }}</span>
+                  </span>
+                </a>
               {% else %}
                 <a href="{% url 'campus:club_detail' item.slug %}" class="row-link">
                   {% include "campus/partials/club_mark.html" with club=item %}
