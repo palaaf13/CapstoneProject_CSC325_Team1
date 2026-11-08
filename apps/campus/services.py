@@ -15,11 +15,14 @@ decisions here:
 
 import re
 from collections import Counter
-from datetime import date
+from datetime import date, timedelta
+from itertools import groupby
 
+from django.contrib.auth import get_user_model
 from django.db.models import F, QuerySet
+from django.utils import timezone
 
-from .models import LITTLE_WORDS, Club
+from .models import LITTLE_WORDS, Club, ClubEvent
 
 # Divisible by 2 and by 3, the grid's two column counts, so a page of results
 # never ends on a ragged row.
@@ -152,3 +155,58 @@ def last_retrieved() -> date | None:
         .values_list("source_retrieved", flat=True)
         .first()
     )
+
+
+# -- Club events ------------------------------------------------------------------
+
+# Events still running count as upcoming. None runs longer than this.
+EVENT_LOOKBACK = timedelta(days=1)
+
+
+def upcoming_events(*, club: Club | None = None, limit: int | None = 50) -> list[ClubEvent]:
+    """
+    Events that have not finished yet, soonest first, with their club and poster
+    loaded in two queries rather than two per event.
+    """
+    now = timezone.now()
+    events = ClubEvent.objects.filter(starts_at__gte=now - EVENT_LOOKBACK)
+    if club is not None:
+        events = events.filter(club=club)
+    events = [event for event in events.order_by("starts_at") if event.end >= now][:limit]
+
+    clubs = {club.pk: club} if club else Club.objects.in_bulk({e.club_id for e in events})
+    posters = get_user_model().objects.in_bulk({e.posted_by_id for e in events})
+    for event in events:
+        event.club = clubs[event.club_id]
+        event.posted_by = posters[event.posted_by_id]
+    return events
+
+
+def events_by_day(events: list[ClubEvent]) -> list[tuple[date, list[ClubEvent]]]:
+    """Group events under the local (Farmingdale) date they start on."""
+
+    def day(event: ClubEvent) -> date:
+        return timezone.localtime(event.starts_at).date()
+
+    return [(d, list(group)) for d, group in groupby(events, key=day)]
+
+
+def search_events(q: str) -> list[ClubEvent]:
+    """
+    Upcoming events where every word of ``q`` appears in the event's name,
+    place, details, or club name. Soonest first, like the events page.
+
+    Upcoming events are a short list, so this filters in Python rather than
+    asking MongoDB for a text index.
+    """
+    words = q.casefold().split()
+    if not words:
+        return []
+
+    def text(event: ClubEvent) -> str:
+        club = event.club
+        return " ".join(
+            [event.title, event.location, event.details, club.name, club.short_name]
+        ).casefold()
+
+    return [e for e in upcoming_events(limit=None) if all(w in text(e) for w in words)]

@@ -27,6 +27,10 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 # RamHub: only email addresses at this domain may register (enforced in Phase 2).
 COLLEGE_EMAIL_DOMAIN = env.str("COLLEGE_EMAIL_DOMAIN", default="farmingdale.edu")
 
+# Where @login_required sends a signed-out visitor. Django's default
+# (/accounts/login/) does not exist here.
+LOGIN_URL = "login"
+
 # --------------------------------------------------------------------------
 # Email
 # --------------------------------------------------------------------------

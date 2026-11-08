@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{% if q %}{{ q }} · Search{% else %}Search{% endif %} · RamHub{% endblock %}
+
+{% block content %}
+{% comment %}
+Global search. Each section is a preview of one directory's own search for the
+same words, using that directory's row, with "See all" handing the query over.
+Works as a plain GET form; no JavaScript needed.
+{% endcomment %}
+<section aria-labelledby="search-title">
+  <h1 id="search-title" class="text-h1 font-semibold tracking-tight text-neutral-900">
+    {% if q %}Results for &ldquo;{{ q }}&rdquo;{% else %}Search RamHub{% endif %}
+  </h1>
+  {% if q %}
+    <p class="mt-1 text-meta text-neutral-500" role="status">
+      {% if total %}{{ total }} match{{ total|pluralize:"es" }} across courses, professors, clubs, and events{% else %}No matches{% endif %}
+    </p>
+  {% endif %}
+
+  <form action="{% url 'search' %}" method="get" role="search" class="mt-5 flex max-w-xl gap-2">
+    <label for="search-page-q" class="sr-only">Search courses, professors, clubs, and events</label>
+    <input type="search" id="search-page-q" name="q" value="{{ q }}" maxlength="100"
+           placeholder="Try CSC 325, a professor's name, or a club" class="field-input" autocomplete="off"
+           {% if not q %}autofocus{% endif %}>
+    <button type="submit" class="btn-primary shrink-0">Search</button>
+  </form>
+
+  {% if not q %}
+    <p class="mt-6 max-w-xl text-body text-neutral-600">
+      Search every course in the catalog, every instructor in the campus directory, and every
+      student club, all at once.
+    </p>
+  {% elif not sections %}
+    <div class="mt-8">
+      {% include "partials/empty_state.html" with icon="search" headline="Nothing matched that search" description="Check the spelling, or try a course code like CSC 325, a professor's last name, or a word from a club's name." %}
+    </div>
+  {% else %}
+    <div class="mt-8 space-y-10">
+      {% for section in sections %}
+        <section aria-labelledby="search-{{ section.key }}">
+          <div class="mb-2 flex items-baseline justify-between gap-4">
+            <h2 id="search-{{ section.key }}" class="text-h3 font-semibold text-neutral-900">
+              {{ section.label }} <span class="font-normal text-neutral-500">({{ section.total }})</span>
+            </h2>
+            {% if section.total > section.results|length %}
+              <a href="{{ section.see_all_url }}" class="text-meta font-medium text-accent-700 hover:underline">
+                See all {{ section.total }} {{ section.label|lower }} <span aria-hidden="true">&rarr;</span>
+              </a>
+            {% endif %}
+          </div>
+          <div class="card overflow-hidden">
+            {% for item in section.results %}
+              {% if section.key == "courses" %}
+                {% include "catalog/partials/course_row.html" with course=item %}
+              {% elif section.key == "professors" %}
+                {% include "catalog/partials/professor_row.html" with professor=item %}
+              {% elif section.key == "events" %}
+                <a href="{% url 'campus:club_detail' item.club.slug %}" class="row-link">
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-meta font-medium text-accent-700">{{ item.starts_at|date:"D, M j · g:i A" }}</span>
+                    <span class="block font-medium text-neutral-900">{{ item.title }}</span>
+                    <span class="mt-0.5 block truncate text-meta text-neutral-500">{{ item.club.name }} &middot; {{ item.location }}</span>
+                  </span>
+                </a>
+              {% else %}
+                <a href="{% url 'campus:club_detail' item.slug %}" class="row-link">
+                  {% include "campus/partials/club_mark.html" with club=item %}
+                  <span class="min-w-0 flex-1">
+                    <span class="block font-medium text-neutral-900">{{ item.name }}</span>
+                    {% if item.blurb %}
+                      <span class="mt-0.5 block truncate text-meta text-neutral-500">{{ item.blurb|truncatechars:140 }}</span>
+                    {% endif %}
+                  </span>
+                </a>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

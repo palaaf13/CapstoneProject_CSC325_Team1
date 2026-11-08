@@ -31,6 +31,9 @@
             {% endfor %}
           </ul>
         {% endif %}
+        <div class="mt-4">
+          {% include "saved/partials/save_button.html" with item=club kind="club" is_saved=is_saved next=request.get_full_path %}
+        </div>
       </div>
 
       {% comment %}The one primary action: RamCentral is where a student actually joins.{% endcomment %}
@@ -112,15 +115,36 @@
         {% endif %}
       </section>
 
-      <section class="card card-pad">
-        <h2 class="text-h3">Meetings and events</h2>
+      <section class="card card-pad" aria-labelledby="events-heading">
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 id="events-heading" class="text-h3">Upcoming events</h2>
+          <a href="{% url 'campus:events' %}" class="shrink-0 rounded-sm text-meta text-accent-700 hover:underline">All clubs</a>
+        </div>
+
+        {% if events %}
+          <ul role="list" class="mt-3 divide-y divide-neutral-200">
+            {% for event in events %}
+              {% include "campus/partials/event_item.html" %}
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="mt-2 text-meta text-neutral-500">No upcoming events posted yet.</p>
+        {% endif %}
+
+        {% url 'campus:club_event_new' club.slug as new_event_url %}
+        {% if user.is_authenticated %}
+          <a href="{{ new_event_url }}" class="btn-secondary mt-4 w-full justify-center">Post an event</a>
+        {% else %}
+          <a href="{% url 'login' %}?next={{ new_event_url|urlencode }}" class="btn-secondary mt-4 w-full justify-center">Sign in to post an event</a>
+        {% endif %}
+
         {% if club.meeting_info %}
-          <p class="mt-2 text-neutral-700">{{ club.meeting_info }}</p>
+          <p class="mt-4 text-neutral-700">{{ club.meeting_info }}</p>
         {% else %}
           {# Never guessed: RamCentral has no meeting-time field to import. #}
-          <p class="mt-2 text-meta text-neutral-500">
-            RamCentral does not list a regular meeting time for clubs. Upcoming meetings and
-            events are posted on
+          <p class="mt-4 text-meta text-neutral-500">
+            Events here are posted by students. RamCentral does not list a regular meeting time;
+            official events are on
             {% if club.source_url %}
               <a href="{{ club.source_url }}" target="_blank" rel="noopener noreferrer"
                  class="rounded-sm text-accent-700 underline hover:text-accent-800">this club&rsquo;s RamCentral page<span class="sr-only"> (opens in a new tab)</span></a>.

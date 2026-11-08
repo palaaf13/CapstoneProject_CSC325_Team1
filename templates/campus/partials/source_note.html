@@ -1,0 +1,9 @@
+{% comment %}
+Where a section's facts come from, and when we last checked them. Everything
+on the campus guides is copied from the linked official page; that page wins
+if they ever disagree.
+{% endcomment %}
+<p class="mt-4 border-t border-neutral-200 pt-3 text-meta text-neutral-500">
+  Source: {% include "campus/partials/official_link.html" with url=url label=label %}
+  &middot; checked {{ checked|date:"M j, Y" }}
+</p>
