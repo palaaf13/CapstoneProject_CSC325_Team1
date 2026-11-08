@@ -96,11 +96,11 @@ complete with scripts blocked.
 | Application | Vercel, as a single Python function on Fluid Compute |
 | Static files | Collected at build time, served from Vercel's CDN |
 | Database | MongoDB Atlas (free M0 replica set), shared by the team |
-| CI | GitHub Actions: lint, Django checks, and the test suite on every push and PR |
+| CI/CD | GitHub Actions: Setup → Dependencies → Test → Deploy (see [CI/CD pipeline](#cicd-pipeline)) |
 
 Because the application runs serverless, there is no writable disk and no
-long-running process. Migrations and data imports are run from a developer's
-machine against Atlas, not on the server.
+long-running process. Migrations run from the pipeline's Deploy stage, before
+the new code goes live; data imports are run from a developer's machine.
 
 ---
 
@@ -351,7 +351,8 @@ If a class you added has no effect, the Tailwind watcher is not running.
 
 ## Checks
 
-Both must pass before you open a pull request. CI runs them on every PR.
+Both must pass before you open a pull request. The pipeline's Test stage runs
+them on every PR, and `main` will not accept a merge until it passes.
 
 ```bash
 ruff check . && ruff format --check .
@@ -377,6 +378,151 @@ python manage.py check          # Django system checks
 ruff format .                   # apply formatting
 python manage.py createsuperuser
 ```
+
+---
+
+## CI/CD pipeline
+
+One workflow, [`.github/workflows/ci.yml`](.github/workflows/ci.yml), runs on
+**every push to `main` and every pull request into `main`**. It has four stages,
+each a separate job, and each stage starts only if the one before it passed:
+
+```
+Setup ──► Dependencies ──► Test ──► Deploy (pushes to main only)
+```
+
+| Stage | What it does | Fails when |
+| --- | --- | --- |
+| **Setup** | Checks out the full history and scans every commit for secrets with gitleaks (the binary is verified against its published checksum first). Pins Python 3.13 and fingerprints `requirements.txt` for the cache. | A commit anywhere in the history contains something that looks like a key, token, or password. |
+| **Dependencies** | Installs `requirements.txt` into a virtualenv (cached, keyed on the fingerprint), runs `pip check`, installs Node packages with `npm ci`, and builds the Tailwind stylesheet. | A package cannot be installed, two packages conflict, or the CSS does not build. |
+| **Test** | Starts MongoDB 8.0 as a single-node replica set, then runs `ruff check`, `ruff format --check`, `manage.py check`, `makemigrations --check`, a transaction-support check, and the full `pytest` suite. | Any lint error, system-check error, missing migration, or failing test. **Branch protection requires this job.** |
+| **Deploy** | Applies migrations to the production database, writes the Vercel build files into its own checkout (see below), deploys with `vercel deploy --prod`, then loads `/` and `/courses/` from the live site and expects `200`. | A deploy secret is missing, a migration fails, the Vercel build fails, or the live site does not answer `200`. |
+
+Pull requests run Setup, Dependencies and Test. Deploy appears as *skipped* on a
+PR; it runs when the PR merges, because merging is a push to `main`. The live
+site is **<https://ramhub-seven.vercel.app>**, and each production run links to
+it from the run's summary page.
+
+### Why there is no `vercel.json` in the repo
+
+The repository stays host-neutral. Vercel needs four files: `vercel.json`,
+`.vercelignore`, `.python-version`, and a `[project]` table in
+`pyproject.toml`. The Deploy job writes them into its own throwaway checkout
+with [`.github/scripts/prepare_vercel_build.py`](.github/scripts/prepare_vercel_build.py)
+just before deploying. The `[project]` pins are copied from the runtime section
+of `requirements.txt`, so there is one list of versions, and Vercel installs
+exactly what the Test stage ran. `tests/test_prepare_vercel_build.py` covers
+the script.
+
+### From story to production
+
+What a teammate does to ship a story. No step needs anyone else's machine.
+
+1. **Pick the story** on the [project board](https://github.com/users/palaaf13/projects/2),
+   assign yourself, and move it to *In progress*. Note its issue number, e.g. `#41`.
+2. **Branch from the latest `main`:**
+   ```bash
+   git switch main && git pull
+   git switch -c feature/short-story-name
+   ```
+3. **Build it with at least one test** that checks the story's acceptance
+   criteria. Run the same checks CI runs before you push:
+   ```bash
+   ruff check . && ruff format --check . && pytest
+   ```
+4. **Push and open a PR into `main`.** Put `Closes #41` in the description so the
+   PR links to the story and closes it on merge. Move the card to *In review*.
+5. **Wait for green.** Setup, Dependencies and Test run on the PR within a few
+   minutes; the results show at the bottom of the PR. A red stage links to its log.
+6. **Get one approval** from a teammate. Pushing new commits after an approval
+   clears it, so ask again.
+7. **Merge.** The merge triggers the pipeline on `main`, which runs every stage
+   again and then Deploy. When Deploy is green, the change is live.
+
+### Branch protection
+
+`main` is protected by a repository ruleset, kept in the repo as
+[`.github/rulesets/protect-main.json`](.github/rulesets/protect-main.json) so the
+rules are reviewable like code. It:
+
+- **blocks direct pushes**: every change to `main` arrives through a pull request;
+- **requires one approving review** from someone other than the author, and
+  dismisses it if new commits are pushed;
+- **requires the `Test` check to pass** before the merge button unlocks;
+- blocks force-pushes and deleting `main`.
+
+Nobody is on the bypass list, including the repository owner.
+
+Only the repository owner can create rulesets. To apply or update it:
+*Settings → Rules → Rulesets → New ruleset → Import a ruleset*, and choose the
+JSON file. Or, from a clone:
+
+```bash
+gh api -X POST repos/palaaf13/CapstoneProject_CSC325_Team1/rulesets --input .github/rulesets/protect-main.json
+```
+
+### Secrets
+
+No key, token, or password is in the code, the workflow file, or the commit
+history. The Setup stage proves that on every run by scanning the full history.
+
+**GitHub Secrets** (*Settings → Secrets and variables → Actions*) hold what the
+pipeline itself needs. Only the Deploy job reads them, and only on `main`;
+pull requests never see them.
+
+| Secret | Used for | Where the value comes from |
+| --- | --- | --- |
+| `VERCEL_TOKEN` | Authenticating the Vercel CLI | vercel.com → Account Settings → Tokens |
+| `VERCEL_ORG_ID` | Which Vercel account owns the project | `.vercel/project.json` after `vercel link` |
+| `VERCEL_PROJECT_ID` | Which Vercel project to deploy | `.vercel/project.json` after `vercel link` |
+| `PROD_MONGODB_URI` | Running migrations against Atlas before deploying | Atlas → Connect → Drivers |
+| `PROD_MONGODB_NAME` | The production database name | The `MONGODB_NAME` Vercel uses |
+
+Only the repository owner can add them. Use the web form or `gh secret set`,
+which prompts for the value so it never lands in your shell history:
+
+```bash
+gh secret set VERCEL_TOKEN --repo palaaf13/CapstoneProject_CSC325_Team1
+```
+
+**The running site's settings** (`SECRET_KEY`, `MONGODB_URI`, `ALLOWED_HOSTS`,
+`EMAIL_*`, `DEFAULT_FROM_EMAIL`) are Vercel environment variables, encrypted
+in the Vercel project and never in this repo. `config/settings/prod.py` has no
+defaults for them, so a missing one stops the site from starting instead of
+running on a placeholder, and the Deploy smoke test fails.
+
+**The Test stage needs no secrets at all.** MongoDB runs in a throwaway container,
+and `SECRET_KEY` is generated fresh for each run and masked in the logs.
+
+**Locally**, your values live in `.env`, which is gitignored along with every
+other `.env.*` file except `.env.example`. If a secret is ever committed, treat
+it as leaked: rotate it first, then remove it from the history.
+
+### How we used AI on the pipeline, and what it got wrong
+
+We used Claude (Claude Code) to draft the workflow, the ruleset, and this
+section. Everything it produced was checked: `actionlint` on the workflow,
+gitleaks on the history, the full suite locally, and real runs on GitHub. It
+got these things wrong, and this is how each was caught:
+
+- **Its starting template used `runs-on: ubuntu-latest` and an unpinned
+  `npm install -g vercel`**, from Vercel's generic CI example. Our existing
+  workflow explained why that breaks: the newest runners use a Linux kernel
+  that MongoDB 8.0 refuses to start on. All four jobs stay on `ubuntu-22.04`,
+  and the Vercel CLI version is pinned.
+- **It picked `actions/cache@v4`.** Before committing, we read each action's
+  `action.yml` and found v4 still runs on Node 20, which GitHub is retiring. We
+  moved to `@v5`, which runs on Node 24 like the other actions.
+- **Its first Vercel setup ignored `.env*` in `.gitignore`.** That pattern also
+  matches `.env.example`, the template new teammates copy, so later edits to it
+  would have been silently left out of commits. Found while reviewing the
+  diff; it is now `.env.*` with `!.env.example`.
+- **It kept two copies of the dependency list.** Vercel installs from
+  `pyproject.toml` and CI from `requirements.txt`; its first setup duplicated
+  the pins and relied on a comment saying "change a version in one place,
+  change it in the other". Nothing enforced that, so the site could run
+  versions the tests never ran. The Deploy job now generates Vercel's copy from
+  `requirements.txt`, and a test fails if a pin is loose.
 
 ---
 
@@ -438,11 +584,11 @@ by tests rather than by memory.
 
 ### Continuous integration
 
-Every push and pull request runs `ruff check`, `ruff format --check`, Django's
-system checks, and the full suite against MongoDB 8.0 started as a single-node
-replica set. A dedicated step asserts that transactions are available, because a
-standalone MongoDB would let the suite pass while silently weakening test
-isolation.
+Every push and pull request runs the full suite in the pipeline's Test stage,
+against MongoDB 8.0 started as a single-node replica set. A dedicated step
+asserts that transactions are available, because a standalone MongoDB would let
+the suite pass while silently weakening test isolation. See
+[CI/CD pipeline](#cicd-pipeline) for every stage.
 
 ### Known gaps
 
