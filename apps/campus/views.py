@@ -10,16 +10,21 @@ These pages are public for now. Phase 2 puts them behind the college-email gate.
 from datetime import date
 from urllib.parse import urlencode
 
+from bson import ObjectId
+from bson.errors import InvalidId
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from apps.saved import services as saved
 
 from . import services
-from .forms import ClubDirectoryForm, ClubQuery
-from .models import Club
+from .forms import ClubDirectoryForm, ClubEventForm, ClubQuery
+from .models import Club, ClubEvent
 
 
 def _page_url(query: ClubQuery, page_number: int) -> str:
@@ -86,7 +91,11 @@ def club_detail(request: HttpRequest, slug: str) -> HttpResponse:
     return render(
         request,
         "campus/club_detail.html",
-        {"club": club, "is_saved": saved.is_saved(request.user, club)},
+        {
+            "club": club,
+            "is_saved": saved.is_saved(request.user, club),
+            "events": services.upcoming_events(club=club, limit=5),
+        },
     )
 
 
@@ -106,3 +115,45 @@ def parking(request: HttpRequest) -> HttpResponse:
 
 def facilities(request: HttpRequest) -> HttpResponse:
     return render(request, "campus/facilities.html", {"checked": GUIDES_CHECKED})
+
+
+def events(request: HttpRequest) -> HttpResponse:
+    """Every club's upcoming events, grouped by day."""
+    return render(
+        request,
+        "campus/events.html",
+        {"days": services.events_by_day(services.upcoming_events())},
+    )
+
+
+@login_required
+def club_event_new(request: HttpRequest, slug: str) -> HttpResponse:
+    """A signed-in student posts an upcoming event for one club."""
+    club = get_object_or_404(Club, slug=slug)
+    form = ClubEventForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        event = form.save(commit=False)
+        event.club = club
+        event.posted_by = request.user
+        event.save()
+        messages.success(request, f"Posted \u201c{event.title}\u201d to {club.name}.")
+        return redirect("campus:club_detail", slug=club.slug)
+    return render(request, "campus/event_form.html", {"club": club, "form": form})
+
+
+@require_POST
+@login_required
+def club_event_delete(request: HttpRequest, slug: str, event_id: str) -> HttpResponse:
+    """The student who posted an event (or staff) takes it down."""
+    try:
+        pk = ObjectId(event_id)
+    except InvalidId as exc:
+        raise Http404("No such event") from exc
+    club = get_object_or_404(Club, slug=slug)
+    event = get_object_or_404(ClubEvent, pk=pk, club=club)
+    if event.posted_by_id != request.user.pk and not request.user.is_staff:
+        # Same answer as a missing event: no hint that it exists.
+        raise Http404("No such event")
+    event.delete()
+    messages.success(request, f"Removed \u201c{event.title}\u201d.")
+    return redirect("campus:club_detail", slug=club.slug)

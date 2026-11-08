@@ -4,7 +4,8 @@
 {% block description %}Student clubs and organizations at Farmingdale State College — what each one does and how to reach it.{% endblock %}
 
 {% block content %}
-  {% include "partials/page_header.html" with title="Clubs" count=club_count subtitle="Student organizations at Farmingdale State College &mdash; what each one does and how to get in touch." %}
+  {% url 'campus:events' as events_url %}
+  {% include "partials/page_header.html" with title="Clubs" count=club_count subtitle="Student organizations at Farmingdale State College &mdash; what each one does and how to get in touch." action_label="Upcoming events" action_url=events_url %}
 
   {% if club_count %}
     {% comment %}

@@ -8,8 +8,10 @@ college's data, not ours. The import overwrites every field it owns on each run
 (all but meeting_info), and nothing in the app should edit them.
 """
 
-from urllib.parse import urlsplit
+from datetime import UTC, timedelta
+from urllib.parse import urlencode, urlsplit
 
+from django.conf import settings
 from django.db import models
 from django_mongodb_backend.fields import ArrayField
 
@@ -203,3 +205,71 @@ class Club(models.Model):
         if self.contact_email:
             labels.append("Email")
         return list(dict.fromkeys(labels))
+
+
+# An event with no end time is assumed to run this long, for the calendar link.
+DEFAULT_EVENT_LENGTH = timedelta(hours=1)
+GOOGLE_CALENDAR_URL = "https://calendar.google.com/calendar/render"
+
+
+class ClubEvent(models.Model):
+    """
+    An upcoming club event, posted by a signed-in student.
+
+    RamCentral does publish events, but its robots.txt puts the events API off
+    limits (see seed_data/farmingdale_clubs.README.md), so nothing here is
+    imported. Students post what they know about, the page says who posted it,
+    and the poster can take it down.
+    """
+
+    club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name="events")
+    title = models.CharField(max_length=120)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField(null=True, blank=True)
+    location = models.CharField(max_length=200)
+    details = models.TextField(blank=True, max_length=2000)
+    posted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="club_events"
+    )
+    posted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["starts_at"]
+        indexes = [
+            # The /events/ page: everything upcoming, soonest first.
+            models.Index(fields=["starts_at"], name="campus_event_start_idx"),
+            # A club page: that club's upcoming events.
+            models.Index(fields=["club", "starts_at"], name="campus_event_club_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.title} ({self.club})"
+
+    @property
+    def end(self):
+        """When the event ends, or an hour after it starts when no end was given."""
+        return self.ends_at or self.starts_at + DEFAULT_EVENT_LENGTH
+
+    @property
+    def google_calendar_url(self) -> str:
+        """
+        A link that opens Google Calendar with this event filled in.
+
+        Google's public "render" link, not the Calendar API: no key, no sign-in
+        with RamHub, and the student decides whether to save it.
+        """
+
+        def stamp(moment) -> str:
+            return moment.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
+
+        details = f"{self.club.name}"
+        if self.details:
+            details += f"\n\n{self.details}"
+        query = {
+            "action": "TEMPLATE",
+            "text": self.title,
+            "dates": f"{stamp(self.starts_at)}/{stamp(self.end)}",
+            "location": self.location,
+            "details": details,
+        }
+        return f"{GOOGLE_CALENDAR_URL}?{urlencode(query)}"

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Club events · RamHub{% endblock %}
+{% block description %}Upcoming club events at Farmingdale State College, posted by students.{% endblock %}
+
+{% block content %}
+  {% include "partials/page_header.html" with title="Club events" subtitle="What clubs have coming up, posted by students. Open a club to post one of its events." %}
+
+  {% if days %}
+    <div class="space-y-6">
+      {% for day, day_events in days %}
+        <section class="card card-pad" aria-labelledby="day-{{ forloop.counter }}">
+          <h2 id="day-{{ forloop.counter }}" class="mb-3 text-h3">{{ day|date:"l, F j" }}</h2>
+          <ul role="list" class="divide-y divide-neutral-200">
+            {% for event in day_events %}
+              {% include "campus/partials/event_item.html" with show_club=True %}
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  {% else %}
+    {% url 'campus:clubs' as clubs_url %}
+    {% include "partials/empty_state.html" with icon="calendar" headline="No upcoming events yet" description="Know about a club meeting or event? Open the club’s page and post it, so other students can find it and add it to their calendar." action_label="Browse clubs" action_url=clubs_url %}
+  {% endif %}
+
+  <p class="mt-6 text-meta text-neutral-500">
+    Events here are posted by students, not by the clubs or the college. Official listings are on
+    <a href="https://farmingdale.campuslabs.com/engage/events" target="_blank" rel="noopener noreferrer"
+       class="rounded-sm text-accent-700 underline hover:text-accent-800">RamCentral<span class="sr-only"> (opens in a new tab)</span></a>.
+  </p>
+{% endblock %}
