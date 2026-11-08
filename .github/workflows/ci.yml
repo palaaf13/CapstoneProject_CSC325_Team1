@@ -17,10 +17,12 @@ on:
 permissions:
   contents: read
 
-# A newer push to the same PR cancels the older run. Runs on main are never
-# cancelled part-way, so a deploy is never cut off.
+# A newer push to the same PR cancels the older run. On main every merge gets
+# its own group (keyed by commit), so each merge is tested in full. A shared
+# group would make each new merge cancel the run still waiting in line.
+# Deploys still go one at a time through the "production" group below.
 concurrency:
-  group: ci-cd-${{ github.ref }}
+  group: ci-cd-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:

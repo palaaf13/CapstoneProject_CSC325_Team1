@@ -517,6 +517,12 @@ got these things wrong, and this is how each was caught:
   matches `.env.example`, the template new teammates copy, so later edits to it
   would have been silently left out of commits. Found while reviewing the
   diff; it is now `.env.*` with `!.env.example`.
+- **Its concurrency setting cancelled runs on `main`.** It put every run on
+  `main` in one concurrency group. GitHub keeps only one run waiting per group,
+  so when five PRs merged in a row, the runs for three of them were cancelled
+  before they started. We saw the cancelled runs in the Actions tab right after
+  those merges. Each commit on `main` now gets its own group; only the Deploy
+  job is serialized.
 - **It kept two copies of the dependency list.** Vercel installs from
   `pyproject.toml` and CI from `requirements.txt`; its first setup duplicated
   the pins and relied on a comment saying "change a version in one place,
