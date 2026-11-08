@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="RamHub student community account screens — interactive frontend prototype.">
+  <title>RamHub | Student Community</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="demo-nav" id="top">
+    <a class="brand" href="#top" aria-label="RamHub home"><span class="brand-orbit">✧</span>Ram<span>Hub</span></a>
+    <span class="nav-caption">Let Each Become All One Is Capable Of Being</span>
+  </header>
+
+  <main class="rh-login-page" id="main">
+    <div class="rh-login-layout">
+      <section class="rh-art" aria-label="Student approaching a glowing campus portal">
+        <img class="rh-scene" src="portal.png" alt="College student with a backpack leaping through a glowing green portal">
+        <div class="rh-halo" aria-hidden="true"></div>
+        <div class="rh-orbit rh-orbit-top" aria-hidden="true"></div>
+        <div class="rh-orbit rh-orbit-bottom" aria-hidden="true"></div>
+        <div class="rh-float rh-float-one" aria-hidden="true">✦</div>
+        <div class="rh-float rh-float-two" aria-hidden="true">✧</div>
+        <div class="rh-float rh-float-three" aria-hidden="true">✦</div>
+        <div class="rh-scan" aria-hidden="true"></div>
+      </section>
+
+      <section class="rh-panel" aria-label="RamHub account screens">
+        <div class="panel-top"><span class="rh-mini-led" aria-hidden="true"></span>FSC STUDENT COMMUNITY</div>
+
+        <!-- SIGN IN -->
+        <div class="rh-view" id="view-login">
+          <h1>Welcome to<br><span>RamHub<span class="punct">.</span></span></h1>
+          <p class="rh-tagline">Your campus, one click away.</p>
+          <form id="form-login" class="rh-fields">
+            <label for="login-email">STUDENT EMAIL</label>
+            <div class="rh-field-wrap">
+              <span class="field-icon" aria-hidden="true">✉</span>
+              <input id="login-email" name="email" type="email" placeholder="username@farmingdale.edu" autocomplete="email" required>
+            </div>
+            <div class="password-header">
+              <label for="login-password">PASSWORD</label>
+              <button type="button" class="rh-text-link" data-view="reset">Forgot password?</button>
+            </div>
+            <div class="rh-field-wrap">
+              <span class="field-icon lock-icon" aria-hidden="true">◈</span>
+              <input id="login-password" name="password" type="password" placeholder="Enter your RamHub password" autocomplete="current-password" required>
+              <button type="button" class="eye-toggle" data-toggle-password="login-password" aria-label="Show password" aria-pressed="false" title="Show or hide password">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <button type="submit" class="rh-sign-in">Sign In</button>
+          </form>
+          <p class="rh-account-prompt">New to RamHub? <button type="button" class="rh-text-link" data-view="signup">Create New Account</button></p>
+        </div>
+
+        <!-- CREATE ACCOUNT -->
+        <div class="rh-view" id="view-signup" hidden>
+          <h1>Create your<br><span>account<span class="punct">.</span></span></h1>
+          <p class="rh-tagline">Join your campus community.</p>
+          <form id="form-signup" class="rh-fields">
+            <label for="signup-name">FULL NAME</label>
+            <div class="rh-field-wrap">
+              <span class="field-icon" aria-hidden="true">◇</span>
+              <input id="signup-name" name="fullName" type="text" placeholder="Your name" autocomplete="name" maxlength="80" required>
+            </div>
+            <label for="signup-email">FARMINGDALE EMAIL</label>
+            <div class="rh-field-wrap">
+              <span class="field-icon" aria-hidden="true">✉</span>
+              <input id="signup-email" name="email" type="email" placeholder="username@farmingdale.edu" autocomplete="email" required>
+            </div>
+            <label for="signup-password">CREATE RAMHUB PASSWORD</label>
+            <div class="rh-field-wrap">
+              <span class="field-icon lock-icon" aria-hidden="true">◈</span>
+              <input id="signup-password" name="newPassword" type="password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required>
+              <button type="button" class="eye-toggle" data-toggle-password="signup-password" aria-label="Show password" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <label for="signup-confirm">CONFIRM NEW PASSWORD</label>
+            <div class="rh-field-wrap">
+              <span class="field-icon lock-icon" aria-hidden="true">◈</span>
+              <input id="signup-confirm" name="confirmPassword" type="password" placeholder="Repeat your password" autocomplete="new-password" minlength="8" required>
+              <button type="button" class="eye-toggle" data-toggle-password="signup-confirm" aria-label="Show password" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <p class="rh-hint">Use a new RamHub password, not your college account password.</p>
+            <button type="submit" class="rh-sign-in">Create Account</button>
+          </form>
+          <p class="rh-account-prompt">Already have an account? <button type="button" class="rh-text-link" data-view="login">Sign In</button></p>
+        </div>
+
+        <!-- RESET PASSWORD -->
+        <div class="rh-view" id="view-reset" hidden>
+          <h1>Reset your<br><span>password<span class="punct">.</span></span></h1>
+          <p class="rh-tagline">Get back to campus life.</p>
+          <p class="rh-reset-copy">Enter your RamHub email. When the backend is connected, this will send a secure password-reset link.</p>
+          <form id="form-reset" class="rh-fields">
+            <label for="reset-email">FARMINGDALE EMAIL</label>
+            <div class="rh-field-wrap">
+              <span class="field-icon" aria-hidden="true">✉</span>
+              <input id="reset-email" name="email" type="email" placeholder="username@farmingdale.edu" autocomplete="email" required>
+            </div>
+            <button type="submit" class="rh-sign-in">Reset Password</button>
+          </form>
+          <p class="rh-account-prompt"><button type="button" class="rh-text-link" data-view="login">← Back to Sign In</button></p>
+        </div>
+
+        <p id="rh-info" class="rh-info" role="status" aria-live="polite" hidden></p>
+        <p class="rh-demo-note">Frontend preview only · No account data is sent or stored</p>
+        <div class="rh-typing-section" aria-label="Campus conversation ideas">
+          <div class="rh-type-line"><span class="rh-type-prompt" aria-hidden="true">&gt;</span><span id="rh-type-text"></span><span class="rh-type-cursor" aria-hidden="true"></span></div>
+          <p class="rh-sr-only">Discover campus news, study spots, professors, clubs, and course reviews.</p>
+        </div>
+        <div class="rh-bottom-line"><span>DREAM.</span><span class="tiny-connector">HOPE.</span><span>ASPIRE.</span></div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
