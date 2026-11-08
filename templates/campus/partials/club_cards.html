@@ -1,0 +1,24 @@
+{% comment %}
+One page of club cards, as list items for the grid in club_results.html.
+"Load more" replaces its own list item with the next page of this template.
+{% endcomment %}
+{% for club in page_obj %}
+  {% include "campus/partials/club_card.html" %}
+{% endfor %}
+
+{% if next_page_url %}
+  <li class="col-span-full flex items-center justify-center gap-3 pt-2">
+    <a href="{{ next_page_url }}"
+       class="btn-secondary"
+       hx-get="{{ next_page_url }}"
+       hx-target="closest li"
+       hx-swap="outerHTML"
+       hx-indicator="find .htmx-indicator">
+      Load more
+      <span class="htmx-indicator" aria-hidden="true">&hellip;</span>
+    </a>
+    <span class="text-meta text-neutral-500">
+      Showing {{ page_obj.end_index }} of {{ total }}
+    </span>
+  </li>
+{% endif %}

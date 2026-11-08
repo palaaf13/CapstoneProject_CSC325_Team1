@@ -1,0 +1,24 @@
+{% comment %}One card of the club grid. The whole card is a single link.{% endcomment %}
+<li class="flex min-w-0">
+  <a href="{% url 'campus:club_detail' club.slug %}" class="club-card">
+    <span class="flex items-start gap-3">
+      {% include "campus/partials/club_mark.html" %}
+      <span class="min-w-0 flex-1">
+        <span class="club-card-name">{{ club.name }}</span>
+        {% if club.categories %}
+          <span class="mt-0.5 block truncate text-meta text-neutral-500">{{ club.categories|join:" · " }}</span>
+        {% endif %}
+      </span>
+    </span>
+
+    {% if club.blurb %}
+      <span class="club-card-summary">{{ club.blurb }}</span>
+    {% endif %}
+
+    {# How to reach the club, so a card answers "do they have an Instagram?" without a click. #}
+    <span class="club-card-foot">
+      <span class="min-w-0 truncate">{{ club.channels|join:" · " }}</span>
+      <span class="club-card-go" aria-hidden="true">&rarr;</span>
+    </span>
+  </a>
+</li>

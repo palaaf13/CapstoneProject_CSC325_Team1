@@ -11,6 +11,150 @@ decisions, MongoDB constraints, and conventions this project is built on.
 
 ---
 
+## Architecture
+
+RamHub is a **server-rendered, layered web application**. There is no separate
+frontend: Django renders HTML, HTMX swaps fragments of it, and the browser never
+holds application state. One deployment serves everything.
+
+```
+Browser
+   │  HTML over HTTP, plus HTMX fragment requests
+   ▼
+URL routing            config/urls.py → apps/<app>/urls.py
+   ▼
+Presentation           templates/ · Tailwind tokens in static/src/input.css
+   ▼
+Views                  apps/<app>/views.py — parse the request, call a service,
+                       render a template. No business logic lives here.
+   ▼
+Validation             apps/<app>/forms.py — every query string and form body
+                       is validated before it reaches a query
+   ▼
+Services               apps/<app>/services.py — all business logic: search,
+                       filtering, sorting, resolving relationships
+   ▼
+Models                 apps/<app>/models.py — documents, embedded summaries,
+                       indexes, constraints
+   ▼
+MongoDB Atlas          via django-mongodb-backend
+```
+
+**The layering rule:** a view may call a service; a service may touch models; a
+template only displays what it is handed. A query in a view or logic in a
+template is a bug, not a shortcut.
+
+### Applications
+
+The project is split by domain rather than by technical role, so each feature
+owns its models, views, services, and tests together.
+
+| App | Responsibility | State |
+| --- | --- | --- |
+| `catalog` | Course and Professor, both directories, detail pages, data imports | Built |
+| `accounts` | Custom user, FSC email verification, profiles | Planned |
+| `ratings` | Course and professor ratings, summary recomputation | Planned |
+| `community` | Posts, embedded comments, votes, tags, the feed | Planned |
+| `campus` | Clubs, jobs, parking, facilities | Placeholder pages |
+| `saved` | The filing cabinet: saved courses, professors, and clubs | Built |
+| `assistant` | Retrieval index and the Rambo assistant | Planned |
+| `moderation` | Reports, moderator actions, the queue | Planned |
+
+`config/` holds settings (split into `base`, `dev`, `prod`), the root URL
+configuration, and the site-level pages.
+
+### Data layer
+
+MongoDB is a document store, so the model design is not relational:
+
+- **Embedding over joins.** A course's rating summary lives inside the course
+  document, because it is always read with it.
+- **ObjectId arrays instead of many-to-many tables.** `Course.professor_ids` and
+  `Professor.course_ids` hold each other's ids, resolved in a single query.
+- **Denormalized summaries.** Averages are stored and recomputed on write, never
+  aggregated live on a list page.
+
+`CLAUDE.md` records the backend constraints that forced these choices, including
+several that fail silently rather than erroring.
+
+### Request styles
+
+| Style | Returns | Used for |
+| --- | --- | --- |
+| Full page | A rendered template | Any normal navigation |
+| HTMX partial | An HTML fragment | Live search, "Load more", inline updates |
+| DRF endpoint under `/api/` | JSON | Reserved for voting, autocomplete, and the assistant |
+
+Each feature picks one and stays consistent. Everything degrades without
+JavaScript: the directories are plain GET forms, and the landing page is
+complete with scripts blocked.
+
+### Deployment
+
+| Piece | Where it runs |
+| --- | --- |
+| Application | Vercel, as a single Python function on Fluid Compute |
+| Static files | Collected at build time, served from Vercel's CDN |
+| Database | MongoDB Atlas (free M0 replica set), shared by the team |
+| CI/CD | GitHub Actions: Setup → Dependencies → Test → Deploy (see [CI/CD pipeline](#cicd-pipeline)) |
+
+Because the application runs serverless, there is no writable disk and no
+long-running process. Migrations run from the pipeline's Deploy stage, before
+the new code goes live; data imports are run from a developer's machine.
+
+---
+
+## Prototype
+
+**Figma:** [RamHub Prototype](https://www.figma.com/design/YPd5HXGVtHgMErfYGxEDvd/RamHub-Prototype?node-id=0-1)
+**Walkthrough video (1:50):** [RamHub — Figma UI/UX Prototype Walkthrough](https://www.youtube.com/watch?v=8xP8z4f6uhE)
+
+The prototype follows our product goal: **a private, `@farmingdale.edu`-only
+platform where FSC students look up courses and professors, read and share
+honest advice from classmates, and find campus info in one place, so class
+knowledge doesn't disappear when students graduate.**
+
+### Personas
+
+| Persona | Role | What they need |
+| --- | --- | --- |
+| **Maya Rios** (primary) | Transfer student | Does not know which professors to take, and has no classmates to ask |
+| **Jordan Kim** (secondary) | Trained student moderator | Keeps content honest and safe |
+
+### Context diagram
+
+RamHub sits at the centre, surrounded by:
+
+- **Actors:** Student, Moderator, Administrator, Advisor / prospective student
+- **External systems:** FSC email and identity, AI language model service, Google
+  Calendar API, cloud media storage, campus info sources and the LMS
+
+### UI screens
+
+Sign up · Check email · Home feed · Search results (CSC 325) · Professor page ·
+Course advice thread · Filing cabinet · Clubs · Moderation queue
+
+### UX flow
+
+Maya's journey, clickable end to end in the Figma prototype:
+
+```
+Sign up → verify email → search CSC 325 → compare professors →
+read the advice thread → save to the filing cabinet →
+post her own tip after the semester
+```
+
+Each screen earns its place in that journey, and the two personas sit on either
+side of the same goal: Maya puts knowledge in and takes it out, Jordan keeps it
+trustworthy.
+
+The design is built against the real system rather than ahead of it. The colours,
+type scale, and components come from the design system in
+`static/src/input.css`, which you can review at `/styleguide` on a running
+instance.
+
+---
+
 ## Prerequisites
 
 | Tool | Version | Notes |
@@ -45,24 +189,27 @@ npm run tailwind:build
 # 5. Create the collections Django needs
 python manage.py migrate
 
-# 6. Load real courses and faculty (runs both imports below)
+# 6. Load real courses, faculty and clubs (runs the imports below)
 python manage.py seed_demo
 ```
 
 Everything is idempotent — run it as often as you like. `seed_demo` is a
-convenience wrapper; you can run either import on its own:
+convenience wrapper; you can run any import on its own:
 
 | command | source | records |
 |---|---|---|
 | `import_catalog` | published [2025–26 course catalog](https://www.farmingdale.edu/course-offerings/catalog_2025_2026.html) | ~1,785 courses |
 | `import_directory` | public [campus directory](https://www.farmingdale.edu/directory/) | ~913 teaching staff |
 | `import_rmp` | [RateMyProfessors](https://www.ratemyprofessors.com/school/14046) export | ratings for ~517 of them |
+| `import_clubs` | [RamCentral](https://farmingdale.campuslabs.com/engage/organizations), the college's club directory | ~107 student organizations |
 
-Both exports live in `apps/catalog/seed_data/` with a `.README.md` documenting
+The course, faculty and ratings exports live in `apps/catalog/seed_data/` and the
+club export in `apps/campus/seed_data/`, each with a `.README.md` documenting
 provenance and caveats. `scrape_catalog.py` regenerates the course export when a
-new catalog year is published.
+new catalog year is published; `scrape_clubs.py` regenerates the club export,
+which wants refreshing every semester because clubs re-register each term.
 
-Two rules neither import will bend:
+Rules the imports will not bend:
 
 - **Courses are never rated by an import.** No course has a rating until a
   student leaves one.
@@ -74,6 +221,19 @@ Two rules neither import will bend:
 - **They never invent relationships.** A directory says who works here; a catalog
   says a course exists. Neither says who teaches what, so courses are not linked
   to professors. That needs real section/schedule data.
+- **Clubs carry only what RamCentral shows the public.** No officers or members
+  (RamCentral hides those behind a sign-in), and no meeting times (it does not
+  publish any) — the club page says so and links to RamCentral instead of
+  guessing. College offices listed there are skipped unless you pass
+  `--include-offices`.
+- **Two club filters are RamHub's grouping, not RamCentral's.** RamCentral has no
+  technology category, so `apps/campus/seed_data/ramhub_categories.json` lists,
+  by slug, the twelve computing, AI and engineering clubs that RamHub files
+  under **Technology** — on top of whatever RamCentral gave them, never instead
+  of it. **Other** is the filter for the clubs that are in no category at all,
+  so that every club can be reached through one. Everything else about a club
+  is RamCentral's data as published; this is the only place we add our own.
+  The reasoning is in `apps/campus/seed_data/farmingdale_clubs.README.md`.
 
 Use `--prune --yes` to drop records no longer in the exports.
 
@@ -128,6 +288,16 @@ settings file.
 | `MONGODB_URI` | **yes** | The full Atlas connection string. |
 | `MONGODB_NAME` | no | Database name inside the cluster. Defaults to `ramhub`. |
 | `COLLEGE_EMAIL_DOMAIN` | no | Domain allowed to register. Defaults to `farmingdale.edu`. |
+| `EMAIL_HOST` | prod | SMTP server used to send confirmation emails. |
+| `EMAIL_PORT` | no | SMTP port. Defaults to `587`. |
+| `EMAIL_HOST_USER` | no | SMTP username, if required by the provider. |
+| `EMAIL_HOST_PASSWORD` | no | SMTP password, if required by the provider. |
+| `EMAIL_USE_TLS` | no | Whether SMTP uses TLS. Defaults to `True`. |
+| `DEFAULT_FROM_EMAIL` | prod | Sender address authorized by the mail provider. |
+
+In development, registration confirmation emails print in the `runserver`
+terminal. Production uses SMTP and requires `EMAIL_HOST` and
+`DEFAULT_FROM_EMAIL`; keep any SMTP credentials in the gitignored `.env`.
 
 Generate a key for `.env` with:
 
@@ -181,7 +351,8 @@ If a class you added has no effect, the Tailwind watcher is not running.
 
 ## Checks
 
-Both must pass before you open a pull request. CI runs them on every PR.
+Both must pass before you open a pull request. The pipeline's Test stage runs
+them on every PR, and `main` will not accept a merge until it passes.
 
 ```bash
 ruff check . && ruff format --check .
@@ -210,6 +381,239 @@ python manage.py createsuperuser
 
 ---
 
+## CI/CD pipeline
+
+One workflow, [`.github/workflows/ci.yml`](.github/workflows/ci.yml), runs on
+**every push to `main` and every pull request into `main`**. It has four stages,
+each a separate job, and each stage starts only if the one before it passed:
+
+```
+Setup ──► Dependencies ──► Test ──► Deploy (pushes to main only)
+```
+
+| Stage | What it does | Fails when |
+| --- | --- | --- |
+| **Setup** | Checks out the full history and scans every commit for secrets with gitleaks (the binary is verified against its published checksum first). Pins Python 3.13 and fingerprints `requirements.txt` for the cache. | A commit anywhere in the history contains something that looks like a key, token, or password. |
+| **Dependencies** | Installs `requirements.txt` into a virtualenv (cached, keyed on the fingerprint), runs `pip check`, installs Node packages with `npm ci`, and builds the Tailwind stylesheet. | A package cannot be installed, two packages conflict, or the CSS does not build. |
+| **Test** | Starts MongoDB 8.0 as a single-node replica set, then runs `ruff check`, `ruff format --check`, `manage.py check`, `makemigrations --check`, a transaction-support check, and the full `pytest` suite. | Any lint error, system-check error, missing migration, or failing test. **Branch protection requires this job.** |
+| **Deploy** | Applies migrations to the production database, writes the Vercel build files into its own checkout (see below), deploys with `vercel deploy --prod`, then loads `/` and `/courses/` from the live site and expects `200`. | A deploy secret is missing, a migration fails, the Vercel build fails, or the live site does not answer `200`. |
+
+Pull requests run Setup, Dependencies and Test. Deploy appears as *skipped* on a
+PR; it runs when the PR merges, because merging is a push to `main`. The live
+site is **<https://ramhub-seven.vercel.app>**, and each production run links to
+it from the run's summary page.
+
+### Why there is no `vercel.json` in the repo
+
+The repository stays host-neutral. Vercel needs four files: `vercel.json`,
+`.vercelignore`, `.python-version`, and a `[project]` table in
+`pyproject.toml`. The Deploy job writes them into its own throwaway checkout
+with [`.github/scripts/prepare_vercel_build.py`](.github/scripts/prepare_vercel_build.py)
+just before deploying. The `[project]` pins are copied from the runtime section
+of `requirements.txt`, so there is one list of versions, and Vercel installs
+exactly what the Test stage ran. `tests/test_prepare_vercel_build.py` covers
+the script.
+
+### From story to production
+
+What a teammate does to ship a story. No step needs anyone else's machine.
+
+1. **Pick the story** on the [project board](https://github.com/users/palaaf13/projects/2),
+   assign yourself, and move it to *In progress*. Note its issue number, e.g. `#41`.
+2. **Branch from the latest `main`:**
+   ```bash
+   git switch main && git pull
+   git switch -c feature/short-story-name
+   ```
+3. **Build it with at least one test** that checks the story's acceptance
+   criteria. Run the same checks CI runs before you push:
+   ```bash
+   ruff check . && ruff format --check . && pytest
+   ```
+4. **Push and open a PR into `main`.** Put `Closes #41` in the description so the
+   PR links to the story and closes it on merge. Move the card to *In review*.
+5. **Wait for green.** Setup, Dependencies and Test run on the PR within a few
+   minutes; the results show at the bottom of the PR. A red stage links to its log.
+6. **Get one approval** from a teammate. Pushing new commits after an approval
+   clears it, so ask again.
+7. **Merge.** The merge triggers the pipeline on `main`, which runs every stage
+   again and then Deploy. When Deploy is green, the change is live.
+
+### Branch protection
+
+`main` is protected by a repository ruleset, kept in the repo as
+[`.github/rulesets/protect-main.json`](.github/rulesets/protect-main.json) so the
+rules are reviewable like code. It:
+
+- **blocks direct pushes**: every change to `main` arrives through a pull request;
+- **requires one approving review** from someone other than the author, and
+  dismisses it if new commits are pushed;
+- **requires the `Test` check to pass** before the merge button unlocks;
+- blocks force-pushes and deleting `main`.
+
+Nobody is on the bypass list, including the repository owner.
+
+Only the repository owner can create rulesets. To apply or update it:
+*Settings → Rules → Rulesets → New ruleset → Import a ruleset*, and choose the
+JSON file. Or, from a clone:
+
+```bash
+gh api -X POST repos/palaaf13/CapstoneProject_CSC325_Team1/rulesets --input .github/rulesets/protect-main.json
+```
+
+### Secrets
+
+No key, token, or password is in the code, the workflow file, or the commit
+history. The Setup stage proves that on every run by scanning the full history.
+
+**GitHub Secrets** (*Settings → Secrets and variables → Actions*) hold what the
+pipeline itself needs. Only the Deploy job reads them, and only on `main`;
+pull requests never see them.
+
+| Secret | Used for | Where the value comes from |
+| --- | --- | --- |
+| `VERCEL_TOKEN` | Authenticating the Vercel CLI | vercel.com → Account Settings → Tokens |
+| `VERCEL_ORG_ID` | Which Vercel account owns the project | `.vercel/project.json` after `vercel link` |
+| `VERCEL_PROJECT_ID` | Which Vercel project to deploy | `.vercel/project.json` after `vercel link` |
+| `PROD_MONGODB_URI` | Running migrations against Atlas before deploying | Atlas → Connect → Drivers |
+| `PROD_MONGODB_NAME` | The production database name | The `MONGODB_NAME` Vercel uses |
+
+Only the repository owner can add them. Use the web form or `gh secret set`,
+which prompts for the value so it never lands in your shell history:
+
+```bash
+gh secret set VERCEL_TOKEN --repo palaaf13/CapstoneProject_CSC325_Team1
+```
+
+**The running site's settings** (`SECRET_KEY`, `MONGODB_URI`, `ALLOWED_HOSTS`,
+`EMAIL_*`, `DEFAULT_FROM_EMAIL`) are Vercel environment variables, encrypted
+in the Vercel project and never in this repo. `config/settings/prod.py` has no
+defaults for them, so a missing one stops the site from starting instead of
+running on a placeholder, and the Deploy smoke test fails.
+
+**The Test stage needs no secrets at all.** MongoDB runs in a throwaway container,
+and `SECRET_KEY` is generated fresh for each run and masked in the logs.
+
+**Locally**, your values live in `.env`, which is gitignored along with every
+other `.env.*` file except `.env.example`. If a secret is ever committed, treat
+it as leaked: rotate it first, then remove it from the history.
+
+### How we used AI on the pipeline, and what it got wrong
+
+We used Claude (Claude Code) to draft the workflow, the ruleset, and this
+section. Everything it produced was checked: `actionlint` on the workflow,
+gitleaks on the history, the full suite locally, and real runs on GitHub. It
+got these things wrong, and this is how each was caught:
+
+- **Its starting template used `runs-on: ubuntu-latest` and an unpinned
+  `npm install -g vercel`**, from Vercel's generic CI example. Our existing
+  workflow explained why that breaks: the newest runners use a Linux kernel
+  that MongoDB 8.0 refuses to start on. All four jobs stay on `ubuntu-22.04`,
+  and the Vercel CLI version is pinned.
+- **It picked `actions/cache@v4`.** Before committing, we read each action's
+  `action.yml` and found v4 still runs on Node 20, which GitHub is retiring. We
+  moved to `@v5`, which runs on Node 24 like the other actions.
+- **Its first Vercel setup ignored `.env*` in `.gitignore`.** That pattern also
+  matches `.env.example`, the template new teammates copy, so later edits to it
+  would have been silently left out of commits. Found while reviewing the
+  diff; it is now `.env.*` with `!.env.example`.
+- **Its concurrency setting cancelled runs on `main`.** It put every run on
+  `main` in one concurrency group. GitHub keeps only one run waiting per group,
+  so when five PRs merged in a row, the runs for three of them were cancelled
+  before they started. We saw the cancelled runs in the Actions tab right after
+  those merges. Each commit on `main` now gets its own group; only the Deploy
+  job is serialized.
+- **It kept two copies of the dependency list.** Vercel installs from
+  `pyproject.toml` and CI from `requirements.txt`; its first setup duplicated
+  the pins and relied on a comment saying "change a version in one place,
+  change it in the other". Nothing enforced that, so the site could run
+  versions the tests never ran. The Deploy job now generates Vercel's copy from
+  `requirements.txt`, and a test fails if a pin is loose.
+
+---
+
+## Test Plan Overview
+
+Four categories of automated test, plus the manual checks that cover what we do
+not yet automate. Everything runs with `pytest`, against a **real MongoDB** in a
+throwaway `test_` database — never a mock and never your development data.
+
+### 1. Unit tests — one function or model at a time
+
+Scope: a single service function or model behaviour, with its data created
+directly in the test.
+
+| File | Cases | What it proves |
+| --- | --- | --- |
+| `apps/catalog/tests/test_services.py` | 29 | Search matches a code and a title, department filtering, every sort order, and both directions of the course↔professor link |
+| `apps/catalog/tests/test_models.py` | 13 | ObjectId primary keys, embedded summaries, the unique constraint on course code, the Bayesian ranking score |
+
+Example: a 5.0 rating from one student must not outrank a 4.9 from 226, so the
+ranking function is tested directly rather than through a page.
+
+### 2. Integration tests — a whole request, end to end
+
+Scope: a real HTTP request through routing, the view, the service layer, the
+database, and template rendering, using Django's test client.
+
+| File | Cases | What it proves |
+| --- | --- | --- |
+| `apps/catalog/tests/test_views.py` | 21 | Both directories render, search narrows results, bad query strings degrade instead of erroring, unknown records return 404 |
+| `tests/test_landing.py` | 22 | The landing page renders real counts, motion libraries load only there, the page works with JavaScript off |
+| `tests/test_smoke.py` | 5 | Every page in the navigation returns 200 and the active tab is correct |
+| `apps/catalog/tests/test_admin.py` | 4 | The admin renders for rated and unrated records |
+
+These catch the failures unit tests cannot see: a template referencing a field
+that no longer exists, or a URL that stopped resolving.
+
+### 3. Data integrity tests — the imports
+
+Scope: the commands that load official college data. This category exists
+because the data describes **real people**, so the rules about it are enforced
+by tests rather than by memory.
+
+| File | Cases | What it proves |
+| --- | --- | --- |
+| `apps/catalog/tests/test_import_rmp.py` | 16 | Imported ratings are always tagged as RateMyProfessors data, student ratings are never overwritten, "no data" never renders as a zero |
+| `apps/catalog/tests/test_import_directory.py` | 13 | Faculty import is idempotent, never writes ratings, never invents course assignments |
+| `apps/catalog/tests/test_import_catalog.py` | 12 | Course import is idempotent, courses without a published credit value stay null |
+| `apps/catalog/tests/test_seed_demo.py` | 5 | Running the full seed twice leaves identical data |
+
+### 4. System and accessibility checks — currently manual
+
+| Check | How | When |
+| --- | --- | --- |
+| Accessibility | axe (WCAG 2.1 A/AA) on each new page | Before a feature is called done |
+| Responsive | Every screen at 375px and desktop | Before a feature is called done |
+| Keyboard | Tab through the page; focus must always be visible | Before a feature is called done |
+| Contrast | Ratios computed against the design tokens | When a colour token changes |
+
+### Continuous integration
+
+Every push and pull request runs the full suite in the pipeline's Test stage,
+against MongoDB 8.0 started as a single-node replica set. A dedicated step
+asserts that transactions are available, because a standalone MongoDB would let
+the suite pass while silently weakening test isolation. See
+[CI/CD pipeline](#cicd-pipeline) for every stage.
+
+### Known gaps
+
+Stated plainly, because a test plan that claims full coverage is not useful:
+
+- **No browser-level end-to-end tests.** Nothing drives a real browser, so the
+  HTMX swaps and the landing page motion are verified by hand.
+- **No load or performance testing.** Page timings have only been measured
+  informally.
+- **Accessibility is not automated.** axe is run manually; it should move into
+  CI.
+- **No tests for features not yet built** — accounts, ratings, the feed, and the
+  assistant. Each should arrive with its own tests, per the definition of done.
+- **Run the suite against a local MongoDB, not Atlas.** Pointing `.env` at the
+  shared cluster makes every test a network round trip and slows the suite by
+  roughly an order of magnitude.
+
+---
+
 ## Layout
 
 ```
@@ -223,6 +627,8 @@ apps/catalog/        Course + Professor, the two directories, and the detail
   services.py        pages. Query logic lives here, never in a view.
   forms.py           query-string validation for the directories
   seed_data/         demo_catalog.json — see its _meta block
+apps/campus/         Club, the club directory at /clubs/ and the club pages.
+  seed_data/         the RamCentral export, and the scraper that regenerates it
 
 templates/           base.html, partials/, one directory per app
 static/src/          input.css — every design token lives here
@@ -247,7 +653,8 @@ so if a utility does not exist, add the token first.
 Shared patterns: `.btn-primary` `.btn-secondary` `.btn-ghost` `.btn-danger`,
 `.field-input` `.field-input-error` `.field-label` `.field-hint` `.field-error`,
 `.card` `.card-pad` `.row-link`, `.badge-neutral` `.badge-accent` `.badge-danger`,
-`.rating-value`.
+`.rating-value`. The Clubs tab adds `.club-card`, `.club-mark` and the
+`.club-filter-*` category filter.
 
 Reusable partials: `partials/page_header.html`, `partials/empty_state.html`,
 and the icon set in `partials/icons/`.

@@ -1,0 +1,7 @@
+{% comment %}
+A link to an official FSC page, marked as leaving RamHub.
+
+  {% include "campus/partials/official_link.html" with url="https://…" label="Student Parking Permits" %}
+{% endcomment %}
+<a href="{{ url }}" class="inline-flex items-center gap-1 font-medium text-accent-700 hover:underline"
+   target="_blank" rel="noopener">{{ label }}<span class="[&>svg]:h-3.5 [&>svg]:w-3.5">{% include "partials/icons/external.html" %}</span><span class="sr-only"> (opens the official site in a new tab)</span></a>

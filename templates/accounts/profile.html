@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Your profile · RamHub{% endblock %}
+
+{% block content %}
+  <section class="mx-auto max-w-2xl py-6 sm:py-10" aria-labelledby="profile-title">
+    <div class="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-neutral-200 pb-4">
+      <div class="min-w-0">
+        <h1 id="profile-title" class="text-h1">
+          {{ profile_user.display_name|default:profile_user.username }}
+        </h1>
+        <p class="mt-1 text-body text-neutral-500">@{{ profile_user.username }}</p>
+      </div>
+      <div class="flex shrink-0 items-center gap-2">
+        <form action="{% url 'logout' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost">Sign out</button>
+        </form>
+        <a href="{% url 'saved:cabinet' %}" class="btn-secondary">Filing cabinet</a>
+        <a href="{% url 'profile_edit' %}" class="btn-primary">Edit profile</a>
+      </div>
+    </div>
+
+    <div class="card card-pad sm:p-6">
+      <dl class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+        <div>
+          <dt class="field-label">College email</dt>
+          <dd class="text-body text-neutral-900 break-all">{{ profile_user.email }}</dd>
+        </div>
+        <div>
+          <dt class="field-label">Major</dt>
+          <dd class="text-body {% if profile_user.major %}text-neutral-900{% else %}text-neutral-500{% endif %}">
+            {{ profile_user.major|default:"Not added yet" }}
+          </dd>
+        </div>
+        <div>
+          <dt class="field-label">Graduation year</dt>
+          <dd class="text-body {% if profile_user.grad_year %}text-neutral-900{% else %}text-neutral-500{% endif %}">
+            {{ profile_user.grad_year|default:"Not added yet" }}
+          </dd>
+        </div>
+        <div>
+          <dt class="field-label">Visibility</dt>
+          <dd class="text-body text-neutral-900">
+            {% if profile_user.is_profile_public %}
+              Visible to other students
+            {% else %}
+              Only you can see this profile
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+
+      <div class="mt-6 border-t border-neutral-200 pt-4">
+        <h2 class="text-h3">About</h2>
+        {% if profile_user.bio %}
+          <p class="mt-2 whitespace-pre-line text-body text-neutral-900">{{ profile_user.bio }}</p>
+        {% else %}
+          <p class="mt-2 text-body text-neutral-500">
+            You haven’t written a bio yet. A line about your major or interests helps other
+            students know whose advice they’re reading.
+          </p>
+          <a href="{% url 'profile_edit' %}" class="btn-secondary mt-3">Add a bio</a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

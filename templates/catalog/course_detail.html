@@ -23,6 +23,9 @@
             &middot; <span title="The catalog lists no credit value for this course">credits not listed</span>
           {% endif %}
         </p>
+        <div class="mt-4">
+          {% include "saved/partials/save_button.html" with item=course kind="course" is_saved=is_saved next=request.get_full_path %}
+        </div>
       </div>
 
       {% if course.rating_summary.has_ratings %}

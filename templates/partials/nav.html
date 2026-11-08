@@ -28,27 +28,42 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
 
       {% comment %}Search — full input only from 1280px. At 1024px the seven tabs plus a
          288px input overflowed the header by 46px and pushed Sign in offscreen.{% endcomment %}
-      <form action="#" method="get" role="search" class="hidden xl:block">
+      <form action="{% url 'search' %}" method="get" role="search" class="hidden xl:block">
         <label for="site-search" class="sr-only">Search RamHub</label>
         <div class="relative">
           <span class="pointer-events-none absolute inset-y-0 left-2 flex items-center text-neutral-500">
             {% include "partials/icons/search.html" %}
           </span>
-          <input type="search" id="site-search" name="q" placeholder="Search courses, professors, posts"
-                 class="field-input w-72 pl-9" autocomplete="off">
+          <input type="search" id="site-search" name="q" placeholder="Search courses, professors, clubs"
+                 class="field-input w-72 pl-9" autocomplete="off" maxlength="100"
+                 value="{% if request.resolver_match.url_name == 'search' %}{{ request.GET.q }}{% endif %}">
         </div>
       </form>
 
       {# Search — icon only between 768px and 1280px #}
-      <a href="#" class="btn-ghost hidden md:inline-flex xl:hidden" aria-label="Search RamHub">
+      <a href="{% url 'search' %}" class="btn-ghost hidden md:inline-flex xl:hidden" aria-label="Search RamHub">
         {% include "partials/icons/search.html" %}
       </a>
 
-      {# Account menu — a placeholder until auth lands in Phase 2 #}
-      <a href="#" class="btn-secondary hidden shrink-0 md:inline-flex">
-        {% include "partials/icons/user.html" %}
-        <span>Sign in</span>
-      </a>
+      {# Account #}
+      {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="btn-secondary hidden shrink-0 md:inline-flex">
+          {% include "partials/icons/user.html" %}
+          <span>Profile</span>
+        </a>
+        <form action="{% url 'logout' %}" method="post" class="hidden shrink-0 xl:block">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn-secondary hidden shrink-0 md:inline-flex">
+          {% include "partials/icons/user.html" %}
+          <span>Sign in</span>
+        </a>
+        <a href="{% url 'register' %}" class="btn-primary hidden shrink-0 xl:inline-flex">
+          <span>Join</span>
+        </a>
+      {% endif %}
 
       {# Mobile menu toggle #}
       <button type="button"
@@ -66,14 +81,15 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
   {# Mobile menu #}
   <div id="mobile-menu" class="border-t border-neutral-200 bg-white md:hidden" hidden>
     <nav class="mx-auto max-w-6xl space-y-1 px-4 py-3" aria-label="Primary (mobile)">
-      <form action="#" method="get" role="search" class="pb-2">
+      <form action="{% url 'search' %}" method="get" role="search" class="pb-2">
         <label for="mobile-search" class="sr-only">Search RamHub</label>
         <div class="relative">
           <span class="pointer-events-none absolute inset-y-0 left-2 flex items-center text-neutral-500">
             {% include "partials/icons/search.html" %}
           </span>
           <input type="search" id="mobile-search" name="q" placeholder="Search RamHub"
-                 class="field-input pl-9" autocomplete="off">
+                 class="field-input pl-9" autocomplete="off" maxlength="100"
+                 value="{% if request.resolver_match.url_name == 'search' %}{{ request.GET.q }}{% endif %}">
         </div>
       </form>
 
@@ -84,10 +100,24 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
       {% endfor %}
 
       <div class="border-t border-neutral-200 pt-3">
-        <a href="#" class="btn-secondary w-full">
-          {% include "partials/icons/user.html" %}
-          <span>Sign in</span>
-        </a>
+        {% if user.is_authenticated %}
+          <a href="{% url 'profile' %}" class="btn-secondary w-full">
+            {% include "partials/icons/user.html" %}
+            <span>Profile</span>
+          </a>
+          <form action="{% url 'logout' %}" method="post" class="mt-2">
+            {% csrf_token %}
+            <button type="submit" class="btn-ghost w-full">Sign out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}" class="btn-secondary w-full">
+            {% include "partials/icons/user.html" %}
+            <span>Sign in</span>
+          </a>
+          <a href="{% url 'register' %}" class="btn-primary mt-2 w-full">
+            <span>Create account</span>
+          </a>
+        {% endif %}
       </div>
     </nav>
   </div>

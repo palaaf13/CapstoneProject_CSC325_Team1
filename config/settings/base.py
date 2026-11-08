@@ -27,6 +27,30 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 # RamHub: only email addresses at this domain may register (enforced in Phase 2).
 COLLEGE_EMAIL_DOMAIN = env.str("COLLEGE_EMAIL_DOMAIN", default="farmingdale.edu")
 
+# Where @login_required sends a signed-out visitor. Django's default
+# (/accounts/login/) does not exist here.
+LOGIN_URL = "login"
+
+# --------------------------------------------------------------------------
+# Email
+# --------------------------------------------------------------------------
+MAILERS = {
+    "default": {
+        "BACKEND": env.str(
+            "EMAIL_BACKEND",
+            default="django.core.mail.backends.smtp.EmailBackend",
+        ),
+        "OPTIONS": {
+            "host": env.str("EMAIL_HOST", default=""),
+            "port": env.int("EMAIL_PORT", default=587),
+            "username": env.str("EMAIL_HOST_USER", default=""),
+            "password": env.str("EMAIL_HOST_PASSWORD", default=""),
+            "use_tls": env.bool("EMAIL_USE_TLS", default=True),
+        },
+    }
+}
+DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="RamHub <noreply@localhost>")
+
 # --------------------------------------------------------------------------
 # Applications
 # --------------------------------------------------------------------------
@@ -117,6 +141,8 @@ MIGRATION_MODULES = {
 # --------------------------------------------------------------------------
 # Auth
 # --------------------------------------------------------------------------
+AUTH_USER_MODEL = "accounts.User"
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},

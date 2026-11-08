@@ -16,6 +16,8 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
+from apps.saved import services as saved
+
 from . import services
 from .forms import CourseDirectoryForm, DirectoryQuery, ProfessorDirectoryForm
 from .models import Professor
@@ -123,7 +125,11 @@ def course_detail(request: HttpRequest, code: str) -> HttpResponse:
     return render(
         request,
         "catalog/course_detail.html",
-        {"course": course, "professors": services.professors_for_course(course)},
+        {
+            "course": course,
+            "professors": services.professors_for_course(course),
+            "is_saved": saved.is_saved(request.user, course),
+        },
     )
 
 
@@ -133,5 +139,9 @@ def professor_detail(request: HttpRequest, slug: str) -> HttpResponse:
     return render(
         request,
         "catalog/professor_detail.html",
-        {"professor": professor, "courses": services.courses_for_professor(professor)},
+        {
+            "professor": professor,
+            "courses": services.courses_for_professor(professor),
+            "is_saved": saved.is_saved(request.user, professor),
+        },
     )

@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "what": "Categories RamHub adds to a club on top of the ones RamCentral gives it. Keyed by the club's slug.",
+    "whose": "RamHub's own grouping — an editorial call by this project, NOT data from RamCentral or the college. Everything else about a club is imported as published; this file is the one place we add something.",
+    "why": "RamCentral has no technology category, so the computing and engineering clubs were scattered across Academic, Special Interest, or nowhere at all.",
+    "Technology": "Computing, AI, robotics, and the engineering-technology clubs. Each entry was checked against the club's own name or description on RamCentral. ColorStack at FSC published no description; it is listed on the strength of ColorStack being a national community for computer science students.",
+    "editing": "Add a slug to put a club in a category; it is applied on the next `manage.py import_clubs`. A test fails if a slug here is not in the export, so a renamed or deleted club cannot leave a dead entry behind."
+  },
+  "actclub": ["Technology"],
+  "asce": ["Technology"],
+  "asme": ["Technology"],
+  "colorstack": ["Technology"],
+  "cs": ["Technology"],
+  "csc": ["Technology"],
+  "fscnsbe": ["Technology"],
+  "gdgfsc": ["Technology"],
+  "ieee": ["Technology"],
+  "rambots": ["Technology"],
+  "shpe": ["Technology"],
+  "swic": ["Technology"]
+}

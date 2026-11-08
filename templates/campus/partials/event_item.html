@@ -1,0 +1,38 @@
+{% comment %}
+One club event. Pass show_club=True where the page lists several clubs.
+The Google Calendar link opens Google's own "add event" page with the details
+filled in; nothing is saved until the student clicks Save there.
+{% endcomment %}
+<li class="py-4 first:pt-0 last:pb-0">
+  <p class="text-meta font-medium text-accent-700">
+    <time datetime="{{ event.starts_at|date:'c' }}">{{ event.starts_at|date:"D, M j · g:i A" }}</time>{% if event.ends_at %}
+      &ndash; <time datetime="{{ event.ends_at|date:'c' }}">{% if event.ends_at|date:"Ymd" == event.starts_at|date:"Ymd" %}{{ event.ends_at|date:"g:i A" }}{% else %}{{ event.ends_at|date:"D, M j · g:i A" }}{% endif %}</time>{% endif %}
+  </p>
+  <h3 class="mt-0.5 break-words text-body font-semibold text-neutral-900">{{ event.title }}</h3>
+  <p class="mt-0.5 break-words text-meta text-neutral-600">
+    {% if show_club %}
+      <a href="{% url 'campus:club_detail' event.club.slug %}" class="rounded-sm text-accent-700 hover:underline">{{ event.club.name }}</a> &middot;
+    {% endif %}
+    {{ event.location }}
+  </p>
+  {% if event.details %}
+    <p class="mt-1.5 break-words text-meta text-neutral-700">{{ event.details|linebreaksbr }}</p>
+  {% endif %}
+  <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+    {% include "saved/partials/save_button.html" with item=event kind="event" is_saved=event.is_saved next=request.get_full_path compact=True %}
+    <a href="{{ event.google_calendar_url }}" target="_blank" rel="noopener noreferrer"
+       class="inline-flex items-center gap-1.5 rounded-sm text-meta font-medium text-accent-700 hover:underline">
+      {% include "partials/icons/calendar.html" %}
+      <span>Add to Google Calendar</span><span class="sr-only"> (opens in a new tab)</span>
+    </a>
+    <span class="text-meta text-neutral-500">
+      Posted by {{ event.posted_by.display_name|default:event.posted_by.username }}
+    </span>
+    {% if request.user.is_authenticated and request.user.pk == event.posted_by_id or request.user.is_staff %}
+      <form method="post" action="{% url 'campus:club_event_delete' event.club.slug event.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="rounded-sm text-meta text-danger-600 hover:underline">Remove</button>
+      </form>
+    {% endif %}
+  </div>
+</li>

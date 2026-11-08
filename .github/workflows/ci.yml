@@ -1,14 +1,149 @@
-name: CI
+# RamHub's one pipeline: Setup -> Dependencies -> Test -> Deploy.
+#
+# Every pull request to main and every push to main runs it. Pull requests stop
+# after Test (Deploy shows as skipped). A push to main — which, with the branch
+# ruleset on, only happens when a reviewed PR merges — goes on to Deploy.
+#
+# Branch protection requires the "Test" job by name. Rename it and the ruleset
+# in .github/rulesets/protect-main.json has to change too.
+name: CI/CD
 
 on:
   pull_request:
+    branches: [main]
   push:
-    branches: [main, master]
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A newer push to the same PR cancels the older run. On main every merge gets
+# its own group (keyed by commit), so each merge is tested in full. A shared
+# group would make each new merge cancel the run still waiting in line.
+# Deploys still go one at a time through the "production" group below.
+concurrency:
+  group: ci-cd-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "24"
+  GITLEAKS_VERSION: "8.30.1"
+  VERCEL_CLI_VERSION: "65.12.1"
+  PRODUCTION_URL: https://ramhub-seven.vercel.app
+
+# Not ubuntu-latest: from late October 2026 the 24.04 runners use Linux kernel
+# 7.0, and MongoDB 8.0 before 8.0.37 refuses to start on it (SERVER-121912 /
+# SERVER-131779). The 22.04 runners are on kernel 6.8. Every job uses the same
+# image so the virtualenv cached by Dependencies runs unchanged in Test and
+# Deploy. Move back once mongo:8.0 on Docker Hub is 8.0.37 or newer.
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  # ---------------------------------------------------------------------------
+  # Stage 1: check out the code, prove no secret is in the history, and pin the
+  # toolchain every later stage uses.
+  # ---------------------------------------------------------------------------
+  setup:
+    name: Setup
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    outputs:
+      python-version: ${{ steps.python.outputs.python-version }}
+      venv-key: ${{ steps.key.outputs.venv-key }}
+    steps:
+      - name: Check out the code (full history, for the secret scan)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
+      - name: Scan every commit for secrets
+        # Full history, not just this PR: the rule is that no secret may appear
+        # anywhere in the repository's history. The binary is checked against
+        # the release's published checksum before it runs.
+        run: |
+          set -euo pipefail
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSLO "$base/$tarball"
+          curl -fsSL "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt" | grep " $tarball\$" | sha256sum -c -
+          tar -xzf "$tarball" gitleaks
+          ./gitleaks git --redact --no-banner --verbose .
+
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Fingerprint the dependencies
+        # The cache key changes whenever requirements.txt or the exact Python
+        # build changes, so a stale virtualenv is never reused.
+        id: key
+        run: |
+          echo "venv-key=venv-${{ runner.os }}-py${{ steps.python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Show the toolchain
+        run: |
+          python --version
+          git --version
+          echo "Event: ${{ github.event_name }}  Ref: ${{ github.ref }}  Commit: ${{ github.sha }}"
+
+  # ---------------------------------------------------------------------------
+  # Stage 2: install Python and Node packages, check they resolve cleanly, and
+  # build the stylesheet. The virtualenv is cached for Test and Deploy.
+  # ---------------------------------------------------------------------------
+  dependencies:
+    name: Dependencies
+    needs: setup
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ needs.setup.outputs.python-version }}
+
+      - name: Restore the virtualenv
+        id: venv
+        uses: actions/cache@v5
+        with:
+          path: .venv
+          key: ${{ needs.setup.outputs.venv-key }}
+
+      - name: Install Python packages
+        if: steps.venv.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/pip install -r requirements.txt
+
+      - name: Check Python packages for conflicts
+        run: .venv/bin/pip check
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Node packages
+        run: npm ci
+
+      - name: Build the stylesheet
+        # Vercel runs the same command at deploy time; failing here is cheaper.
+        run: npm run tailwind:build
+
+  # ---------------------------------------------------------------------------
+  # Stage 3: lint, Django checks, migrations, and the full pytest suite against
+  # a real MongoDB. This is the job the branch ruleset requires.
+  # ---------------------------------------------------------------------------
+  test:
+    name: Test
+    needs: [setup, dependencies]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
     env:
       # directConnection avoids replica-set host-advertisement mismatches: the
       # container advertises its own hostname, which the runner cannot always
@@ -17,11 +152,32 @@ jobs:
       # decide whether transactions are available.
       MONGODB_URI: mongodb://localhost:27017/?directConnection=true
       MONGODB_NAME: ramhub_ci
-      SECRET_KEY: ci-only-not-a-real-secret
       DEBUG: "False"
-
     steps:
       - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ needs.setup.outputs.python-version }}
+
+      - name: Restore the virtualenv from Dependencies
+        uses: actions/cache/restore@v5
+        with:
+          path: .venv
+          key: ${{ needs.setup.outputs.venv-key }}
+          fail-on-cache-miss: true
+
+      - name: Put the virtualenv on PATH
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Generate a throwaway SECRET_KEY
+        # Made fresh for every run and masked in the logs, so no key, not even
+        # a fake one, is written in this file.
+        run: |
+          key="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
+          echo "::add-mask::$key"
+          echo "SECRET_KEY=$key" >> "$GITHUB_ENV"
 
       - name: Start MongoDB as a single-node replica set
         # Not a plain `services:` container. MongoDB only supports transactions
@@ -35,6 +191,11 @@ jobs:
 
           echo "Waiting for mongod to accept connections..."
           for _ in $(seq 1 60); do
+            if [ "$(docker inspect -f '{{.State.Running}}' mongo)" != "true" ]; then
+              echo "mongod exited during startup. Container logs:"
+              docker logs mongo
+              exit 1
+            fi
             if docker exec mongo mongosh --quiet --eval 'db.adminCommand({ping:1}).ok' >/dev/null 2>&1; then
               break
             fi
@@ -55,17 +216,6 @@ jobs:
           docker exec mongo mongosh --quiet --eval \
             'print("replica set ready: " + db.adminCommand("hello").setName)'
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-          cache: pip
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
       - name: Lint
         run: |
           ruff check .
@@ -73,6 +223,11 @@ jobs:
 
       - name: Django system checks
         run: python manage.py check
+
+      - name: Check for missing migrations
+        # A model change without its migration would pass the tests (pytest
+        # builds the schema from the models) and then break production.
+        run: python manage.py makemigrations --check --dry-run
 
       - name: Confirm MongoDB reports transaction support
         # Fails loudly if the replica set did not come up. Without this, a
@@ -91,5 +246,105 @@ jobs:
               sys.exit("MongoDB is not a replica set — @django_db isolation would degrade.")
           PY
 
-      - name: Test
+      - name: Run the test suite
         run: pytest
+
+  # ---------------------------------------------------------------------------
+  # Stage 4: only for pushes to main. Migrate the production database, deploy
+  # to Vercel, then load real pages from the live site to prove it came up.
+  # Every credential comes from GitHub Secrets; see "Secrets" in the README.
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy
+    needs: [setup, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ env.PRODUCTION_URL }}
+    # One deploy at a time. A second merge waits instead of racing the first.
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check the deploy secrets are set
+        # Names only, never values. A missing secret fails here with a clear
+        # message instead of halfway through a deploy.
+        env:
+          PROD_MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
+          PROD_MONGODB_NAME: ${{ secrets.PROD_MONGODB_NAME }}
+        run: |
+          missing=0
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID PROD_MONGODB_URI PROD_MONGODB_NAME; do
+            if [ -z "${!name}" ]; then
+              echo "::error::GitHub secret $name is not set. See 'Secrets' in the README."
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ needs.setup.outputs.python-version }}
+
+      - name: Restore the virtualenv from Dependencies
+        uses: actions/cache/restore@v5
+        with:
+          path: .venv
+          key: ${{ needs.setup.outputs.venv-key }}
+          fail-on-cache-miss: true
+
+      - name: Apply database migrations to production
+        # Runs before the new code goes live, so the site never serves models
+        # whose collections or indexes do not exist yet. Already-applied
+        # migrations are skipped, so this is a no-op on most deploys.
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.base
+          MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
+          MONGODB_NAME: ${{ secrets.PROD_MONGODB_NAME }}
+        run: |
+          key="$(.venv/bin/python -c 'import secrets; print(secrets.token_urlsafe(50))')"
+          echo "::add-mask::$key"
+          SECRET_KEY="$key" .venv/bin/python manage.py migrate --no-input
+
+      - name: Prepare the Vercel build
+        # Writes vercel.json, .vercelignore, .python-version and a [project]
+        # table into this throwaway checkout only. Nothing Vercel-specific is
+        # committed, and the pins come from requirements.txt, so Vercel installs
+        # exactly what Test ran.
+        run: .venv/bin/python .github/scripts/prepare_vercel_build.py
+
+      - name: Install the Vercel CLI
+        run: npm install --global "vercel@${VERCEL_CLI_VERSION}"
+
+      - name: Deploy to Vercel (production)
+        # Vercel builds from this checkout (vercel.json runs the Tailwind build)
+        # and reads the app's runtime settings from the project's own
+        # environment variables, which live in Vercel, not in this repo.
+        run: |
+          url="$(vercel deploy --prod --yes --token="$VERCEL_TOKEN")"
+          echo "Deployed: $url"
+          echo "### Deployed to production" >> "$GITHUB_STEP_SUMMARY"
+          echo "$PRODUCTION_URL (commit ${GITHUB_SHA::7})" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Smoke test the live site
+        # The home page proves Django started with the production settings;
+        # the course directory proves it can reach the database.
+        run: |
+          set -euo pipefail
+          for path in / /courses/; do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 5 --retry-all-errors "$PRODUCTION_URL$path")"
+            echo "$path -> $code"
+            if [ "$code" != "200" ]; then
+              echo "::error::$PRODUCTION_URL$path returned $code after the deploy."
+              exit 1
+            fi
+          done

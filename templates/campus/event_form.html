@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Post an event for {{ club.name }} · RamHub{% endblock %}
+
+{% block content %}
+  <section class="mx-auto max-w-md py-6 sm:py-10" aria-labelledby="event-form-title">
+    <nav aria-label="Breadcrumb" class="mb-3 text-meta">
+      <a href="{% url 'campus:club_detail' club.slug %}" class="rounded-sm text-neutral-500 hover:text-neutral-900 hover:underline">
+        &larr; {{ club.name }}
+      </a>
+    </nav>
+    <div class="mb-6 border-b border-neutral-200 pb-4">
+      <h1 id="event-form-title" class="text-h1">Post an event</h1>
+      <p class="mt-1 text-body text-neutral-500">
+        For {{ club.name }}. Your name is shown with it, and you can remove it later.
+      </p>
+    </div>
+
+    <div class="card card-pad sm:p-6">
+      <form method="post" class="space-y-4" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="rounded-md border border-danger-600 bg-white p-3 text-meta text-danger-600" role="alert">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        {% for field in form %}
+          <div>
+            <label for="{{ field.id_for_label }}" class="field-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+              <div class="field-hint">{{ field.help_text }}</div>
+            {% endif %}
+            {% for error in field.errors %}
+              <p class="field-error" id="{{ field.auto_id }}-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+        <p class="field-hint">Times are Farmingdale time (Eastern).</p>
+
+        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <a href="{% url 'campus:club_detail' club.slug %}" class="btn-secondary">Cancel</a>
+          <button type="submit" class="btn-primary">Post event</button>
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}

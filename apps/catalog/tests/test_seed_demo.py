@@ -1,10 +1,11 @@
-"""seed_demo is a wrapper: it runs both real imports, in order."""
+"""seed_demo is a wrapper: it runs the real imports, in order."""
 
 from io import StringIO
 
 import pytest
 from django.core.management import call_command
 
+from apps.campus.models import Club
 from apps.catalog.models import Course, Professor, ProfessorRatingSummary
 
 pytestmark = pytest.mark.django_db
@@ -16,8 +17,10 @@ def test_seed_demo_loads_both_directories():
 
     assert Course.objects.count() > 1500
     assert Professor.objects.count() > 800
+    assert Club.objects.count() > 100
     assert "import_catalog" in out.getvalue()
     assert "import_directory" in out.getvalue()
+    assert "import_clubs" in out.getvalue()
 
 
 def test_seed_demo_leaves_courses_unrated():

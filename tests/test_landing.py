@@ -212,15 +212,31 @@ def test_strip_counts_come_from_the_database(client, make_course, make_professor
 @pytest.mark.django_db
 def test_strip_does_not_claim_data_it_does_not_have(client):
     """
-    Courses and Professors hold real college data; the campus tabs are still
-    empty. The card must not imply otherwise in either direction.
+    Courses and Professors hold real college data, and the Jobs, Parking, and
+    Facilities guides carry facts from official pages. Clubs and the feed stay
+    "building" until their data is loaded, and nothing is loaded here. The
+    card must not imply otherwise in either direction.
     """
     features = {f["label"]: f for f in client.get("/").context["features"]}
 
-    assert features["Courses"]["status"] == "live"
-    assert features["Professors"]["status"] == "live"
-    for label in ("Clubs", "Jobs", "Parking", "Facilities", "Feed"):
-        assert features[label]["status"] == "building"
+    for label in ("Courses", "Professors", "Jobs", "Parking", "Facilities"):
+        assert features[label]["status"] == "live", label
+    for label in ("Clubs", "Feed"):
+        assert features[label]["status"] == "building", label
+
+
+@pytest.mark.django_db
+def test_clubs_card_goes_live_only_once_clubs_are_loaded(client, make_club):
+    """The card reads the database, so it is true on a fresh clone and after an import."""
+    before = {f["label"]: f for f in client.get("/").context["features"]}
+    assert before["Clubs"]["status"] == "building"
+
+    make_club("Chess Club")
+    make_club("Gaming Club")
+
+    after = {f["label"]: f for f in client.get("/").context["features"]}
+    assert after["Clubs"]["status"] == "live"
+    assert "2 student organisations" in after["Clubs"]["detail"]
 
 
 @pytest.mark.django_db
@@ -241,3 +257,55 @@ def test_strip_script_loads_only_on_the_landing_page(client):
     assert b"js/strip.js" in client.get("/").content
     for url in ("/courses/", "/professors/", "/feed/"):
         assert b"strip.js" not in client.get(url).content, url
+
+
+# -- Galaxy, drum roll, impact -------------------------------------------------
+@pytest.mark.django_db
+def test_galaxy_opens_the_page_and_reads_without_javascript(client):
+    """The headline and button are plain HTML; the galaxy only decorates them."""
+    body = client.get("/").content.decode()
+    assert body.index("data-galaxy") < body.index("data-hero"), "galaxy comes first"
+    assert '<h1 id="galaxy-heading" class="galaxy-title">RamHub</h1>' in body
+    assert body.count("<h1") == 1, "one page title; the old hero headline is an h2"
+    galaxy = body[body.index("data-galaxy") : body.index("data-hero")]
+    assert f'href="{reverse("catalog:courses")}"' in galaxy
+
+
+@pytest.mark.django_db
+def test_three_js_loads_only_on_the_landing_page(client):
+    body = client.get("/").content
+    assert b"three@0.170.0" in body, "pinned version, never a floating tag"
+    assert b"js/galaxy.js" in body
+    for url in ("/courses/", "/professors/", "/feed/"):
+        page = client.get(url).content
+        assert b"three@" not in page and b"galaxy.js" not in page, url
+
+
+@pytest.mark.django_db
+def test_drum_roll_words_are_in_the_html(client):
+    body = client.get("/").content
+    for word in (b"Learn.", b"Connect.", b"Discover.", b"Belong."):
+        assert word in body
+
+
+@pytest.mark.django_db
+def test_scroll_stages_are_only_pinned_by_javascript(client):
+    """Without JS each stage is one screen tall, so nothing is a dead scroll."""
+    body = client.get("/").content
+    assert b"galaxy-pinned" not in body
+    assert b"roll-pinned" not in body
+
+
+def test_galaxy_uses_the_design_tokens_not_stray_colours():
+    script = (Path(__file__).resolve().parent.parent / "static/js/galaxy.js").read_text()
+    css = (Path(__file__).resolve().parent.parent / "static/src/input.css").read_text()
+    for token in ("--color-accent-200", "--color-accent-400", "--color-neutral-950"):
+        assert token in script, token
+    tokens = {
+        "#a3d7b8": "--color-accent-200: #a3d7b8",
+        "#3f9e6d": "--color-accent-400: #3f9e6d",
+        "#0d0f12": "--color-neutral-950: #0d0f12",
+    }
+    for hex_value, declaration in tokens.items():
+        assert hex_value in script.replace("0x0d0f12", "#0d0f12"), hex_value
+        assert declaration in css, declaration
