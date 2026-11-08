@@ -9,6 +9,8 @@ __pycache__/
 
 # Django
 .env
+.env.*
+!.env.example
 *.log
 db.sqlite3
 staticfiles/
@@ -26,3 +28,6 @@ static/css/site.css
 
 # Claude Code local config
 .claude/
+
+# Vercel CLI link (holds the org and project IDs)
+.vercel/
