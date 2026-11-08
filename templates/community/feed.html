@@ -3,6 +3,70 @@
 {% block title %}Feed · RamHub{% endblock %}
 
 {% block content %}
-  {% include "partials/page_header.html" with title="Feed" subtitle="Campus-wide discussion. Anything that is not tied to one course lives here." %}
-  {% include "partials/empty_state.html" with icon="chat" headline="Nothing in the feed yet" description="Posts, questions, and announcements from across campus will show up here. Tag a post to a course and it also appears on that course's page." action_label="Write a post" %}
+  {% url 'community:post_create' as new_post_url %}
+  {% include "partials/page_header.html" with title="Feed" subtitle="Campus-wide discussion. Share notes, ask questions, or talk about anything that is not tied to one course." action_label="Write a post" action_url=new_post_url %}
+
+  {% if not user.is_authenticated %}
+    <p class="card card-pad mb-4 text-meta text-neutral-600">
+      Anyone can read the feed. <a href="{{ login_url }}?next={{ request.get_full_path|urlencode }}" class="font-medium text-accent-700 underline hover:text-accent-800">Sign in</a> to post, comment, or vote.
+    </p>
+  {% endif %}
+
+  {% comment %}
+  A plain GET form first: it works with JavaScript off. The hx-* attributes add
+  partial swaps on top, and hx-push-url keeps the result linkable.
+  {% endcomment %}
+  <form method="get"
+        action="{% url 'community:feed' %}"
+        role="search"
+        class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end"
+        hx-get="{% url 'community:feed' %}"
+        hx-target="#feed-results"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        hx-indicator="#feed-search-indicator"
+        hx-trigger="submit, change, keyup changed delay:300ms">
+
+    <div class="flex-1">
+      <label for="feed-q" class="field-label">Search posts</label>
+      <input type="search" id="feed-q" name="q" value="{{ query.q }}"
+             class="field-input" autocomplete="off" placeholder="Search titles and posts">
+    </div>
+
+    <div class="sm:w-40">
+      <label for="feed-kind" class="field-label">Type</label>
+      <select id="feed-kind" name="kind" class="field-input">
+        <option value="">All posts</option>
+        {% for value, label in kinds %}
+          <option value="{{ value }}" {% if value == query.kind %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="sm:w-36">
+      <label for="feed-sort" class="field-label">Sort</label>
+      <select id="feed-sort" name="sort" class="field-input">
+        {% for key, label in sorts.items %}
+          <option value="{{ key }}" {% if key == query.sort %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if query.tag %}<input type="hidden" name="tag" value="{{ query.tag }}">{% endif %}
+
+    <noscript><button type="submit" class="btn-primary">Search</button></noscript>
+
+    <span id="feed-search-indicator" class="htmx-indicator self-center text-meta text-neutral-500">
+      Loading&hellip;
+    </span>
+  </form>
+
+  {% if query.tag %}
+    <p class="mb-3 flex items-center gap-2 text-meta text-neutral-600">
+      Showing <span class="badge-accent">#{{ query.tag }}</span>
+      <a href="{% url 'community:feed' %}" class="rounded-sm text-accent-700 underline hover:text-accent-800">Show all tags</a>
+    </p>
+  {% endif %}
+
+  {% include "community/partials/feed_results.html" %}
 {% endblock %}
