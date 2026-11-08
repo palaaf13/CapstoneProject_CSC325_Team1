@@ -31,6 +31,9 @@
             {% endfor %}
           </ul>
         {% endif %}
+        <div class="mt-4">
+          {% include "saved/partials/save_button.html" with item=club kind="club" is_saved=is_saved next=request.get_full_path %}
+        </div>
       </div>
 
       {% comment %}The one primary action: RamCentral is where a student actually joins.{% endcomment %}

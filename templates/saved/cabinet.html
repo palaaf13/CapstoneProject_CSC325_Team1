@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Filing cabinet · RamHub{% endblock %}
+
+{% block content %}
+{% comment %}
+Everything the signed-in student saved, newest first, grouped by kind. Rows
+reuse the directories' own markup; Remove is a plain POST beside each row.
+{% endcomment %}
+<section aria-labelledby="cabinet-title">
+  <h1 id="cabinet-title" class="text-h1 font-semibold tracking-tight text-neutral-900">Filing cabinet</h1>
+  <p class="mt-1 text-body text-neutral-500">
+    Courses, professors, and clubs you&rsquo;ve saved. Only you can see this.
+  </p>
+
+  {% if not sections %}
+    <div class="mt-8">
+      {% url 'catalog:courses' as courses_url %}
+      {% include "partials/empty_state.html" with icon="bookmark" headline="Nothing saved yet" description="Press Save on any course, professor, or club page and it lands here, so you can find it again when it's time to register." action_label="Browse courses" action_url=courses_url %}
+    </div>
+  {% else %}
+    <div class="mt-8 space-y-10">
+      {% for section in sections %}
+        <section aria-labelledby="cabinet-{{ section.kind }}">
+          <h2 id="cabinet-{{ section.kind }}" class="mb-2 text-h3 font-semibold text-neutral-900">
+            {{ section.label }} <span class="font-normal text-neutral-500">({{ section.items|length }})</span>
+          </h2>
+          <ul role="list" class="card overflow-hidden">
+            {% for item in section.items %}
+              <li class="flex items-center border-b border-neutral-200 last:border-b-0">
+                <div class="min-w-0 flex-1 [&>.row-link]:border-b-0">
+                  {% if section.kind == "course" %}
+                    {% include "catalog/partials/course_row.html" with course=item %}
+                  {% elif section.kind == "professor" %}
+                    {% include "catalog/partials/professor_row.html" with professor=item %}
+                  {% else %}
+                    <a href="{% url 'campus:club_detail' item.slug %}" class="row-link">
+                      {% include "campus/partials/club_mark.html" with club=item %}
+                      <span class="min-w-0 flex-1">
+                        <span class="block font-medium text-neutral-900">{{ item.name }}</span>
+                        {% if item.blurb %}
+                          <span class="mt-0.5 block truncate text-meta text-neutral-500">{{ item.blurb|truncatechars:140 }}</span>
+                        {% endif %}
+                      </span>
+                    </a>
+                  {% endif %}
+                </div>
+                <form method="post" action="{% url 'saved:toggle' %}" class="shrink-0 px-3">
+                  {% csrf_token %}
+                  <input type="hidden" name="kind" value="{{ section.kind }}">
+                  <input type="hidden" name="object_id" value="{{ item.pk }}">
+                  <input type="hidden" name="next" value="{% url 'saved:cabinet' %}">
+                  <button type="submit" class="btn-ghost btn-sm">
+                    Remove<span class="sr-only"> {% firstof item.code item.full_name item.name %}</span>
+                  </button>
+                </form>
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -16,6 +16,7 @@
           {% csrf_token %}
           <button type="submit" class="btn-ghost">Sign out</button>
         </form>
+        <a href="{% url 'saved:cabinet' %}" class="btn-secondary">Filing cabinet</a>
         <a href="{% url 'profile_edit' %}" class="btn-primary">Edit profile</a>
       </div>
     </div>

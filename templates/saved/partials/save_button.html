@@ -1,0 +1,32 @@
+{% comment %}
+Save / Saved toggle for a course, professor, or club page.
+
+  {% include "saved/partials/save_button.html" with item=course kind="course" is_saved=is_saved next=request.get_full_path %}
+
+A plain POST form, so it works without JavaScript; HTMX swaps it in place.
+Signed-out visitors get a link to sign in and come straight back.
+{% endcomment %}
+{% if user.is_authenticated %}
+  <form method="post" action="{% url 'saved:toggle' %}" class="flex flex-wrap items-center gap-3"
+        hx-post="{% url 'saved:toggle' %}" hx-target="this" hx-swap="outerHTML">
+    {% csrf_token %}
+    <input type="hidden" name="kind" value="{{ kind }}">
+    <input type="hidden" name="object_id" value="{{ item.pk }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="{% if is_saved %}btn-secondary{% else %}btn-primary{% endif %}"
+            aria-pressed="{{ is_saved|yesno:'true,false' }}">
+      {% include "partials/icons/bookmark.html" %}
+      <span>{% if is_saved %}Saved{% else %}Save{% endif %}</span>
+    </button>
+    {% if is_saved %}
+      <a href="{% url 'saved:cabinet' %}" class="text-meta font-medium text-accent-700 hover:underline">
+        Filing cabinet <span aria-hidden="true">&rarr;</span>
+      </a>
+    {% endif %}
+  </form>
+{% else %}
+  <a href="{% url 'login' %}?next={{ next|urlencode }}" class="btn-secondary">
+    {% include "partials/icons/bookmark.html" %}
+    <span>Sign in to save</span>
+  </a>
+{% endif %}

@@ -14,6 +14,8 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
+from apps.saved import services as saved
+
 from . import services
 from .forms import ClubDirectoryForm, ClubQuery
 from .models import Club
@@ -80,7 +82,11 @@ def clubs(request: HttpRequest) -> HttpResponse:
 def club_detail(request: HttpRequest, slug: str) -> HttpResponse:
     """One club, keyed on its RamCentral slug."""
     club = get_object_or_404(Club, slug=slug)
-    return render(request, "campus/club_detail.html", {"club": club})
+    return render(
+        request,
+        "campus/club_detail.html",
+        {"club": club, "is_saved": saved.is_saved(request.user, club)},
+    )
 
 
 def jobs(request: HttpRequest) -> HttpResponse:
