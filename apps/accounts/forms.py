@@ -2,7 +2,7 @@
 
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm, UserCreationForm
 from django.http import HttpRequest
 from django.utils import timezone
 
@@ -150,3 +150,33 @@ class ProfileForm(forms.ModelForm):
         if not earliest <= grad_year <= latest:
             raise forms.ValidationError(f"Enter a year between {earliest} and {latest}.")
         return grad_year
+
+
+class RamHubPasswordResetForm(PasswordResetForm):
+    """Ask for the college email to send a reset link to."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["email"].label = "College email"
+        self.fields["email"].widget.attrs.update(
+            {
+                "class": "field-input",
+                "autocomplete": "email",
+                "placeholder": "name@farmingdale.edu",
+                "autofocus": True,
+            }
+        )
+
+
+class RamHubSetPasswordForm(SetPasswordForm):
+    """Choose a new password from a reset link."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["new_password1"].widget.attrs.update(
+            {"class": "field-input", "autocomplete": "new-password", "autofocus": True}
+        )
+        self.fields["new_password2"].label = "Confirm new password"
+        self.fields["new_password2"].widget.attrs.update(
+            {"class": "field-input", "autocomplete": "new-password"}
+        )

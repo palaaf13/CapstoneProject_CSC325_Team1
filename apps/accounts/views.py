@@ -1,4 +1,4 @@
-"""Student account views: registration, sign-in, and profiles."""
+"""Student account views: registration, sign-in, profiles, and password reset."""
 
 import logging
 from smtplib import SMTPException
@@ -7,10 +7,16 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import (
+    PasswordResetCompleteView,
+    PasswordResetConfirmView,
+    PasswordResetDoneView,
+    PasswordResetView,
+)
 from django.core.exceptions import ValidationError
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import (
     url_has_allowed_host_and_scheme,
@@ -20,7 +26,13 @@ from django.utils.http import (
 from django.views.decorators.http import require_POST
 
 from apps.accounts import services
-from apps.accounts.forms import ProfileForm, RegistrationForm, SignInForm
+from apps.accounts.forms import (
+    ProfileForm,
+    RamHubPasswordResetForm,
+    RamHubSetPasswordForm,
+    RegistrationForm,
+    SignInForm,
+)
 from apps.accounts.models import User
 
 logger = logging.getLogger(__name__)
@@ -169,3 +181,38 @@ def profile_edit(request: HttpRequest) -> HttpResponse:
         form = ProfileForm(instance=request.user)
 
     return render(request, "accounts/profile_edit.html", {"form": form})
+
+
+# --------------------------------------------------------------------------
+# Password reset: Django's own views (token, expiry, one-time links), with
+# RamHub templates, styled forms, and a per-IP limit on reset emails.
+# --------------------------------------------------------------------------
+class PasswordResetRequestView(PasswordResetView):
+    """Email a reset link. The page that follows is the same whether or not the
+    email belongs to an account, so the form can't be used to find accounts."""
+
+    template_name = "accounts/password_reset.html"
+    form_class = RamHubPasswordResetForm
+    email_template_name = "accounts/email/password_reset.txt"
+    subject_template_name = "accounts/email/password_reset_subject.txt"
+    success_url = reverse_lazy("password_reset_done")
+
+    def form_valid(self, form):
+        if services.allow_password_reset_email(services.client_ip(self.request)):
+            return super().form_valid(form)
+        logger.warning("Password reset emails throttled for %s", services.client_ip(self.request))
+        return HttpResponseRedirect(self.get_success_url())
+
+
+class PasswordResetSentView(PasswordResetDoneView):
+    template_name = "accounts/password_reset_done.html"
+
+
+class PasswordResetSetView(PasswordResetConfirmView):
+    template_name = "accounts/password_reset_confirm.html"
+    form_class = RamHubSetPasswordForm
+    success_url = reverse_lazy("password_reset_complete")
+
+
+class PasswordResetFinishedView(PasswordResetCompleteView):
+    template_name = "accounts/password_reset_complete.html"
