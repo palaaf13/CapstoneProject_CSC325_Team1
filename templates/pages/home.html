@@ -6,6 +6,16 @@
 
 {% block extra_head %}
   <link rel="stylesheet" href="{% static 'vendor/lenis.css' %}">
+  {# Three.js for the galaxy, from a CDN at a pinned version. Landing page only. #}
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
   <script>
     // Hide reveal targets before first paint, so they animate in rather than
     // flashing. Skipped entirely for reduced-motion users. If landing.js has
@@ -38,6 +48,35 @@ repainting. Static (and centred) for touch devices and reduced motion.
 </div>
 
 <main id="main" class="relative z-10 flex-1">
+
+  {# ── 0 · The galaxy: the opening scene ────────────────────────────── #}
+  {% comment %}
+  A spiral galaxy of graduation caps, drawn by static/js/galaxy.js with Three.js.
+  That script makes the stage taller so scrolling flies into the galaxy. Without
+  JavaScript or WebGL, the CSS glow and the headline render on their own. The
+  overlay ignores the pointer so the galaxy stays draggable behind the text;
+  only the button takes clicks.
+  {% endcomment %}
+  <section class="galaxy-stage" aria-labelledby="galaxy-heading" data-galaxy>
+    <div class="galaxy-sticky">
+      <div class="galaxy-mount" data-galaxy-canvas></div>
+      <div class="galaxy-overlay">
+        <p class="landing-eyebrow">For Farmingdale students</p>
+        <h1 id="galaxy-heading" class="galaxy-title">RamHub</h1>
+        <p class="galaxy-subline">
+          Every course, every professor, and the advice of the students who came before you.
+        </p>
+        <a href="{% url 'catalog:courses' %}" class="btn-luxe galaxy-cta">
+          Start exploring <span aria-hidden="true">&rarr;</span>
+        </a>
+        <p class="galaxy-hint" aria-hidden="true">Drag to spin &middot; pinch to zoom</p>
+      </div>
+      <div class="mouse-cue" aria-hidden="true">
+        <span class="mouse-cue-body"><span class="mouse-cue-wheel"></span></span>
+        <span>Scroll</span>
+      </div>
+    </div>
+  </section>
 
   {# ── 1 · Hero ───────────────────────────────────────────────────────── #}
   <section class="landing-section" aria-labelledby="hero-heading" data-hero>
@@ -72,10 +111,10 @@ repainting. Static (and centred) for touch devices and reduced motion.
     {# Front layer: the headline. #}
     <div class="landing-inner text-center">
       <p class="landing-eyebrow" data-reveal>Farmingdale State College</p>
-      <h1 id="hero-heading" class="landing-display mt-6">
+      <h2 id="hero-heading" class="landing-display mt-6">
         <span class="reveal-line"><span data-line>Know the class</span></span>
         <span class="reveal-line"><span data-line>before you take it.</span></span>
-      </h1>
+      </h2>
       <p class="landing-lede mx-auto mt-8 max-w-xl" data-reveal>
         Honest advice on every course and every professor, from the students who already sat in the room.
       </p>
@@ -161,6 +200,37 @@ repainting. Static (and centred) for touch devices and reduced motion.
               data-count="{{ department_count }}">{{ department_count }}</dd>
         </div>
       </dl>
+    </div>
+  </section>
+
+  {# ── 2b · Drum roll: four words turn into place as you scroll ────────── #}
+  {% comment %}
+  landing.js pins this stage and rolls each word up into place, scrubbed by the
+  scroll. Without JavaScript the words simply sit in a column. The caps are
+  decoration, drifting at their own depths.
+  {% endcomment %}
+  <section class="roll-stage" aria-labelledby="roll-heading" data-roll>
+    <div class="roll-sticky">
+      <span class="roll-cap roll-cap-1" aria-hidden="true" data-parallax="-0.5">{% include "partials/icons/cap.html" %}</span>
+      <span class="roll-cap roll-cap-2" aria-hidden="true" data-parallax="0.35">{% include "partials/icons/cap.html" %}</span>
+      <span class="roll-cap roll-cap-3" aria-hidden="true" data-parallax="-0.2">{% include "partials/icons/cap.html" %}</span>
+      <span class="roll-cap roll-cap-4" aria-hidden="true" data-parallax="0.6">{% include "partials/icons/cap.html" %}</span>
+      <span class="roll-cap roll-cap-5" aria-hidden="true" data-parallax="-0.4">{% include "partials/icons/cap.html" %}</span>
+      <span class="roll-cap roll-cap-6" aria-hidden="true" data-parallax="0.25">{% include "partials/icons/cap.html" %}</span>
+      <span class="roll-cap roll-cap-7" aria-hidden="true" data-parallax="0.5">{% include "partials/icons/cap.html" %}</span>
+      <span class="roll-cap roll-cap-8" aria-hidden="true" data-parallax="-0.3">{% include "partials/icons/cap.html" %}</span>
+      <div class="landing-inner text-center">
+        <p class="landing-eyebrow">One place for all of it</p>
+        <h2 id="roll-heading" class="roll-words">
+          <span class="roll-word" data-roll-word>Learn.</span>
+          <span class="roll-word roll-word-accent" data-roll-word>Connect.</span>
+          <span class="roll-word" data-roll-word>Discover.</span>
+          <span class="roll-word roll-word-soft" data-roll-word>Belong.</span>
+        </h2>
+        <p class="landing-lede mx-auto mt-8 max-w-xl" data-roll-sub>
+          Courses, professors, clubs, and the advice that used to graduate with the people who had it.
+        </p>
+      </div>
     </div>
   </section>
 
@@ -252,8 +322,10 @@ repainting. Static (and centred) for touch devices and reduced motion.
   </section>
 
   {# ── 6 · Call to action ───────────────────────────────────────────── #}
-  <section class="landing-section" aria-labelledby="cta-heading">
+  <section class="landing-section" aria-labelledby="cta-heading" data-impact-section>
     <div class="hero-glow" aria-hidden="true" data-parallax="0.2"></div>
+    {# One soft flash as the last call arrives, scrubbed by scroll in landing.js. #}
+    <div class="impact-flash" aria-hidden="true" data-impact></div>
     <div class="landing-inner text-center">
       <h2 id="cta-heading" class="landing-display">
         <span class="reveal-line"><span data-line>Start with</span></span>
@@ -277,5 +349,6 @@ repainting. Static (and centred) for touch devices and reduced motion.
   <script src="{% static 'js/cursor.js' %}" defer></script>
   <script src="{% static 'js/rambo.js' %}" defer></script>
   <script src="{% static 'js/strip.js' %}" defer></script>
+  <script type="module" src="{% static 'js/galaxy.js' %}"></script>
   {{ rambo_lines|json_script:"rambo-lines" }}
 {% endblock %}
