@@ -94,7 +94,9 @@ def club_detail(request: HttpRequest, slug: str) -> HttpResponse:
         {
             "club": club,
             "is_saved": saved.is_saved(request.user, club),
-            "events": services.upcoming_events(club=club, limit=5),
+            "events": saved.mark_saved(
+                request.user, services.upcoming_events(club=club, limit=5), "event"
+            ),
         },
     )
 
@@ -124,7 +126,10 @@ def events(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "campus/events.html",
-        {"days": services.events_by_day(found), "q": q},
+        {
+            "days": services.events_by_day(saved.mark_saved(request.user, found, "event")),
+            "q": q,
+        },
     )
 
 

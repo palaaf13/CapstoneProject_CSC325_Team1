@@ -27,7 +27,7 @@ def cabinet(request: HttpRequest) -> HttpResponse:
 
 @require_POST
 def toggle(request: HttpRequest) -> HttpResponse:
-    """Save or unsave one course, professor, or club.
+    """Save or unsave one course, professor, club, or club event.
 
     HTMX gets the button back in its new state; a plain form post goes back to
     the page it came from.
@@ -53,6 +53,13 @@ def toggle(request: HttpRequest) -> HttpResponse:
         return render(
             request,
             "saved/partials/save_button.html",
-            {"item": obj, "kind": services.kind_of(obj), "is_saved": saved, "next": next_url or ""},
+            {
+                "item": obj,
+                "kind": services.kind_of(obj),
+                "is_saved": saved,
+                "next": next_url or "",
+                # The small text-style button used beside each club event.
+                "compact": request.POST.get("compact") == "1",
+            },
         )
     return redirect(next_url or "saved:cabinet")

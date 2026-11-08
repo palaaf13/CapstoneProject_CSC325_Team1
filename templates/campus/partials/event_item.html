@@ -19,6 +19,7 @@ filled in; nothing is saved until the student clicks Save there.
     <p class="mt-1.5 break-words text-meta text-neutral-700">{{ event.details|linebreaksbr }}</p>
   {% endif %}
   <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+    {% include "saved/partials/save_button.html" with item=event kind="event" is_saved=event.is_saved next=request.get_full_path compact=True %}
     <a href="{{ event.google_calendar_url }}" target="_blank" rel="noopener noreferrer"
        class="inline-flex items-center gap-1.5 rounded-sm text-meta font-medium text-accent-700 hover:underline">
       {% include "partials/icons/calendar.html" %}

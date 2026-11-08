@@ -6,8 +6,9 @@ from dataclasses import dataclass
 from bson import ObjectId
 from bson.errors import InvalidId
 from django.db import IntegrityError
+from django.utils import timezone
 
-from apps.campus.models import Club
+from apps.campus.models import Club, ClubEvent
 from apps.catalog.models import Course, Professor
 
 from .models import SavedItem
@@ -15,8 +16,13 @@ from .models import SavedItem
 Kind = SavedItem.Kind
 
 # What each kind points at, and how the cabinet labels its section.
-MODELS = {Kind.COURSE: Course, Kind.PROFESSOR: Professor, Kind.CLUB: Club}
-SECTION_ORDER = [(Kind.COURSE, "Courses"), (Kind.PROFESSOR, "Professors"), (Kind.CLUB, "Clubs")]
+MODELS = {Kind.COURSE: Course, Kind.PROFESSOR: Professor, Kind.CLUB: Club, Kind.EVENT: ClubEvent}
+SECTION_ORDER = [
+    (Kind.EVENT, "Upcoming events"),
+    (Kind.COURSE, "Courses"),
+    (Kind.PROFESSOR, "Professors"),
+    (Kind.CLUB, "Clubs"),
+]
 
 
 @dataclass(frozen=True)
@@ -34,7 +40,7 @@ def kind_of(obj) -> str:
 
 
 def find(kind: str, object_id: str):
-    """The course, professor, or club with this id, or None if there isn't one."""
+    """The course, professor, club, or event with this id, or None if there isn't one."""
     model = MODELS.get(kind)
     if model is None:
         return None
@@ -70,7 +76,8 @@ def toggle(user, obj) -> bool:
 def cabinet(user) -> list[Section]:
     """The student's saved items by kind, newest first. Empty kinds are left out.
 
-    Items whose course, professor, or club no longer exists are skipped.
+    Items whose course, professor, or club no longer exists are skipped. Events
+    are listed soonest first, and drop out once they are over or removed.
     """
     saved = list(SavedItem.objects.filter(user=user).order_by("-saved_at"))
     sections = []
@@ -80,6 +87,8 @@ def cabinet(user) -> list[Section]:
             continue
         found = {obj.pk: obj for obj in MODELS[kind].objects.filter(pk__in=ids)}
         items = [found[oid] for oid in ids if oid in found]
+        if kind == Kind.EVENT:
+            items = _upcoming_with_clubs(items)
         if items:
             sections.append(Section(kind=kind, label=label, items=items))
     return sections
@@ -87,3 +96,27 @@ def cabinet(user) -> list[Section]:
 
 def count(user) -> int:
     return SavedItem.objects.filter(user=user).count() if user.is_authenticated else 0
+
+
+def _upcoming_with_clubs(events: list[ClubEvent]) -> list[ClubEvent]:
+    """Events that have not finished, soonest first, with their clubs loaded."""
+    now = timezone.now()
+    events = sorted((e for e in events if e.end >= now), key=lambda e: e.starts_at)
+    clubs = Club.objects.in_bulk({e.club_id for e in events})
+    for event in events:
+        event.club = clubs[event.club_id]
+    return events
+
+
+def mark_saved(user, items: list, kind: str) -> list:
+    """Set ``is_saved`` on each item, with one query for the whole list."""
+    ids = set()
+    if user.is_authenticated and items:
+        ids = set(
+            SavedItem.objects.filter(
+                user=user, kind=kind, object_id__in=[i.pk for i in items]
+            ).values_list("object_id", flat=True)
+        )
+    for item in items:
+        item.is_saved = item.pk in ids
+    return items
