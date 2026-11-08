@@ -56,7 +56,7 @@ owns its models, views, services, and tests together.
 | `ratings` | Course and professor ratings, summary recomputation | Planned |
 | `community` | Posts, embedded comments, votes, tags, the feed | Planned |
 | `campus` | Clubs, jobs, parking, facilities | Placeholder pages |
-| `saved` | The filing cabinet: collections and saved items | Planned |
+| `saved` | The filing cabinet: saved courses, professors, and clubs | Built |
 | `assistant` | Retrieval index and the Rambo assistant | Planned |
 | `moderation` | Reports, moderator actions, the queue | Planned |
 

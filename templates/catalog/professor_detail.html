@@ -17,6 +17,9 @@
         <p class="mt-1 text-meta text-neutral-500">
           {% if professor.title %}{{ professor.title }} &middot; {% endif %}{{ professor.department }}
         </p>
+        <div class="mt-4">
+          {% include "saved/partials/save_button.html" with item=professor kind="professor" is_saved=is_saved next=request.get_full_path %}
+        </div>
       </div>
 
       {% comment %}

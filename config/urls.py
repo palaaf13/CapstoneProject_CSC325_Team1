@@ -14,6 +14,7 @@ urlpatterns = [
     path("", include("apps.community.urls")),
     path("", include("apps.catalog.urls")),
     path("", include("apps.campus.urls")),
+    path("", include("apps.saved.urls")),
     # Site-level pages
     path("styleguide/", views.styleguide, name="styleguide"),
     path("styleguide/htmx-demo/", views.styleguide_htmx_demo, name="styleguide_htmx_demo"),
