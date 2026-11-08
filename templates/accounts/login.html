@@ -39,6 +39,12 @@
         <button type="submit" class="btn-primary w-full">Sign in</button>
       </form>
 
+      <p class="mt-3 text-center text-meta">
+        <a href="{% url 'password_reset' %}" class="font-medium text-accent-700 hover:underline">
+          Forgot your password?
+        </a>
+      </p>
+
       <a href="{% url 'register' %}" class="btn-secondary mt-4 w-full">
         Create a student account
       </a>

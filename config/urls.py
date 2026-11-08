@@ -28,6 +28,25 @@ urlpatterns = [
         account_views.confirm_email,
         name="confirm_email",
     ),
+    # Password reset (Django's own token views, RamHub templates).
+    path(
+        "password-reset/", account_views.PasswordResetRequestView.as_view(), name="password_reset"
+    ),
+    path(
+        "password-reset/sent/",
+        account_views.PasswordResetSentView.as_view(),
+        name="password_reset_done",
+    ),
+    path(
+        "password-reset/<str:uidb64>/<str:token>/",
+        account_views.PasswordResetSetView.as_view(),
+        name="password_reset_confirm",
+    ),
+    path(
+        "password-reset/done/",
+        account_views.PasswordResetFinishedView.as_view(),
+        name="password_reset_complete",
+    ),
     # Always the signed-in student's own profile: no id in the URL to tamper with.
     path("profile/", account_views.profile, name="profile"),
     path("profile/edit/", account_views.profile_edit, name="profile_edit"),

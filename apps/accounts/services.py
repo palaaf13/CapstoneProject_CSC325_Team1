@@ -1,5 +1,7 @@
 """Account-related business operations."""
 
+import hashlib
+
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -163,3 +165,31 @@ def update_profile(user: User, changes: dict) -> User:
             setattr(user, field, changes[field])
     user.save(update_fields=list(PROFILE_FIELDS))
     return user
+
+
+# Password-reset emails one address may receive per window, so the form can't
+# be used to flood someone's inbox. Past the limit the visitor sees the same
+# "check your email" page, but nothing is sent. Counted per email address, not
+# per IP: behind a proxy every visitor can share one IP, which would turn a
+# per-IP limit into a site-wide one.
+RESET_MAX_REQUESTS = 3
+RESET_WINDOW_SECONDS = 15 * 60
+
+
+def _reset_requests_key(email: str) -> str:
+    # Hashed so cache keys never hold an address, and always a valid key length.
+    digest = hashlib.sha256(email.strip().casefold().encode()).hexdigest()
+    return f"accounts:reset-requests:{digest}"
+
+
+def allow_password_reset_email(email: str) -> bool:
+    """Count one reset request for this address. False once it is over the limit."""
+    key = _reset_requests_key(email)
+    cache.add(key, 0, timeout=RESET_WINDOW_SECONDS)
+    try:
+        requests = cache.incr(key)
+    except ValueError:
+        # The counter expired between add() and incr(); this is the first request.
+        cache.set(key, 1, timeout=RESET_WINDOW_SECONDS)
+        requests = 1
+    return requests <= RESET_MAX_REQUESTS
