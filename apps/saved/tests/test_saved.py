@@ -209,3 +209,15 @@ def test_profile_links_to_the_cabinet(client):
     client.force_login(make_student())
 
     assert reverse("saved:cabinet").encode() in client.get(reverse("profile")).content
+
+
+def test_an_expired_session_sends_htmx_to_sign_in_instead_of_swapping(client, make_course):
+    course = make_course()
+    page = reverse("catalog:course_detail", args=[course.slug])
+
+    response = toggle(client, "course", course, data={"next": page}, HTTP_HX_REQUEST="true")
+
+    assert response.status_code == 200
+    assert response["HX-Redirect"] == f"{reverse('login')}?next={page.replace('/', '%2F')}"
+    assert response.content == b""
+    assert SavedItem.objects.count() == 0
