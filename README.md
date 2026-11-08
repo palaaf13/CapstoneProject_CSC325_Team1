@@ -434,10 +434,41 @@ What a teammate does to ship a story. No step needs anyone else's machine.
    PR links to the story and closes it on merge. Move the card to *In review*.
 5. **Wait for green.** Setup, Dependencies and Test run on the PR within a few
    minutes; the results show at the bottom of the PR. A red stage links to its log.
-6. **Get one approval** from a teammate. Pushing new commits after an approval
-   clears it, so ask again.
+6. **Get one approval** from a teammate. Any change to the PR after an approval
+   clears it, including `main` moving underneath it. If your branch is behind
+   `main`, click **Update branch** first, wait for green, *then* ask for the
+   approval.
 7. **Merge.** The merge triggers the pipeline on `main`, which runs every stage
    again and then Deploy. When Deploy is green, the change is live.
+
+### Epics and stories
+
+For this milestone we completed two epics from the backlog, six stories in all.
+Each one was built on its own feature branch and merged through a pull request
+that closes its board issue. Each has acceptance tests, was approved by a
+teammate, and passed the pipeline.
+
+**Epic: Search, Filing Cabinet & AI**
+
+| Story | What it does | Issue | Pull request | Acceptance tests |
+| --- | --- | --- | --- | --- |
+| RH-29 Global search | One search box covering courses, professors, and clubs | [#25](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/issues/25) | [#16](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/pull/16) | `tests/test_search.py` |
+| RH-30 Filing cabinet | Save courses, professors, and clubs; see and remove them in one place | [#26](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/issues/26) | [#18](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/pull/18) | `apps/saved/tests/test_saved.py` |
+| RH-39 Events in search | Search also finds upcoming club events | [#28](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/issues/28) | [#31](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/pull/31) | `apps/campus/tests/test_event_search.py` |
+| RH-40 Save events | Save club events to the filing cabinet | [#29](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/issues/29) | [#32](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/pull/32) | `apps/saved/tests/test_saved_events.py` |
+
+**Epic: Community Feed & Campus Tabs**
+
+| Story | What it does | Issue | Pull request | Acceptance tests |
+| --- | --- | --- | --- | --- |
+| RH-27 Campus tabs | Parking, Jobs, and Facilities guides from official FSC pages | [#23](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/issues/23) | [#19](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/pull/19) | `apps/campus/tests/test_guides.py` |
+| RH-28 Club events | Students post club events; `/events/` page; Add to Google Calendar | [#24](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/issues/24) | [#30](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/pull/30) | `apps/campus/tests/test_events.py` |
+
+The rest of each epic stays on the board for later sprints. That covers the
+community feed and votes (RH-25, RH-26, an open PR), and the AI assistant,
+notifications, and LMS stretch cards (RH-31 to RH-33). Where a story's
+original wording mentioned something that does not exist yet (searching or
+saving feed *posts*), the issue says so in a scope note.
 
 ### Branch protection
 
@@ -498,6 +529,26 @@ and `SECRET_KEY` is generated fresh for each run and masked in the logs.
 other `.env.*` file except `.env.example`. If a secret is ever committed, treat
 it as leaked: rotate it first, then remove it from the history.
 
+### Sanity check: can a new teammate ship without help?
+
+Yes, once the repository owner has added them as a collaborator. That one step
+needs Axel, because only the owner of a personal-account repository can grant
+push access. After that, a new teammate needs nothing from anyone except a
+review:
+
+- **Setting up:** [First-time setup](#first-time-setup) gets the site running
+  locally against their own MongoDB. No shared secrets are needed to develop
+  or to run the tests.
+- **Shipping a change:** [From story to production](#from-story-to-production)
+  walks them from picking a card to a merged PR.
+- **Testing:** the pipeline tests their PR with no setup on their part, because
+  the Test stage brings its own database and generates its own key.
+- **Deploying:** merging deploys it. The deploy credentials are GitHub Secrets
+  that the pipeline already has, so they never handle them.
+- **Getting stuck:** if a stage fails, the run's log names the failing step,
+  and a missing deploy secret fails with a message pointing at the Secrets
+  section above.
+
 ### How we used AI on the pipeline, and what it got wrong
 
 We used Claude (Claude Code) to draft the workflow, the ruleset, and this
@@ -523,6 +574,14 @@ got these things wrong, and this is how each was caught:
   before they started. We saw the cancelled runs in the Actions tab right after
   those merges. Each commit on `main` now gets its own group; only the Deploy
   job is serialized.
+- **It told us stacked PRs could all be approved up front.** RH-39 and RH-40
+  were built on top of RH-28, and a teammate approved all three at once. When
+  RH-28 merged, GitHub dismissed the other two approvals: "The merge-base
+  changed after approval". Our ruleset clears approvals whenever a PR's
+  contents change, and that includes the base moving. We saw it when merging
+  RH-39 was refused for a missing review. Each stacked PR now gets
+  **Update branch** first, and its approval is requested only after that. The
+  step-by-step guide above says so.
 - **It kept two copies of the dependency list.** Vercel installs from
   `pyproject.toml` and CI from `requirements.txt`; its first setup duplicated
   the pins and relied on a comment saying "change a version in one place,
