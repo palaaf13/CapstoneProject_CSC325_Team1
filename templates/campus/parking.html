@@ -3,6 +3,68 @@
 {% block title %}Parking · RamHub{% endblock %}
 
 {% block content %}
-  {% include "partials/page_header.html" with title="Parking" subtitle="The lots, the permits, the rules — plus the timing tips that actually matter." %}
-  {% include "partials/empty_state.html" with icon="car" headline="No lots listed yet" description="Each lot will show its permit types, location, and rules, alongside student notes about when it fills up and which exit is faster." action_label="" %}
+  {% include "partials/page_header.html" with title="Parking" subtitle="Permits, where you can park, and what a ticket costs, from FSC University Police's parking rules." %}
+
+  <div class="grid grid-cols-1 gap-6 break-words lg:grid-cols-3">
+    <div class="space-y-6 lg:col-span-2">
+
+      <section class="card card-pad sm:p-6" aria-labelledby="parking-permit">
+        <h2 id="parking-permit" class="text-h3 font-semibold text-neutral-900">Getting a permit</h2>
+        <ul role="list" class="mt-3 list-disc space-y-2 pl-5 text-body text-neutral-700">
+          <li>Every student who drives on campus has to register the car with University Police and get a permit.</li>
+          <li>Apply and pay online at {% include "campus/partials/official_link.html" with url="https://farmingdale.t2hosted.com/Account/Portal" label="Student Parking Permits" %}. The fee is set by SUNY and shown when you apply.</li>
+          <li>Stick the decal on the <strong>top of the rear side window, driver&rsquo;s side</strong>, no later than 48 hours after the first day of classes. Tape doesn&rsquo;t count as attached.</li>
+          <li>A permit can&rsquo;t be moved to another car or another person.</li>
+        </ul>
+        {% include "campus/partials/source_note.html" with url="https://www.farmingdale.edu/university-police/parking-and-traffic.shtml" label="Parking and Traffic" %}
+      </section>
+
+      <section class="card card-pad sm:p-6" aria-labelledby="parking-where">
+        <h2 id="parking-where" class="text-h3 font-semibold text-neutral-900">Where you can park</h2>
+        <ul role="list" class="mt-3 list-disc space-y-2 pl-5 text-body text-neutral-700">
+          <li><strong>White lines</strong> mark student parking. <strong>Blue</strong> spaces are accessible parking and need an accessible permit.</li>
+          <li>Only marked spaces count: no parking along curbs or roadways.</li>
+          <li>Overnight parking (midnight to 6&nbsp;a.m.) is for residence hall students only.</li>
+          <li>Visitors need a temporary permit from University Police.</li>
+        </ul>
+        <p class="mt-3 text-body text-neutral-700">
+          Find the lots on the {% include "campus/partials/official_link.html" with url="https://map.farmingdale.edu" label="campus map" %}.
+          See also {% include "campus/partials/official_link.html" with url="https://www.farmingdale.edu/university-police/accessible-parking-information.shtml" label="accessible parking information" %}.
+        </p>
+        {% include "campus/partials/source_note.html" with url="https://www.farmingdale.edu/university-police/parking-and-traffic.shtml" label="Parking and Traffic" %}
+      </section>
+
+      <section class="card card-pad sm:p-6" aria-labelledby="parking-tickets">
+        <h2 id="parking-tickets" class="text-h3 font-semibold text-neutral-900">Tickets</h2>
+        <dl class="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-3">
+          <div><dt class="field-label">Most violations</dt><dd class="font-mono text-h2 text-neutral-900">$35</dd></div>
+          <div><dt class="field-label">Accessible space</dt><dd class="font-mono text-h2 text-neutral-900">$150</dd></div>
+          <div><dt class="field-label">Unpaid after 20 days</dt><dd class="font-mono text-h2 text-neutral-900">+$15</dd></div>
+        </dl>
+        <ul role="list" class="mt-4 list-disc space-y-2 pl-5 text-body text-neutral-700">
+          <li>You have <strong>5 business days</strong> to pay or appeal. Miss the window and the ticket stands.</li>
+          <li>Pay online through {% include "campus/partials/official_link.html" with url="https://farmingdale.t2hosted.com/Account/Portal" label="Pay Parking Citation" %}, or appeal through {% include "campus/partials/official_link.html" with url="https://www.farmingdale.edu/university-police/parking-appeals.shtml" label="Parking Ticket Appeal" %}.</li>
+          <li>Unpaid fines block class registration, and grades and transcripts are held until they&rsquo;re paid.</li>
+          <li>Ten or more violations in one academic year can cost you your parking privileges for the rest of it.</li>
+          <li>Towed or booted? Go to the University Police office.</li>
+        </ul>
+        {% include "campus/partials/source_note.html" with url="https://www.farmingdale.edu/university-police/parking-and-traffic.shtml" label="Parking and Traffic" %}
+      </section>
+    </div>
+
+    <aside class="space-y-6" aria-label="University Police contacts">
+      <section class="card card-pad" aria-labelledby="parking-contact">
+        <h2 id="parking-contact" class="text-h3 font-semibold text-neutral-900">University Police</h2>
+        <dl class="mt-3 space-y-3 text-body">
+          <div><dt class="field-label">Parking &amp; Traffic</dt><dd><a href="tel:+19344202561" class="text-accent-700 hover:underline">934-420-2561</a></dd></div>
+          <div><dt class="field-label">Emergency</dt><dd><a href="tel:+19344202111" class="text-accent-700 hover:underline">934-420-2111</a></dd></div>
+          <div><dt class="field-label">Email</dt><dd><a href="mailto:police@farmingdale.edu" class="text-accent-700 hover:underline">police@farmingdale.edu</a></dd></div>
+          <div><dt class="field-label">Office hours</dt><dd class="text-neutral-700">Monday&ndash;Friday, 8:30&nbsp;a.m.&ndash;4:30&nbsp;p.m.</dd></div>
+        </dl>
+      </section>
+      <p class="text-meta text-neutral-500">
+        RamHub copies these rules from the official page so they&rsquo;re easy to find. If the two ever disagree, the official page is right.
+      </p>
+    </aside>
+  </div>
 {% endblock %}

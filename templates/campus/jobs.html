@@ -3,6 +3,72 @@
 {% block title %}Jobs · RamHub{% endblock %}
 
 {% block content %}
-  {% include "partials/page_header.html" with title="Jobs" subtitle="On-campus jobs, work-study positions, internships, and leads posted by students." %}
-  {% include "partials/empty_state.html" with icon="briefcase" headline="No job postings yet" description="Listings will appear here as they are imported and as students post leads from their own departments. Student postings expire on their own." action_label="" %}
+  {% include "partials/page_header.html" with title="Jobs" subtitle="On-campus jobs, work-study, internships, and career help, from FSC Human Resources and the Nexus Center." %}
+
+  <div class="grid grid-cols-1 gap-6 break-words lg:grid-cols-3">
+    <div class="space-y-6 lg:col-span-2">
+
+      <section class="card card-pad sm:p-6" aria-labelledby="jobs-campus">
+        <h2 id="jobs-campus" class="text-h3 font-semibold text-neutral-900">Working on campus</h2>
+        <p class="mt-3 text-body text-neutral-700">
+          Campus jobs come in two kinds: <strong>Student Assistant</strong> and <strong>College Work-Study</strong>.
+          Departments that hire students include Admissions, Student Activities, Athletics, the Tutoring
+          Center, Human Resources, the Writing Center, Information Technology, and the Library.
+        </p>
+        <ul role="list" class="mt-3 list-disc space-y-2 pl-5 text-body text-neutral-700">
+          <li>Work-study depends on your financial aid; ask the Financial Aid Office (<a href="mailto:faoffice@farmingdale.edu" class="text-accent-700 hover:underline">faoffice@farmingdale.edu</a>) whether you qualify.</li>
+          <li>Not every department posts its openings online, so it&rsquo;s worth asking the offices you&rsquo;d like to work in directly.</li>
+          <li>Before your first shift: finish the new-hire paperwork online and book an <strong>I-9 appointment</strong> with Human Resources.</li>
+        </ul>
+        {% include "campus/partials/source_note.html" with url="https://www.farmingdale.edu/human-resources/student-employment.shtml" label="Student Employment" %}
+      </section>
+
+      <section class="card card-pad sm:p-6" aria-labelledby="jobs-find">
+        <h2 id="jobs-find" class="text-h3 font-semibold text-neutral-900">Finding jobs and internships</h2>
+        <p class="mt-3 text-body text-neutral-700">
+          FSC posts jobs and internships, including campus work-study and student assistant positions, on
+          {% include "campus/partials/official_link.html" with url="https://farmingdale-csm.symplicity.com/students" label="CareerConnect" %}.
+          Sign in and open <strong>Jobs and Internships</strong>.
+        </p>
+        {% include "campus/partials/source_note.html" with url="https://www.farmingdale.edu/nexus-center/career-development.shtml" label="Nexus Center Career Development" %}
+      </section>
+
+      <section class="card card-pad sm:p-6" aria-labelledby="jobs-help">
+        <h2 id="jobs-help" class="text-h3 font-semibold text-neutral-900">Career help at the Nexus Center</h2>
+        <p class="mt-3 text-body text-neutral-700">The Nexus Center, in Greenley Hall, offers:</p>
+        <ul role="list" class="mt-2 list-disc space-y-2 pl-5 text-body text-neutral-700">
+          <li>Career counseling appointments, booked in CareerConnect.</li>
+          <li>Resume and cover letter reviews: email your document to <a href="mailto:nexuscenter@farmingdale.edu" class="text-accent-700 hover:underline">nexuscenter@farmingdale.edu</a>.</li>
+          <li>Free tools: Focus&nbsp;2 career assessments, Big Interview for interview practice, and Jobscan for resumes.</li>
+          <li>LinkedIn Learning access for students.</li>
+        </ul>
+        {% include "campus/partials/source_note.html" with url="https://www.farmingdale.edu/nexus-center/career-development.shtml" label="Nexus Center Career Development" %}
+      </section>
+    </div>
+
+    <aside class="space-y-6" aria-label="Contacts">
+      <section class="card card-pad" aria-labelledby="jobs-contact">
+        <h2 id="jobs-contact" class="text-h3 font-semibold text-neutral-900">Who to ask</h2>
+        <dl class="mt-3 space-y-3 text-body">
+          <div>
+            <dt class="field-label">Student employment</dt>
+            <dd><a href="mailto:studentemployment@farmingdale.edu" class="break-all text-accent-700 hover:underline">studentemployment@farmingdale.edu</a></dd>
+          </div>
+          <div>
+            <dt class="field-label">Nexus Center</dt>
+            <dd><a href="tel:+19344202296" class="text-accent-700 hover:underline">934-420-2296</a></dd>
+          </div>
+          <div>
+            <dt class="field-label">Human Resources</dt>
+            <dd class="text-neutral-700">Whitman Hall, Room 260<br>
+              <a href="tel:+19344202107" class="text-accent-700 hover:underline">934-420-2107</a><br>
+              Monday&ndash;Friday, 8:30&nbsp;a.m.&ndash;4:45&nbsp;p.m.</dd>
+          </div>
+        </dl>
+      </section>
+      <p class="text-meta text-neutral-500">
+        Job leads posted by students arrive with the community feed.
+      </p>
+    </aside>
+  </div>
 {% endblock %}

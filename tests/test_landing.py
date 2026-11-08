@@ -212,16 +212,17 @@ def test_strip_counts_come_from_the_database(client, make_course, make_professor
 @pytest.mark.django_db
 def test_strip_does_not_claim_data_it_does_not_have(client):
     """
-    Courses and Professors hold real college data; the campus tabs are empty
-    until their data is imported, and nothing is imported in this test. The
+    Courses and Professors hold real college data, and the Jobs, Parking, and
+    Facilities guides carry facts from official pages. Clubs and the feed stay
+    "building" until their data is loaded, and nothing is loaded here. The
     card must not imply otherwise in either direction.
     """
     features = {f["label"]: f for f in client.get("/").context["features"]}
 
-    assert features["Courses"]["status"] == "live"
-    assert features["Professors"]["status"] == "live"
-    for label in ("Clubs", "Jobs", "Parking", "Facilities", "Feed"):
-        assert features[label]["status"] == "building"
+    for label in ("Courses", "Professors", "Jobs", "Parking", "Facilities"):
+        assert features[label]["status"] == "live", label
+    for label in ("Clubs", "Feed"):
+        assert features[label]["status"] == "building", label
 
 
 @pytest.mark.django_db

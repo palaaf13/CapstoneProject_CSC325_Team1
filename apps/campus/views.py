@@ -7,6 +7,7 @@ it works with JavaScript off, with HTMX swapping the same partials on top.
 These pages are public for now. Phase 2 puts them behind the college-email gate.
 """
 
+from datetime import date
 from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
@@ -83,13 +84,19 @@ def club_detail(request: HttpRequest, slug: str) -> HttpResponse:
     return render(request, "campus/club_detail.html", {"club": club})
 
 
+# The Jobs, Parking, and Facilities guides copy facts from official FSC pages,
+# each linked beside its section. This is the date they were last checked
+# against those pages; update it whenever the guides are re-checked.
+GUIDES_CHECKED = date(2026, 11, 7)
+
+
 def jobs(request: HttpRequest) -> HttpResponse:
-    return render(request, "campus/jobs.html")
+    return render(request, "campus/jobs.html", {"checked": GUIDES_CHECKED})
 
 
 def parking(request: HttpRequest) -> HttpResponse:
-    return render(request, "campus/parking.html")
+    return render(request, "campus/parking.html", {"checked": GUIDES_CHECKED})
 
 
 def facilities(request: HttpRequest) -> HttpResponse:
-    return render(request, "campus/facilities.html")
+    return render(request, "campus/facilities.html", {"checked": GUIDES_CHECKED})
