@@ -11,6 +11,8 @@ from django.utils import timezone
 
 from apps.catalog import landing as catalog_landing
 
+from .search import SiteSearchForm, site_search
+
 
 def home(request: HttpRequest) -> HttpResponse:
     """The front door. Cinematic on purpose; the directories behind it stay dense."""
@@ -42,3 +44,15 @@ def about(request: HttpRequest) -> HttpResponse:
 
 def guidelines(request: HttpRequest) -> HttpResponse:
     return render(request, "pages/guidelines.html")
+
+
+def search(request: HttpRequest) -> HttpResponse:
+    """Global search across courses, professors, and clubs (the nav's search box)."""
+    form = SiteSearchForm(request.GET)
+    q = form.cleaned_data["q"] if form.is_valid() else ""
+    sections = site_search(q)
+    return render(
+        request,
+        "pages/search.html",
+        {"q": q, "sections": sections, "total": sum(section.total for section in sections)},
+    )
