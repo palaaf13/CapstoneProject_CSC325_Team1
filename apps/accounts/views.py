@@ -189,7 +189,8 @@ def profile_edit(request: HttpRequest) -> HttpResponse:
 # --------------------------------------------------------------------------
 class PasswordResetRequestView(PasswordResetView):
     """Email a reset link. The page that follows is the same whether or not the
-    email belongs to an account, so the form can't be used to find accounts."""
+    email belongs to an account, so the form can't be used to find accounts,
+    and each address gets at most a few emails per window."""
 
     template_name = "accounts/password_reset.html"
     form_class = RamHubPasswordResetForm
@@ -198,9 +199,9 @@ class PasswordResetRequestView(PasswordResetView):
     success_url = reverse_lazy("password_reset_done")
 
     def form_valid(self, form):
-        if services.allow_password_reset_email(services.client_ip(self.request)):
+        if services.allow_password_reset_email(form.cleaned_data["email"]):
             return super().form_valid(form)
-        logger.warning("Password reset emails throttled for %s", services.client_ip(self.request))
+        logger.warning("Password reset emails throttled for one address")
         return HttpResponseRedirect(self.get_success_url())
 
 

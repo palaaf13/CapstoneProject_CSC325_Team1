@@ -125,7 +125,7 @@ def test_unconfirmed_account_gets_no_reset_email(client):
     assert len(mail.outbox) == 0
 
 
-def test_reset_emails_are_limited_per_ip_without_revealing_it(client):
+def test_reset_emails_are_limited_per_address_without_revealing_it(client):
     student = make_student()
 
     for _ in range(services.RESET_MAX_REQUESTS + 2):
@@ -152,3 +152,24 @@ def test_resetting_signs_out_other_sessions(client):
 def test_sent_and_complete_pages_render(client):
     assert client.get(reverse("password_reset_done")).status_code == 200
     assert client.get(reverse("password_reset_complete")).status_code == 200
+
+
+def test_the_limit_is_per_address_so_other_students_can_still_reset(client):
+    flooded, other = make_student(), make_student()
+    for _ in range(services.RESET_MAX_REQUESTS + 1):
+        request_reset(client, flooded.email)
+    mail.outbox.clear()
+
+    # Same client, so the same IP: a per-IP limit would wrongly block this.
+    request_reset(client, other.email)
+
+    assert [m.to for m in mail.outbox] == [[other.email]]
+
+
+def test_the_limit_ignores_case_and_spaces_in_the_address(client):
+    student = make_student()
+    for variant in [student.email, student.email.upper(), f"  {student.email}  "]:
+        request_reset(client, variant)
+    request_reset(client, student.email.title())
+
+    assert len(mail.outbox) == services.RESET_MAX_REQUESTS
