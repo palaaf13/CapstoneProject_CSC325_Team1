@@ -6,6 +6,13 @@
 {% block content %}
   {% include "partials/page_header.html" with title="Club events" subtitle="What clubs have coming up, posted by students. Open a club to post one of its events." %}
 
+  {% if q %}
+    <p class="-mt-2 mb-5 text-meta text-neutral-600" role="status">
+      Showing events matching &ldquo;{{ q }}&rdquo;.
+      <a href="{% url 'campus:events' %}" class="rounded-sm font-medium text-accent-700 hover:underline">Show all events</a>
+    </p>
+  {% endif %}
+
   {% if days %}
     <div class="space-y-6">
       {% for day, day_events in days %}
@@ -19,6 +26,8 @@
         </section>
       {% endfor %}
     </div>
+  {% elif q %}
+    {% include "partials/empty_state.html" with icon="search" headline="No upcoming events match that" description="Try a different word, or look through all upcoming events." %}
   {% else %}
     {% url 'campus:clubs' as clubs_url %}
     {% include "partials/empty_state.html" with icon="calendar" headline="No upcoming events yet" description="Know about a club meeting or event? Open the club’s page and post it, so other students can find it and add it to their calendar." action_label="Browse clubs" action_url=clubs_url %}

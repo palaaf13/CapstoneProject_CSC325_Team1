@@ -2,8 +2,8 @@
 Global search: one box in the nav that looks across every directory.
 
 It does no searching of its own. Each section reuses its directory's search
-service, so a query matches exactly the same courses, professors, and clubs
-here as it does on that directory's page, and "See all" hands the query over.
+service, so a query matches exactly the same courses, professors, clubs, and
+events here as it does on that directory's page, and "See all" hands the query over.
 
 Kept at site level (like config/views.py) because it spans several apps.
 """
@@ -69,7 +69,7 @@ def _directory_url(url_name: str, q: str) -> str:
 
 
 def site_search(q: str, *, limit: int = PREVIEW) -> list[Section]:
-    """Courses, professors, and clubs matching ``q``, best matches first.
+    """Courses, professors, clubs, and upcoming events matching ``q``, best first.
 
     Sections with no matches are left out. An empty query searches nothing.
     """
@@ -83,6 +83,7 @@ def site_search(q: str, *, limit: int = PREVIEW) -> list[Section]:
         ("courses", "Courses", courses, "catalog:courses"),
         ("professors", "Professors", catalog.search_professors(q=q), "catalog:professors"),
         ("clubs", "Clubs", campus.search_clubs(q=q), "campus:clubs"),
+        ("events", "Upcoming events", campus.search_events(q), "campus:events"),
     ]
     sections = []
     for key, label, found, url_name in candidates:

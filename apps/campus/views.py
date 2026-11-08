@@ -118,11 +118,13 @@ def facilities(request: HttpRequest) -> HttpResponse:
 
 
 def events(request: HttpRequest) -> HttpResponse:
-    """Every club's upcoming events, grouped by day."""
+    """Every club's upcoming events, grouped by day; ?q= narrows them (from search)."""
+    q = request.GET.get("q", "").strip()[:100]
+    found = services.search_events(q) if q else services.upcoming_events()
     return render(
         request,
         "campus/events.html",
-        {"days": services.events_by_day(services.upcoming_events())},
+        {"days": services.events_by_day(found), "q": q},
     )
 
 
