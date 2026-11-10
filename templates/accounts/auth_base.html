@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+{% comment %}
+Layout for the account pages: Sara's portal artwork on the left, the form panel
+on the right (stacked on phones). Pages fill {% block panel %}.
+{% endcomment %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block body_class %}rh-body{% endblock %}
+
+{% block main %}
+<main id="main" class="rh-login-page">
+  <div class="rh-login-layout">
+    <div class="rh-art">
+      <img class="rh-scene" src="{% static 'img/login-portal.jpg' %}" width="1044" height="877"
+           alt="A college student with a backpack leaping through a glowing green portal">
+      <div class="rh-halo" aria-hidden="true"></div>
+      <div class="rh-orbit rh-orbit-top" aria-hidden="true"></div>
+      <div class="rh-orbit rh-orbit-bottom" aria-hidden="true"></div>
+      <div class="rh-float rh-float-one" aria-hidden="true">✦</div>
+      <div class="rh-float rh-float-two" aria-hidden="true">✧</div>
+      <div class="rh-float rh-float-three" aria-hidden="true">✦</div>
+      <div class="rh-scan" aria-hidden="true"></div>
+    </div>
+
+    <section class="rh-panel" aria-labelledby="auth-title">
+      <p class="rh-panel-top"><span class="rh-mini-led" aria-hidden="true"></span>FSC STUDENT COMMUNITY</p>
+
+      {% block panel %}{% endblock %}
+
+      {% for message in messages %}
+        <p class="rh-info{% if message.level_tag == 'error' %} rh-info-error{% endif %}" role="status">{{ message }}</p>
+      {% endfor %}
+
+      <div class="rh-typing" aria-hidden="true">
+        <div class="rh-type-line">
+          <span class="rh-type-prompt">&gt;</span><span class="rh-type-text" data-type-text></span><span class="rh-type-cursor"></span>
+        </div>
+      </div>
+      <p class="rh-bottom-line" aria-hidden="true"><span>DREAM.</span><span class="rh-dim">HOPE.</span><span>ASPIRE.</span></p>
+    </section>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{% static 'js/auth.js' %}" defer></script>
+{% endblock %}
