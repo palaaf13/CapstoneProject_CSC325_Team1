@@ -1,0 +1,44 @@
+{% comment %}
+One form field in the account-page style.
+  field      the bound field
+  link_url   optional link shown beside the label (e.g. "Forgot password?")
+  link_text  its text
+{% endcomment %}
+<div class="rh-field">
+  {% if link_url %}
+    <div class="rh-label-row">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      <a class="rh-text-link" href="{{ link_url }}">{{ link_text }}</a>
+    </div>
+  {% else %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {% endif %}
+
+  <div class="rh-field-wrap">
+    {% if field.widget_type == "password" %}
+      <span class="rh-field-icon rh-field-icon-lock" aria-hidden="true">◈</span>
+    {% elif field.widget_type == "email" %}
+      <span class="rh-field-icon" aria-hidden="true">✉</span>
+    {% else %}
+      <span class="rh-field-icon" aria-hidden="true">◇</span>
+    {% endif %}
+    {{ field }}
+    {% if field.widget_type == "password" %}
+      <button type="button" class="rh-eye" data-toggle-password="{{ field.id_for_label }}"
+              aria-label="Show password" aria-pressed="false" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+          <line class="rh-eye-slash" x1="4" y1="20" x2="20" y2="4"></line>
+        </svg>
+      </button>
+    {% endif %}
+  </div>
+
+  {% if field.help_text %}
+    <div class="rh-hint" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</div>
+  {% endif %}
+  {% for error in field.errors %}
+    <p class="rh-error" id="{{ field.auto_id }}-error">{{ error }}</p>
+  {% endfor %}
+</div>

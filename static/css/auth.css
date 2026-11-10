@@ -1,0 +1,391 @@
+/* Account pages (sign in, create account, password reset).
+   Sara's RamHub login design, from prototypes/ramhub_login/.
+   Every class starts with rh- so no other page changes. This file is not in a
+   CSS layer, so it wins over the Tailwind .field-input styles on the inputs. */
+
+.rh-body { background: #05100c; }
+
+.rh-login-page {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px clamp(14px, 2vw, 36px);
+  background: radial-gradient(ellipse at 60% 10%, #06351b, #080e0c 58%);
+  color: #fff;
+  color-scheme: dark;
+}
+
+.rh-login-layout {
+  width: min(1480px, 100%);
+  min-height: min(805px, 85vh);
+  display: grid;
+  grid-template-columns: minmax(0, 1.16fr) minmax(360px, .84fr);
+  overflow: hidden;
+  border: 1px solid #148553;
+  border-radius: 20px;
+  background: #021a10;
+  box-shadow: 0 25px 85px #000a, 0 0 35px #02b86826;
+}
+
+/* -- Artwork ------------------------------------------------------------- */
+.rh-art {
+  position: relative;
+  overflow: hidden;
+  min-height: 640px;
+  background: #03130c;
+  isolation: isolate;
+}
+.rh-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  animation: rh-scene-drift 9s ease-in-out infinite alternate;
+}
+/* A glow over the picture makes the portal pulse. */
+.rh-halo {
+  position: absolute;
+  left: 58%;
+  top: 40%;
+  width: 43%;
+  height: 43%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #77ffd848, #33d88714 45%, transparent 70%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: rh-halo-pulse 3.5s ease-in-out infinite;
+}
+.rh-orbit {
+  position: absolute;
+  border: 1px dashed #8af6b6a3;
+  border-radius: 50%;
+  box-shadow: 0 0 12px #6afa893b;
+  pointer-events: none;
+}
+.rh-orbit::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  left: 13%;
+  top: 15%;
+  border-radius: 50%;
+  background: #9afac0;
+  box-shadow: 0 0 17px #9afac0;
+}
+.rh-orbit-top {
+  left: 23%;
+  top: 10%;
+  width: 24%;
+  aspect-ratio: 1.25;
+  animation: rh-orbit-turn 15s linear infinite;
+}
+.rh-orbit-bottom {
+  right: 12%;
+  bottom: 11%;
+  width: 21%;
+  aspect-ratio: 1.5;
+  opacity: .65;
+  animation: rh-orbit-turn 18s linear infinite reverse;
+}
+.rh-float {
+  position: absolute;
+  color: #bdffd1;
+  font-size: 40px;
+  text-shadow: 0 0 16px #43d875;
+  pointer-events: none;
+}
+.rh-float-one { top: 27%; left: 7%; animation: rh-float 3.2s ease-in-out infinite alternate; }
+.rh-float-two { top: 21%; right: 13%; animation: rh-float 4.7s ease-in-out infinite alternate-reverse; }
+.rh-float-three { bottom: 18%; left: 44%; font-size: 25px; animation: rh-float 4s ease-in-out infinite alternate; }
+.rh-scan {
+  position: absolute;
+  inset: -50% 0 auto;
+  height: 70px;
+  background: linear-gradient(transparent, #73ffd112, transparent);
+  transform: rotate(-10deg);
+  pointer-events: none;
+  animation: rh-scan 10s linear infinite;
+}
+
+/* -- Panel --------------------------------------------------------------- */
+.rh-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(25px, 4vw, 58px);
+  border-left: 1px solid #216b43;
+  background:
+    radial-gradient(circle at 100% 0%, #07371f 0%, transparent 53%),
+    linear-gradient(145deg, #061a11, #07120e 66%, #04100c);
+  box-shadow: inset 12px 0 50px #0004;
+  color: #f8fff9;
+}
+.rh-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: clamp(25px, 4vw, 58px);
+  width: 135px;
+  height: 3px;
+  background: linear-gradient(90deg, #72ffc0, transparent);
+  box-shadow: 0 0 24px #79ecb3;
+}
+.rh-panel-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #8bdbac;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .17em;
+}
+.rh-mini-led {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #48ef9e;
+  box-shadow: 0 0 12px #31ef8b;
+}
+.rh-panel h1 {
+  margin: 20px 0 12px;
+  color: #fff;
+  font-size: clamp(34px, 3.45vw, 56px);
+  font-weight: 800;
+  line-height: 1.13;
+  letter-spacing: -.055em;
+}
+.rh-panel h1 span { color: #46dd92; }
+.rh-panel h1 .rh-punct { color: #fff; }
+.rh-tagline {
+  margin: 0 0 20px;
+  color: #b7f6cc;
+  font-size: clamp(17px, 1.6vw, 22px);
+  font-weight: 700;
+}
+.rh-copy { margin: 0 0 20px; color: #b5cbbc; font-size: 14px; line-height: 1.6; }
+
+/* -- Form ---------------------------------------------------------------- */
+.rh-fields { display: grid; gap: 7px; }
+.rh-fields label {
+  color: #c7e5d1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.rh-label-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rh-field-wrap { position: relative; display: flex; align-items: center; }
+.rh-field { margin-bottom: 9px; display: grid; gap: 7px; }
+.rh-fields input {
+  width: 100%;
+  min-height: 54px;
+  margin: 0;
+  padding: 14px 49px 14px 45px;
+  color: #fff;
+  font-size: 14px;
+  background: #10261b;
+  border: 1px solid #37654c;
+  border-radius: 11px;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.rh-fields input::placeholder { color: #9ab1a3; }
+.rh-fields input:hover { border-color: #4c8466; }
+.rh-fields input:focus {
+  outline: none;
+  border-color: #4cde96;
+  box-shadow: 0 0 0 3px #28ed8d21, 0 0 24px #18b36a30;
+}
+.rh-fields input[aria-invalid="true"] { border-color: #ff8a8a; }
+.rh-field-icon {
+  position: absolute;
+  left: 16px;
+  z-index: 2;
+  color: #93d7af;
+  font-size: 19px;
+  pointer-events: none;
+}
+.rh-field-icon-lock { font-size: 23px; }
+.rh-eye {
+  position: absolute;
+  right: 13px;
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #addcc0;
+  cursor: pointer;
+}
+.rh-eye:hover { color: #55f5aa; }
+.rh-eye svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rh-eye[aria-pressed="true"] svg .rh-eye-slash { display: inline; }
+.rh-eye svg .rh-eye-slash { display: none; }
+
+.rh-hint { margin: 0; color: #a6b9a9; font-size: 12px; line-height: 1.45; }
+.rh-hint ul { margin: 4px 0 0; padding-left: 18px; list-style: disc; }
+.rh-error { margin: 0; color: #ff9d9d; font-size: 12.5px; font-weight: 600; }
+.rh-alert {
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  border: 1px solid #b84a4a;
+  border-radius: 9px;
+  background: #2a1214;
+  color: #ffd9d9;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.rh-alert p { margin: 0; }
+
+.rh-sign-in {
+  width: 100%;
+  min-height: 55px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px;
+  border: 1px solid #34df92;
+  border-radius: 11px;
+  background: linear-gradient(115deg, #007f48, #1aaf6a);
+  box-shadow: 0 8px 28px #00693e66;
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.rh-sign-in:hover { transform: translateY(-2px); box-shadow: 0 12px 35px #16c97a55; }
+
+.rh-text-link {
+  padding: 2px 0;
+  color: #67f7ae;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rh-label-row .rh-text-link { font-size: 12px; letter-spacing: 0; text-transform: none; }
+.rh-text-link:hover { color: #fff; }
+.rh-text-link:focus-visible,
+.rh-eye:focus-visible,
+.rh-sign-in:focus-visible {
+  outline: 2px solid #94ffc2;
+  outline-offset: 3px;
+}
+.rh-account-prompt { margin: 17px 0 0; color: #b7ceb9; font-size: 13px; text-align: center; }
+
+/* Site messages, such as "Check your email" after creating an account. */
+.rh-info {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #3d8e63;
+  border-radius: 9px;
+  background: #122c1e;
+  color: #dcffea;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.rh-info-error { border-color: #b84a4a; background: #2a1214; color: #ffd9d9; }
+
+/* -- Typing line and footer ---------------------------------------------- */
+.rh-typing {
+  margin: 22px 0 17px;
+  padding: 17px 16px 18px;
+  border: 1px solid #2c6347;
+  border-radius: 12px;
+  background: linear-gradient(110deg, #0c2b1c, #082018);
+  box-shadow: inset 0 1px 0 #20654160;
+}
+.rh-type-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 46px;
+  color: #edfff3;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: clamp(13px, 1.2vw, 17px);
+  font-weight: 600;
+  line-height: 1.5;
+}
+.rh-type-prompt { flex-shrink: 0; color: #50ed9a; }
+.rh-type-text { overflow-wrap: anywhere; }
+.rh-type-cursor {
+  width: 2px;
+  height: 1.18em;
+  flex-shrink: 0;
+  margin-top: 2px;
+  background: #72f9ae;
+  box-shadow: 0 0 9px #6cffa0;
+  animation: rh-caret 1s steps(1, end) infinite;
+}
+.rh-bottom-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding-top: 19px;
+  border-top: 1px solid #346b4d;
+  color: #72b08d;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+}
+.rh-bottom-line .rh-dim { color: #357d54; }
+
+/* -- Motion -------------------------------------------------------------- */
+@keyframes rh-scene-drift {
+  from { transform: translate3d(0, 0, 0) scale(1.025); }
+  to { transform: translate3d(-12px, -8px, 0) scale(1.065); }
+}
+@keyframes rh-halo-pulse { 50% { opacity: .3; transform: scale(1.2); } }
+@keyframes rh-orbit-turn { to { transform: rotate(360deg); } }
+@keyframes rh-float { to { transform: translate3d(11px, -23px, 0) rotate(12deg); } }
+@keyframes rh-scan { to { top: 135%; } }
+@keyframes rh-caret { 50% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rh-scene, .rh-halo, .rh-orbit, .rh-float, .rh-scan, .rh-type-cursor { animation: none; }
+  .rh-sign-in, .rh-fields input { transition: none; }
+}
+
+/* -- Sizes --------------------------------------------------------------- */
+/* Keep the art left and the form right in a half-width window. */
+@media (max-width: 980px) and (min-width: 611px) {
+  .rh-login-page { padding: 14px 12px; }
+  .rh-login-layout {
+    grid-template-columns: minmax(0, 1.06fr) minmax(275px, .94fr);
+    min-height: 600px;
+  }
+  .rh-art { min-height: 600px; }
+  .rh-scene { object-position: 60% center; }
+  .rh-panel { padding: 25px; }
+  .rh-panel h1 { font-size: clamp(28px, 3.2vw, 38px); }
+  .rh-tagline { font-size: 16px; }
+  .rh-fields input { min-height: 46px; }
+}
+/* Phones stack, with a short strip of art so the form stays near the top. */
+@media (max-width: 610px) {
+  .rh-login-page { padding: 12px; }
+  .rh-login-layout { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .rh-art { min-height: 190px; }
+  .rh-panel { padding: 27px 22px; border-left: 0; border-top: 1px solid #216b43; }
+  .rh-panel::before { left: 22px; }
+  .rh-panel h1 { margin-top: 16px; }
+}
