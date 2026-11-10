@@ -585,52 +585,86 @@
     @apply outline-accent-300;
   }
 
-  /* --- Cursor aura ------------------------------------------------------ */
-  /* A soft green gradient that trails the mouse and keeps shifting on an 8s
-     loop (two layers turning and cross-fading). Decorative only: it never
-     takes clicks, the system cursor stays visible, and "screen" blending
-     tints the dark page green while white text stays white. cursor.js adds
-     it for mouse users only; touch and reduced motion never get it. */
+  /* --- Cursor watercolor ------------------------------------------------- */
+  /* A broad, airy watercolor wash that drifts after the mouse like silk.
+     Three soft blobs (mint, sage, sea-glass) follow at different speeds, so
+     they trail and overlap like wet paint. Each blob also breathes on an 8s
+     cloudlike loop of its own, animating only transform and opacity.
+     Decorative only: it never takes clicks, the system cursor stays visible,
+     and "screen" blending tints the dark page while white text stays white.
+     cursor.js adds it for mouse users only; touch and reduced motion never
+     get it. */
   .cursor-aura {
-    @apply pointer-events-none fixed left-0 top-0 z-30 opacity-0;
-    width: clamp(16rem, 34vmin, 26rem);
-    aspect-ratio: 1;
+    @apply pointer-events-none fixed inset-0 z-30 overflow-hidden opacity-0;
     mix-blend-mode: screen;
-    will-change: transform, opacity;
+    will-change: opacity;
   }
 
-  .cursor-aura-layer {
-    @apply absolute inset-0 rounded-full;
-    filter: blur(28px);
-    animation: aura-shift 8s ease-in-out infinite;
+  .cursor-wash {
+    @apply absolute left-0 top-0;
+    width: clamp(26rem, 58vmin, 46rem);
+    aspect-ratio: 1.35;
+    will-change: transform;
   }
 
-  .cursor-aura-layer-a {
+  .cursor-wash-shape {
+    @apply absolute inset-0;
+    filter: blur(44px);
+    animation: wash-drift-a 8s ease-in-out infinite;
+  }
+
+  /* Uneven corners make each blob a pool of paint rather than a circle. */
+  .cursor-wash-a .cursor-wash-shape {
+    border-radius: 58% 42% 55% 45% / 46% 60% 40% 54%;
     background:
-      radial-gradient(circle at 32% 35%, var(--color-accent-500) 0%, transparent 52%),
-      radial-gradient(circle at 70% 68%, var(--color-accent-700) 0%, transparent 58%);
+      radial-gradient(ellipse at 38% 40%, color-mix(in srgb, var(--color-accent-200) 95%, transparent) 0%, transparent 64%),
+      radial-gradient(ellipse at 70% 65%, color-mix(in srgb, var(--color-accent-400) 85%, transparent) 0%, transparent 62%);
   }
 
-  .cursor-aura-layer-b {
+  .cursor-wash-b {
+    width: clamp(22rem, 48vmin, 38rem);
+  }
+
+  .cursor-wash-b .cursor-wash-shape {
+    border-radius: 44% 56% 38% 62% / 58% 44% 56% 42%;
     background:
-      radial-gradient(circle at 68% 30%, var(--color-accent-400) 0%, transparent 50%),
-      radial-gradient(circle at 30% 72%, var(--color-accent-600) 0%, transparent 56%);
-    animation-name: aura-shift-b;
+      radial-gradient(ellipse at 55% 45%, color-mix(in srgb, #8fd3c7 90%, transparent) 0%, transparent 62%),
+      radial-gradient(ellipse at 30% 70%, color-mix(in srgb, var(--color-accent-300) 75%, transparent) 0%, transparent 60%);
+    animation-name: wash-drift-b;
+    animation-delay: -2.7s;
   }
 
-  @keyframes aura-shift {
-    0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.55; }
-    50% { transform: rotate(180deg) scale(1.12); opacity: 0.25; }
+  .cursor-wash-c {
+    width: clamp(18rem, 40vmin, 32rem);
   }
 
-  @keyframes aura-shift-b {
-    0%, 100% { transform: rotate(0deg) scale(1.08); opacity: 0.2; }
-    50% { transform: rotate(-180deg) scale(0.94); opacity: 0.5; }
+  .cursor-wash-c .cursor-wash-shape {
+    border-radius: 62% 38% 48% 52% / 40% 58% 42% 60%;
+    background:
+      radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--color-accent-100) 80%, transparent) 0%, transparent 66%);
+    animation-name: wash-drift-c;
+    animation-delay: -5.3s;
+  }
+
+  @keyframes wash-drift-a {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1, 1); opacity: 0.62; }
+    33% { transform: translate3d(4%, -3%, 0) rotate(14deg) scale(1.08, 0.94); opacity: 0.46; }
+    66% { transform: translate3d(-3%, 4%, 0) rotate(-10deg) scale(0.95, 1.07); opacity: 0.56; }
+  }
+
+  @keyframes wash-drift-b {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1.04, 0.96); opacity: 0.4; }
+    50% { transform: translate3d(-5%, -4%, 0) rotate(-22deg) scale(0.94, 1.1); opacity: 0.58; }
+  }
+
+  @keyframes wash-drift-c {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(0.96); opacity: 0.34; }
+    50% { transform: translate3d(5%, 3%, 0) rotate(18deg) scale(1.12); opacity: 0.5; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .cursor-aura { display: none; }
-    .cursor-aura-layer { animation: none; }
+    .cursor-wash-shape { animation: none; }
   }
 
   /* --- Feature strip ----------------------------------------------------- */

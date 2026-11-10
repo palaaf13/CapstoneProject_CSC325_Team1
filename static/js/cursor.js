@@ -1,10 +1,10 @@
-// The cursor paints the page: a soft green aura that trails it and keeps
-// shifting, gradient washes that change as it crosses the screen, and a
+// The cursor paints the page: a broad watercolor wash that drifts after it
+// like silk, background gradients that change as it crosses the screen, and a
 // flashlight that brightens the hero's wall of course codes beneath it.
 //
-// Performance: the aura and washes move only with transform and opacity, which
-// composite without repainting. The aura's 8s gradient shift is a CSS
-// animation, so it runs even while the mouse is still. The flashlight is the
+// Performance: the watercolor and background move only with transform and
+// opacity, which composite without repainting. Each wash's 8s cloudlike drift
+// is a CSS animation, so it keeps moving while the mouse is still. The flashlight is the
 // one repaint, and it is confined to the hero's code wall.
 //
 // Decorative only: nothing here takes clicks or hides the system cursor.
@@ -38,20 +38,38 @@
     return;
   }
 
-  // ── The aura ─────────────────────────────────────────────────────────────
+  // ── The watercolor ───────────────────────────────────────────────────────
+  // Three soft pools of colour. Each trails the mouse at its own pace (the
+  // last is the laziest), so they stretch apart while it moves and settle
+  // back together, overlapping, when it stops.
   var aura = document.createElement("div");
   aura.className = "cursor-aura";
   aura.setAttribute("aria-hidden", "true");
-  ["a", "b"].forEach(function (name) {
-    var layer = document.createElement("div");
-    layer.className = "cursor-aura-layer cursor-aura-layer-" + name;
-    aura.appendChild(layer);
+  var washes = [
+    { name: "a", lag: 1.1, offset: [0, 0] },
+    { name: "b", lag: 1.9, offset: [-60, 40] },
+    { name: "c", lag: 2.8, offset: [70, -30] },
+  ].map(function (spec) {
+    var wash = document.createElement("div");
+    wash.className = "cursor-wash cursor-wash-" + spec.name;
+    var shape = document.createElement("div");
+    shape.className = "cursor-wash-shape";
+    wash.appendChild(shape);
+    aura.appendChild(wash);
+    gsap.set(wash, {
+      xPercent: -50,
+      yPercent: -50,
+      x: window.innerWidth / 2 + spec.offset[0],
+      y: window.innerHeight / 2 + spec.offset[1],
+    });
+    return {
+      el: wash,
+      offset: spec.offset,
+      x: gsap.quickTo(wash, "x", { duration: spec.lag, ease: "sine.out" }),
+      y: gsap.quickTo(wash, "y", { duration: spec.lag, ease: "sine.out" }),
+    };
   });
   document.body.appendChild(aura);
-  gsap.set(aura, { xPercent: -50, yPercent: -50, x: window.innerWidth / 2, y: window.innerHeight / 2 });
-
-  var auraX = gsap.quickTo(aura, "x", { duration: 0.9, ease: "power3.out" });
-  var auraY = gsap.quickTo(aura, "y", { duration: 0.9, ease: "power3.out" });
 
   var washMix = gsap.quickTo(washB, "opacity", { duration: 2.4, ease: "power2.out" });
 
@@ -68,9 +86,11 @@
     var x = event.clientX;
     var y = event.clientY;
 
-    gsap.to(aura, { opacity: 1, duration: 0.6, overwrite: "auto" });
-    auraX(x);
-    auraY(y);
+    gsap.to(aura, { opacity: 1, duration: 1.2, overwrite: "auto" });
+    washes.forEach(function (wash) {
+      wash.x(x + wash.offset[0]);
+      wash.y(y + wash.offset[1]);
+    });
     // Left edge shows the first gradient, right edge the second.
     washMix(Math.min(Math.max(x / window.innerWidth, 0), 1));
 
@@ -90,17 +110,20 @@
   });
 
   document.addEventListener("pointerleave", function () {
-    gsap.to(aura, { opacity: 0, duration: 0.6 });
+    gsap.to(aura, { opacity: 0, duration: 1.2 });
   });
 
-  // ── Engage: anything you can act on draws the aura in a little ─────────
+  // ── Engage: anything you can act on lets the colour bloom a little ──────
+  var washEls = washes.map(function (wash) {
+    return wash.el;
+  });
   document.querySelectorAll("a, button, .pillar, [data-rambo]").forEach(function (el) {
     var isRambo = el.hasAttribute("data-rambo");
     el.addEventListener("pointerenter", function () {
-      gsap.to(aura, { scale: isRambo ? 1.3 : 1.12, duration: 0.8, ease: "power3.out" });
+      gsap.to(washEls, { scale: isRambo ? 1.2 : 1.08, duration: 1.4, ease: "sine.out" });
     });
     el.addEventListener("pointerleave", function () {
-      gsap.to(aura, { scale: 1, duration: 1, ease: "power3.out" });
+      gsap.to(washEls, { scale: 1, duration: 1.8, ease: "sine.out" });
     });
   });
 

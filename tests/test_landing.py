@@ -176,30 +176,30 @@ def test_interactive_scripts_load_only_on_the_landing_page(client):
         assert b"cursor.js" not in body and b"rambo.js" not in body, url
 
 
-# -- cursor aura -------------------------------------------------------------
+# -- cursor watercolor ------------------------------------------------------
 STATIC = TEMPLATES.parent / "static"
 
 
-def test_cursor_is_a_shifting_gradient_not_a_ring():
+def test_cursor_is_a_drifting_watercolor_not_a_ring():
     script = (STATIC / "js" / "cursor.js").read_text()
     css = (STATIC / "src" / "input.css").read_text()
 
-    assert "cursor-aura" in script
+    assert "cursor-wash" in script
     assert "cursor-follower" not in script and "cursor-cut" not in script
     assert "prefers-reduced-motion: reduce" in script
-    # Continuous 8s shift, animating only transform and opacity.
-    assert re.search(r"animation: aura-shift 8s ease-in-out infinite", css)
-    for name in ("aura-shift", "aura-shift-b"):
+    # Three washes, each on a continuous 8s drift of transform and opacity only.
+    assert "animation: wash-drift-a 8s ease-in-out infinite" in css
+    for name in ("wash-drift-a", "wash-drift-b", "wash-drift-c"):
         body = re.search(rf"@keyframes {name} \{{(.*?)\n  \}}", css, re.S).group(1)
         properties = set(re.findall(r"([a-z-]+):", body))
         assert properties == {"transform", "opacity"}, (name, properties)
 
 
-def test_cursor_aura_never_blocks_the_page():
+def test_cursor_watercolor_never_blocks_the_page():
     css = (STATIC / "src" / "input.css").read_text()
-    aura = re.search(r"\.cursor-aura \{(.*?)\}", css, re.S).group(1)
+    layer = re.search(r"\.cursor-aura \{(.*?)\}", css, re.S).group(1)
 
-    assert "pointer-events-none" in aura
+    assert "pointer-events-none" in layer
     assert re.search(
         r"prefers-reduced-motion: reduce\) \{\s*\.cursor-aura \{ display: none; \}", css
     )
