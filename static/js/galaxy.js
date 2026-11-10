@@ -27,8 +27,8 @@ const SHAPE = { radius: 6, arms: 4, spin: 1.05, scatter: 0.38, scatterPower: 3 }
 // Sit the core below the headline, like a horizon, so the text stays clear.
 const GALAXY_Y = -1.9;
 // How far the scroll dive flies in: the galaxy grows to 1 + DIVE_DEPTH times
-// its size around the camera, which ends the dive inside the bright core.
-const DIVE_DEPTH = 20;
+// its size around the camera, which ends the dive deep in the bright core.
+const DIVE_DEPTH = 40;
 
 
 // A white mortarboard on a soft glow. The shader tints it per particle.
