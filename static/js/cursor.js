@@ -47,8 +47,8 @@
   aura.setAttribute("aria-hidden", "true");
   var washes = [
     { name: "a", lag: 1.1, offset: [0, 0] },
-    { name: "b", lag: 1.9, offset: [-60, 40] },
-    { name: "c", lag: 2.8, offset: [70, -30] },
+    { name: "b", lag: 1.9, offset: [-48, 32] },
+    { name: "c", lag: 2.8, offset: [56, -24] },
   ].map(function (spec) {
     var wash = document.createElement("div");
     wash.className = "cursor-wash cursor-wash-" + spec.name;

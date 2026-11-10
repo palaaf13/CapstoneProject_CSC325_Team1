@@ -602,14 +602,14 @@
 
   .cursor-wash {
     @apply absolute left-0 top-0;
-    width: clamp(26rem, 58vmin, 46rem);
+    width: clamp(21rem, 47vmin, 37rem);
     aspect-ratio: 1.35;
     will-change: transform;
   }
 
   .cursor-wash-shape {
     @apply absolute inset-0;
-    filter: blur(44px);
+    filter: blur(38px);
     animation: wash-drift-a 8s ease-in-out infinite;
   }
 
@@ -622,7 +622,7 @@
   }
 
   .cursor-wash-b {
-    width: clamp(22rem, 48vmin, 38rem);
+    width: clamp(18rem, 39vmin, 31rem);
   }
 
   .cursor-wash-b .cursor-wash-shape {
@@ -635,7 +635,7 @@
   }
 
   .cursor-wash-c {
-    width: clamp(18rem, 40vmin, 32rem);
+    width: clamp(15rem, 32vmin, 26rem);
   }
 
   .cursor-wash-c .cursor-wash-shape {
