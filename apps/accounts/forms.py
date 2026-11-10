@@ -18,6 +18,14 @@ class RegistrationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = get_user_model()
         fields = ("username", "email", "display_name")
+        error_messages = {
+            "email": {
+                "unique": (
+                    "An account already uses this email. If it's yours and you haven't "
+                    "confirmed it yet, resend the confirmation email instead."
+                ),
+            },
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -99,6 +107,24 @@ class SignInForm(forms.Form):
 
     def get_user(self):
         return self.user
+
+
+class ResendConfirmationForm(forms.Form):
+    """Ask for a new email-confirmation link."""
+
+    email = forms.EmailField(
+        label="College email",
+        widget=forms.EmailInput(
+            attrs={
+                "class": "field-input",
+                "autocomplete": "email",
+                "placeholder": "name@farmingdale.edu",
+            }
+        ),
+    )
+
+    def clean_email(self) -> str:
+        return self.cleaned_data["email"].strip().casefold()
 
 
 class ProfileForm(forms.ModelForm):

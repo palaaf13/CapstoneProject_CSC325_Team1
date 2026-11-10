@@ -31,11 +31,24 @@ from apps.accounts.forms import (
     RamHubPasswordResetForm,
     RamHubSetPasswordForm,
     RegistrationForm,
+    ResendConfirmationForm,
     SignInForm,
 )
 from apps.accounts.models import User
 
 logger = logging.getLogger(__name__)
+
+
+# Raised by the mail backend when a confirmation email can't be handed off.
+EMAIL_SEND_ERRORS = (OSError, SMTPException, services.EmailDeliveryError)
+
+
+def _send_confirmation_email(request: HttpRequest, user: User) -> None:
+    """Email ``user`` a link to confirm their address. Raises EMAIL_SEND_ERRORS."""
+    token = services.email_confirmation_token.make_token(user)
+    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    confirmation_path = reverse("confirm_email", kwargs={"uidb64": uidb64, "token": token})
+    services.send_registration_confirmation(user, request.build_absolute_uri(confirmation_path))
 
 
 def register(request: HttpRequest) -> HttpResponse:
@@ -44,6 +57,8 @@ def register(request: HttpRequest) -> HttpResponse:
         return redirect("home")
 
     if request.method == "POST":
+        # Free emails and usernames held by sign-ups whose link expired unclicked.
+        services.delete_expired_signups()
         form = RegistrationForm(request.POST)
         if form.is_valid():
             try:
@@ -56,16 +71,9 @@ def register(request: HttpRequest) -> HttpResponse:
             except ValidationError as error:
                 form.add_error("email", error)
             else:
-                token = services.email_confirmation_token.make_token(user)
-                uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-                confirmation_path = reverse(
-                    "confirm_email",
-                    kwargs={"uidb64": uidb64, "token": token},
-                )
-                confirmation_url = request.build_absolute_uri(confirmation_path)
                 try:
-                    services.send_registration_confirmation(user, confirmation_url)
-                except (OSError, SMTPException, services.EmailDeliveryError):
+                    _send_confirmation_email(request, user)
+                except EMAIL_SEND_ERRORS:
                     logger.exception("Could not send confirmation email for user %s", user.pk)
                     user.delete()
                     form.add_error(
@@ -82,6 +90,41 @@ def register(request: HttpRequest) -> HttpResponse:
         form = RegistrationForm()
 
     return render(request, "accounts/register.html", {"form": form})
+
+
+def resend_confirmation(request: HttpRequest) -> HttpResponse:
+    """Send a fresh confirmation link to an account that hasn't confirmed yet.
+
+    The outcome page is the same whether or not the email has an unconfirmed
+    account, so this form can't be used to find out who has signed up.
+    """
+    if request.user.is_authenticated:
+        return redirect("home")
+
+    if request.method == "POST":
+        form = ResendConfirmationForm(request.POST)
+        if form.is_valid():
+            user = services.account_to_reconfirm(form.cleaned_data["email"])
+            try:
+                if user is not None:
+                    _send_confirmation_email(request, user)
+            except EMAIL_SEND_ERRORS:
+                logger.exception("Could not resend confirmation email for user %s", user.pk)
+                form.add_error(
+                    None,
+                    "We couldn't send the confirmation email. Please try again later.",
+                )
+            else:
+                messages.success(
+                    request,
+                    "If that email has an account waiting to be confirmed, we've sent it a "
+                    "new confirmation link.",
+                )
+                return redirect("login")
+    else:
+        form = ResendConfirmationForm()
+
+    return render(request, "accounts/resend_confirmation.html", {"form": form})
 
 
 def confirm_email(request: HttpRequest, uidb64: str, token: str) -> HttpResponse:
@@ -101,8 +144,8 @@ def confirm_email(request: HttpRequest, uidb64: str, token: str) -> HttpResponse
     else:
         messages.error(
             request,
-            "This confirmation link is invalid or expired. You may sign in if your email "
-            "was already confirmed.",
+            "This confirmation link is invalid or expired. Sign in if you already "
+            'confirmed your email, or use "Resend confirmation email" for a new link.',
         )
     return redirect("login")
 

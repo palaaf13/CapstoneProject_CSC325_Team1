@@ -25,6 +25,11 @@ urlpatterns = [
     path("logout/", account_views.sign_out, name="logout"),
     path("register/", account_views.register, name="register"),
     path(
+        "register/resend/",
+        account_views.resend_confirmation,
+        name="resend_confirmation",
+    ),
+    path(
         "confirm-email/<str:uidb64>/<str:token>/",
         account_views.confirm_email,
         name="confirm_email",

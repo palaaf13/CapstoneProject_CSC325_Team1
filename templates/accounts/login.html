@@ -43,6 +43,11 @@
         <a href="{% url 'password_reset' %}" class="font-medium text-accent-700 hover:underline">
           Forgot your password?
         </a>
+        <span class="text-neutral-400" aria-hidden="true">·</span>
+        <a href="{% url 'resend_confirmation' %}"
+           class="font-medium text-accent-700 hover:underline">
+          Resend confirmation email
+        </a>
       </p>
 
       <a href="{% url 'register' %}" class="btn-secondary mt-4 w-full">

@@ -1,6 +1,7 @@
 """Account-related business operations."""
 
 import hashlib
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -8,6 +9,7 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.cache import cache
 from django.core.mail import EmailMessage, mailers
 from django.http import HttpRequest
+from django.utils import timezone
 
 from apps.accounts.models import User, validate_college_email
 
@@ -176,20 +178,83 @@ RESET_MAX_REQUESTS = 3
 RESET_WINDOW_SECONDS = 15 * 60
 
 
-def _reset_requests_key(email: str) -> str:
+def _per_email_key(prefix: str, email: str) -> str:
     # Hashed so cache keys never hold an address, and always a valid key length.
     digest = hashlib.sha256(email.strip().casefold().encode()).hexdigest()
-    return f"accounts:reset-requests:{digest}"
+    return f"accounts:{prefix}:{digest}"
 
 
-def allow_password_reset_email(email: str) -> bool:
-    """Count one reset request for this address. False once it is over the limit."""
-    key = _reset_requests_key(email)
-    cache.add(key, 0, timeout=RESET_WINDOW_SECONDS)
+def _count_request(key: str, *, limit: int, window_seconds: int) -> bool:
+    """Count one request under this cache key. False once it is over ``limit``."""
+    cache.add(key, 0, timeout=window_seconds)
     try:
         requests = cache.incr(key)
     except ValueError:
         # The counter expired between add() and incr(); this is the first request.
-        cache.set(key, 1, timeout=RESET_WINDOW_SECONDS)
+        cache.set(key, 1, timeout=window_seconds)
         requests = 1
-    return requests <= RESET_MAX_REQUESTS
+    return requests <= limit
+
+
+def allow_password_reset_email(email: str) -> bool:
+    """Count one reset request for this address. False once it is over the limit."""
+    return _count_request(
+        _per_email_key("reset-requests", email),
+        limit=RESET_MAX_REQUESTS,
+        window_seconds=RESET_WINDOW_SECONDS,
+    )
+
+
+# --------------------------------------------------------------------------
+# Unconfirmed sign-ups: resending the link, and freeing abandoned ones.
+#
+# "Unconfirmed" means inactive AND never signed in. Every account that has
+# confirmed its email has signed in at least once or is active, so this never
+# matches a real student. If moderation ever deactivates accounts, give it its
+# own flag rather than reusing is_active, or this would treat a suspended
+# account that never signed in as an abandoned sign-up.
+# --------------------------------------------------------------------------
+RESEND_MAX_REQUESTS = 3
+RESEND_WINDOW_SECONDS = 15 * 60
+
+
+def _unconfirmed_accounts():
+    return User.objects.filter(is_active=False, last_login__isnull=True)
+
+
+def account_to_reconfirm(email: str) -> User | None:
+    """The unconfirmed account to send a fresh confirmation link to, or None.
+
+    None when no unconfirmed account uses this address, or when the address has
+    had too many resends this window. The caller shows the same page either
+    way, so the form can't be used to find accounts or flood an inbox.
+
+    A resend restarts the sign-up clock (``date_joined``), so an account whose
+    first link expired isn't freed by ``delete_expired_signups`` while the
+    student is holding a brand-new link.
+    """
+    allowed = _count_request(
+        _per_email_key("confirmation-resends", email),
+        limit=RESEND_MAX_REQUESTS,
+        window_seconds=RESEND_WINDOW_SECONDS,
+    )
+    if not allowed:
+        return None
+    user = _unconfirmed_accounts().filter(email=email.strip().casefold()).first()
+    if user is not None:
+        user.date_joined = timezone.now()
+        user.save(update_fields=["date_joined"])
+    return user
+
+
+def delete_expired_signups() -> int:
+    """Delete unconfirmed accounts whose confirmation link has expired.
+
+    Frees their email address and username, so a student who never clicked the
+    link can register again. Links last PASSWORD_RESET_TIMEOUT (the token
+    generator's setting), so nothing deleted here could still be confirmed.
+    Returns how many accounts were deleted.
+    """
+    cutoff = timezone.now() - timedelta(seconds=settings.PASSWORD_RESET_TIMEOUT)
+    _, deleted_per_model = _unconfirmed_accounts().filter(date_joined__lt=cutoff).delete()
+    return deleted_per_model.get(User._meta.label, 0)
