@@ -1,12 +1,13 @@
-// The cursor paints the page: a trailing green ring, a green "cut" that turns
-// the dark background Farmingdale green wherever it passes, gradient washes
-// that shift as it crosses the screen, and a flashlight that brightens the
-// hero's wall of course codes beneath it.
+// The cursor paints the page: a soft green aura that trails it and keeps
+// shifting, gradient washes that change as it crosses the screen, and a
+// flashlight that brightens the hero's wall of course codes beneath it.
 //
-// Performance: the cut, ring and washes move only with transform and opacity,
-// which composite without repainting. The flashlight is the one repaint, and
-// it is confined to the hero's code wall.
+// Performance: the aura and washes move only with transform and opacity, which
+// composite without repainting. The aura's 8s gradient shift is a CSS
+// animation, so it runs even while the mouse is still. The flashlight is the
+// one repaint, and it is confined to the hero's code wall.
 //
+// Decorative only: nothing here takes clicks or hides the system cursor.
 // Touch devices get a slow ambient drift instead. Reduced motion gets a still,
 // centred background and none of this.
 (function () {
@@ -37,34 +38,20 @@
     return;
   }
 
-  // ── The green ring ───────────────────────────────────────────────────────
-  var ring = document.createElement("div");
-  ring.className = "cursor-follower";
-  ring.setAttribute("aria-hidden", "true");
-  document.body.appendChild(ring);
+  // ── The aura ─────────────────────────────────────────────────────────────
+  var aura = document.createElement("div");
+  aura.className = "cursor-aura";
+  aura.setAttribute("aria-hidden", "true");
+  ["a", "b"].forEach(function (name) {
+    var layer = document.createElement("div");
+    layer.className = "cursor-aura-layer cursor-aura-layer-" + name;
+    aura.appendChild(layer);
+  });
+  document.body.appendChild(aura);
+  gsap.set(aura, { xPercent: -50, yPercent: -50, x: window.innerWidth / 2, y: window.innerHeight / 2 });
 
-  var ringX = gsap.quickTo(ring, "x", { duration: 0.8, ease: "power3.out" });
-  var ringY = gsap.quickTo(ring, "y", { duration: 0.8, ease: "power3.out" });
-
-  // ── The green cut ────────────────────────────────────────────────────────
-  // A crisp green circle that trails the cursor. It blends with "screen", so
-  // it turns the dark page green but leaves white text white. When you move
-  // fast it stretches along the direction of travel, then rounds out again.
-  var cut = document.createElement("div");
-  cut.className = "cursor-cut";
-  cut.setAttribute("aria-hidden", "true");
-  var cutShape = document.createElement("div");
-  cutShape.className = "cursor-cut-shape";
-  cut.appendChild(cutShape);
-  document.body.appendChild(cut);
-  gsap.set(cut, { xPercent: -50, yPercent: -50, x: window.innerWidth / 2, y: window.innerHeight / 2 });
-
-  var cutX = gsap.quickTo(cut, "x", { duration: 0.9, ease: "power3.out" });
-  var cutY = gsap.quickTo(cut, "y", { duration: 0.9, ease: "power3.out" });
-  var stretch = gsap.quickTo(cutShape, "scaleX", { duration: 0.5, ease: "power3.out" });
-  var squash = gsap.quickTo(cutShape, "scaleY", { duration: 0.5, ease: "power3.out" });
-  var turn = gsap.quickTo(cutShape, "rotation", { duration: 0.5, ease: "power3.out" });
-  var last = { x: 0, y: 0, t: 0 };
+  var auraX = gsap.quickTo(aura, "x", { duration: 0.9, ease: "power3.out" });
+  var auraY = gsap.quickTo(aura, "y", { duration: 0.9, ease: "power3.out" });
 
   var washMix = gsap.quickTo(washB, "opacity", { duration: 2.4, ease: "power2.out" });
 
@@ -81,23 +68,9 @@
     var x = event.clientX;
     var y = event.clientY;
 
-    gsap.to(ring, { opacity: 1, duration: 0.6, overwrite: "auto" });
-    ringX(x - 16);
-    ringY(y - 16);
-
-    gsap.to(cut, { opacity: 1, duration: 0.6, overwrite: "auto" });
-    cutX(x);
-    cutY(y);
-    // Speed in px per ms decides the stretch; direction decides the angle.
-    var now = event.timeStamp;
-    var dt = Math.max(now - last.t, 1);
-    var vx = (x - last.x) / dt;
-    var vy = (y - last.y) / dt;
-    var speed = Math.min(Math.hypot(vx, vy), 3);
-    if (speed > 0.05) turn((Math.atan2(vy, vx) * 180) / Math.PI);
-    stretch(1 + speed * 0.12);
-    squash(1 - speed * 0.06);
-    last = { x: x, y: y, t: now };
+    gsap.to(aura, { opacity: 1, duration: 0.6, overwrite: "auto" });
+    auraX(x);
+    auraY(y);
     // Left edge shows the first gradient, right edge the second.
     washMix(Math.min(Math.max(x / window.innerWidth, 0), 1));
 
@@ -117,29 +90,17 @@
   });
 
   document.addEventListener("pointerleave", function () {
-    gsap.to([ring, cut], { opacity: 0, duration: 0.6 });
+    gsap.to(aura, { opacity: 0, duration: 0.6 });
   });
 
-  // Ease the stretch back to a circle once the cursor stops.
-  gsap.ticker.add(function () {
-    if (performance.now() - last.t > 120) {
-      stretch(1);
-      squash(1);
-    }
-  });
-
-  // ── Engage: anything you can act on pulls the light in ───────────────────
+  // ── Engage: anything you can act on draws the aura in a little ─────────
   document.querySelectorAll("a, button, .pillar, [data-rambo]").forEach(function (el) {
     var isRambo = el.hasAttribute("data-rambo");
     el.addEventListener("pointerenter", function () {
-      ring.classList.add("is-engaged");
-      gsap.to(ring, { scale: isRambo ? 2.6 : 1.8, duration: 0.6, ease: "power3.out" });
-      gsap.to(cut, { scale: isRambo ? 1.5 : 1.25, duration: 0.8, ease: "power3.out" });
+      gsap.to(aura, { scale: isRambo ? 1.3 : 1.12, duration: 0.8, ease: "power3.out" });
     });
     el.addEventListener("pointerleave", function () {
-      ring.classList.remove("is-engaged");
-      gsap.to(ring, { scale: 1, duration: 0.6, ease: "power3.out" });
-      gsap.to(cut, { scale: 1, duration: 1, ease: "power3.out" });
+      gsap.to(aura, { scale: 1, duration: 1, ease: "power3.out" });
     });
   });
 

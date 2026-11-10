@@ -585,35 +585,52 @@
     @apply outline-accent-300;
   }
 
-  /* --- Cursor follower --------------------------------------------------- */
-  /* Decorative only. The system cursor is never hidden, and the follower is
-     not created at all on touch devices or with reduced motion. */
-  /* The green "cut": a crisp circle that trails the cursor and, through
-     "screen" blending, turns the dark page Farmingdale green beneath it while
-     white text stays white. Added by cursor.js for mouse users only. */
-  .cursor-cut {
+  /* --- Cursor aura ------------------------------------------------------ */
+  /* A soft green gradient that trails the mouse and keeps shifting on an 8s
+     loop (two layers turning and cross-fading). Decorative only: it never
+     takes clicks, the system cursor stays visible, and "screen" blending
+     tints the dark page green while white text stays white. cursor.js adds
+     it for mouse users only; touch and reduced motion never get it. */
+  .cursor-aura {
     @apply pointer-events-none fixed left-0 top-0 z-30 opacity-0;
-    width: clamp(11rem, 22vmin, 18rem);
+    width: clamp(16rem, 34vmin, 26rem);
     aspect-ratio: 1;
     mix-blend-mode: screen;
-    will-change: transform;
+    will-change: transform, opacity;
   }
 
-  .cursor-cut-shape {
-    @apply h-full w-full rounded-full;
-    background: radial-gradient(circle,
-      var(--color-accent-600) 0%, var(--color-accent-600) 68%,
-      color-mix(in srgb, var(--color-accent-600) 55%, transparent) 70.5%, transparent 71%);
+  .cursor-aura-layer {
+    @apply absolute inset-0 rounded-full;
+    filter: blur(28px);
+    animation: aura-shift 8s ease-in-out infinite;
   }
 
-  .cursor-follower {
-    @apply pointer-events-none fixed left-0 top-0 z-50 h-8 w-8 rounded-full border
-           border-accent-300 bg-accent-300/0 opacity-0 transition-colors duration-500;
-    transform: translate3d(-100px, -100px, 0);
+  .cursor-aura-layer-a {
+    background:
+      radial-gradient(circle at 32% 35%, var(--color-accent-500) 0%, transparent 52%),
+      radial-gradient(circle at 70% 68%, var(--color-accent-700) 0%, transparent 58%);
   }
 
-  .cursor-follower.is-engaged {
-    @apply bg-accent-300/20;
+  .cursor-aura-layer-b {
+    background:
+      radial-gradient(circle at 68% 30%, var(--color-accent-400) 0%, transparent 50%),
+      radial-gradient(circle at 30% 72%, var(--color-accent-600) 0%, transparent 56%);
+    animation-name: aura-shift-b;
+  }
+
+  @keyframes aura-shift {
+    0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.55; }
+    50% { transform: rotate(180deg) scale(1.12); opacity: 0.25; }
+  }
+
+  @keyframes aura-shift-b {
+    0%, 100% { transform: rotate(0deg) scale(1.08); opacity: 0.2; }
+    50% { transform: rotate(-180deg) scale(0.94); opacity: 0.5; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cursor-aura { display: none; }
+    .cursor-aura-layer { animation: none; }
   }
 
   /* --- Feature strip ----------------------------------------------------- */
