@@ -16,7 +16,7 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
     </a>
 
     {# Desktop tabs #}
-    <nav class="hidden md:flex md:items-center md:gap-0.5" aria-label="Primary">
+    <nav class="hidden shrink-0 md:flex md:items-center md:gap-0.5" aria-label="Primary">
       {% for tab in nav_tabs %}
         <a href="{{ tab.url }}"
            class="{% if tab.is_active %}nav-tab-active{% else %}nav-tab{% endif %} md:px-2 lg:px-3"
@@ -24,18 +24,21 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
       {% endfor %}
     </nav>
 
-    <div class="flex flex-1 items-center justify-end gap-2">
+    <div class="flex min-w-0 flex-1 items-center justify-end gap-2">
 
       {% comment %}Search — full input only from 1280px. At 1024px the seven tabs plus a
-         288px input overflowed the header by 46px and pushed Sign in offscreen.{% endcomment %}
-      <form action="{% url 'search' %}" method="get" role="search" class="hidden xl:block">
+         288px input overflowed the header by 46px and pushed Sign in offscreen.
+         The input is up to 288px but shrinks to fit: signed in, Profile + Sign out
+         are wider than Sign in + Join, and a fixed 288px covered the Facilities tab.{% endcomment %}
+      <form action="{% url 'search' %}" method="get" role="search"
+            class="hidden min-w-0 max-w-72 flex-1 xl:block">
         <label for="site-search" class="sr-only">Search RamHub</label>
         <div class="relative">
           <span class="pointer-events-none absolute inset-y-0 left-2 flex items-center text-neutral-500">
             {% include "partials/icons/search.html" %}
           </span>
           <input type="search" id="site-search" name="q" placeholder="Search courses, professors, clubs"
-                 class="field-input w-72 pl-9" autocomplete="off" maxlength="100"
+                 class="field-input w-full pl-9" autocomplete="off" maxlength="100"
                  value="{% if request.resolver_match.url_name == 'search' %}{{ request.GET.q }}{% endif %}">
         </div>
       </form>
@@ -47,9 +50,11 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
 
       {# Account #}
       {% if user.is_authenticated %}
+        {% comment %}Icon only from 768px to 1024px: "Profile" is wider than "Sign in", and
+           with its label the signed-in header overflowed by 7px at 768px.{% endcomment %}
         <a href="{% url 'profile' %}" class="btn-secondary hidden shrink-0 md:inline-flex">
           {% include "partials/icons/user.html" %}
-          <span>Profile</span>
+          <span class="sr-only lg:not-sr-only">Profile</span>
         </a>
         <form action="{% url 'logout' %}" method="post" class="hidden shrink-0 xl:block">
           {% csrf_token %}
