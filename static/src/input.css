@@ -916,7 +916,8 @@
     --fly: 0;
   }
 
-  .galaxy-stage.galaxy-pinned { height: 230svh; }
+  /* Taller than the screen so the dive into the core has room to play out. */
+  .galaxy-stage.galaxy-pinned { height: 280svh; }
 
   .galaxy-sticky {
     @apply sticky top-0 flex h-svh w-full items-center justify-center overflow-hidden;
