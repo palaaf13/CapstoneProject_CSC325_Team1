@@ -39,7 +39,7 @@
   }
 
   // ── The watercolor ───────────────────────────────────────────────────────
-  // Three soft pools of colour. Each trails the mouse at its own pace (the
+  // Three soft pools of deep green. Each trails the mouse at its own pace (the
   // last is the laziest), so they stretch apart while it moves and settle
   // back together, overlapping, when it stops.
   var aura = document.createElement("div");

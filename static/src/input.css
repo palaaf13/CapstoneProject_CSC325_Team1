@@ -587,7 +587,7 @@
 
   /* --- Cursor watercolor ------------------------------------------------- */
   /* A broad, airy watercolor wash that drifts after the mouse like silk.
-     Three soft blobs (mint, sage, sea-glass) follow at different speeds, so
+     Three soft blobs of deep green follow at different speeds, so
      they trail and overlap like wet paint. Each blob also breathes on an 8s
      cloudlike loop of its own, animating only transform and opacity.
      Decorative only: it never takes clicks, the system cursor stays visible,
@@ -617,8 +617,8 @@
   .cursor-wash-a .cursor-wash-shape {
     border-radius: 58% 42% 55% 45% / 46% 60% 40% 54%;
     background:
-      radial-gradient(ellipse at 38% 40%, color-mix(in srgb, var(--color-accent-200) 95%, transparent) 0%, transparent 64%),
-      radial-gradient(ellipse at 70% 65%, color-mix(in srgb, var(--color-accent-400) 85%, transparent) 0%, transparent 62%);
+      radial-gradient(ellipse at 38% 40%, color-mix(in srgb, var(--color-accent-400) 95%, transparent) 0%, transparent 64%),
+      radial-gradient(ellipse at 70% 65%, color-mix(in srgb, var(--color-accent-600) 90%, transparent) 0%, transparent 62%);
   }
 
   .cursor-wash-b {
@@ -628,8 +628,8 @@
   .cursor-wash-b .cursor-wash-shape {
     border-radius: 44% 56% 38% 62% / 58% 44% 56% 42%;
     background:
-      radial-gradient(ellipse at 55% 45%, color-mix(in srgb, #8fd3c7 90%, transparent) 0%, transparent 62%),
-      radial-gradient(ellipse at 30% 70%, color-mix(in srgb, var(--color-accent-300) 75%, transparent) 0%, transparent 60%);
+      radial-gradient(ellipse at 55% 45%, color-mix(in srgb, #2f8f6a 90%, transparent) 0%, transparent 62%),
+      radial-gradient(ellipse at 30% 70%, color-mix(in srgb, var(--color-accent-500) 80%, transparent) 0%, transparent 60%);
     animation-name: wash-drift-b;
     animation-delay: -2.7s;
   }
@@ -641,25 +641,25 @@
   .cursor-wash-c .cursor-wash-shape {
     border-radius: 62% 38% 48% 52% / 40% 58% 42% 60%;
     background:
-      radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--color-accent-100) 80%, transparent) 0%, transparent 66%);
+      radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--color-accent-300) 75%, transparent) 0%, transparent 66%);
     animation-name: wash-drift-c;
     animation-delay: -5.3s;
   }
 
   @keyframes wash-drift-a {
-    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1, 1); opacity: 0.62; }
-    33% { transform: translate3d(4%, -3%, 0) rotate(14deg) scale(1.08, 0.94); opacity: 0.46; }
-    66% { transform: translate3d(-3%, 4%, 0) rotate(-10deg) scale(0.95, 1.07); opacity: 0.56; }
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1, 1); opacity: 0.50; }
+    33% { transform: translate3d(4%, -3%, 0) rotate(14deg) scale(1.08, 0.94); opacity: 0.37; }
+    66% { transform: translate3d(-3%, 4%, 0) rotate(-10deg) scale(0.95, 1.07); opacity: 0.45; }
   }
 
   @keyframes wash-drift-b {
-    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1.04, 0.96); opacity: 0.4; }
-    50% { transform: translate3d(-5%, -4%, 0) rotate(-22deg) scale(0.94, 1.1); opacity: 0.58; }
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1.04, 0.96); opacity: 0.32; }
+    50% { transform: translate3d(-5%, -4%, 0) rotate(-22deg) scale(0.94, 1.1); opacity: 0.46; }
   }
 
   @keyframes wash-drift-c {
-    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(0.96); opacity: 0.34; }
-    50% { transform: translate3d(5%, 3%, 0) rotate(18deg) scale(1.12); opacity: 0.5; }
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(0.96); opacity: 0.27; }
+    50% { transform: translate3d(5%, 3%, 0) rotate(18deg) scale(1.12); opacity: 0.40; }
   }
 
   @media (prefers-reduced-motion: reduce) {
