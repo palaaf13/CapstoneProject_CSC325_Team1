@@ -1,0 +1,5 @@
+{% if form.non_field_errors %}
+  <div class="rounded-md border border-danger-600 bg-white p-3 text-meta text-danger-600" role="alert">
+    {{ form.non_field_errors }}
+  </div>
+{% endif %}
