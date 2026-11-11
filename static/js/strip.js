@@ -1,4 +1,5 @@
-// The feature strip: seven cards that move sideways as you scroll down.
+// The feature strip: seven cards that move sideways as you scroll down, each
+// one passing through the centre of the screen in turn.
 //
 // Borrowed from the Agrumea Farm reference: off-centre cards fall out of focus
 // (blur + dim + slight shrink) so the middle one reads as the subject.
@@ -58,8 +59,28 @@
     });
   }
 
+  // The strip travels from the first card centred to the last card centred,
+  // so every card, first and last included, passes through the middle.
+  function centreOf(item) {
+    var box = item.getBoundingClientRect();
+    return box.left + box.width / 2 - track.getBoundingClientRect().left;
+  }
+
+  function startX() {
+    return viewport.offsetWidth / 2 - centreOf(items[0]);
+  }
+
+  function endX() {
+    return viewport.offsetWidth / 2 - centreOf(items[items.length - 1]);
+  }
+
   function distance() {
-    return Math.max(track.scrollWidth - viewport.offsetWidth, 0);
+    return Math.max(startX() - endX(), 0);
+  }
+
+  // The section holds for exactly as long as the strip travels.
+  function fitStage() {
+    stage.style.height = distance() + window.innerHeight + "px";
   }
 
   // Phones keep the native swipeable carousel: a pinned strip driven by
@@ -69,30 +90,35 @@
   gsap.matchMedia().add("(min-width: 768px)", function () {
     document.documentElement.classList.add("strip-pinned");
 
-    var drift = gsap.to(track, {
-      x: function () {
-        return -distance();
-      },
-      ease: "none",
-      // Focus is recalculated on the tween's own render, not ScrollTrigger's
-      // onUpdate. With scrub, onUpdate fires on the scroll event while the track
-      // is still ~1s behind, so the blur froze against a stale position and left
-      // the wrong card sharp.
-      onUpdate: focusCards,
-      scrollTrigger: {
-        trigger: stage,
-        start: "top top",
-        end: function () {
-          return "+=" + distance();
+    fitStage();
+    ScrollTrigger.addEventListener("refreshInit", fitStage);
+
+    var drift = gsap.fromTo(
+      track,
+      { x: startX },
+      {
+        x: endX,
+        ease: "none",
+        // Focus is recalculated on the tween's own render, not ScrollTrigger's
+        // onUpdate. With scrub, onUpdate fires on the scroll event while the
+        // track is still ~1s behind, so the blur froze against a stale position
+        // and left the wrong card sharp.
+        onUpdate: focusCards,
+        scrollTrigger: {
+          trigger: stage,
+          start: "top top",
+          end: function () {
+            return "+=" + distance();
+          },
+          scrub: 1.1,
+          pin: ".strip-sticky",
+          pinSpacing: false,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onRefresh: focusCards,
         },
-        scrub: 1.1,
-        pin: ".strip-sticky",
-        pinSpacing: false,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        onRefresh: focusCards,
-      },
-    });
+      }
+    );
 
     // While pinned, the strip's position comes from the transform, so the
     // container must never scroll itself. Browsers scroll a focused child into
@@ -129,6 +155,8 @@
     // matchMedia cleanup: below 768px everything above is reverted.
     return function () {
       document.documentElement.classList.remove("strip-pinned");
+      ScrollTrigger.removeEventListener("refreshInit", fitStage);
+      stage.style.height = "";
       gsap.set(track, { x: 0 });
       clearFocus();
     };

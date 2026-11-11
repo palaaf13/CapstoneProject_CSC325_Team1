@@ -675,6 +675,7 @@
     @apply relative;
   }
 
+  /* strip.js sets the exact height (travel + one screen); this is the fallback. */
   html.strip-pinned .strip-stage {
     height: 320svh;
   }
