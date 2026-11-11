@@ -87,14 +87,16 @@ def test_no_template_uses_a_multiline_hash_comment():
     offenders = [
         f"{path.relative_to(TEMPLATES)}:{number}"
         for path in TEMPLATES.rglob("*.html")
-        for number, line in enumerate(path.read_text().splitlines(), start=1)
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1)
         if "{#" in line and "#}" not in line
     ]
     assert not offenders, offenders
 
 
 def test_landing_css_is_scoped_so_it_cannot_leak_into_directories():
-    css = (Path(__file__).resolve().parent.parent / "static/src/input.css").read_text()
+    css = (Path(__file__).resolve().parent.parent / "static/src/input.css").read_text(
+        encoding="utf-8"
+    )
     landing = css[css.index("Landing page\n") :]
     selectors = re.findall(r"^\s{2}(\.[a-z][\w-]*)", landing, flags=re.M)
     assert selectors, "expected landing selectors"
@@ -297,8 +299,12 @@ def test_scroll_stages_are_only_pinned_by_javascript(client):
 
 
 def test_galaxy_uses_the_design_tokens_not_stray_colours():
-    script = (Path(__file__).resolve().parent.parent / "static/js/galaxy.js").read_text()
-    css = (Path(__file__).resolve().parent.parent / "static/src/input.css").read_text()
+    script = (Path(__file__).resolve().parent.parent / "static/js/galaxy.js").read_text(
+        encoding="utf-8"
+    )
+    css = (Path(__file__).resolve().parent.parent / "static/src/input.css").read_text(
+        encoding="utf-8"
+    )
     for token in ("--color-accent-200", "--color-accent-400", "--color-neutral-950"):
         assert token in script, token
     tokens = {
