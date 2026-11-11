@@ -1,27 +1,11 @@
-{% extends "base.html" %}
+{% extends "accounts/profile_base.html" %}
 
 {% block title %}Your profile · RamHub{% endblock %}
 
-{% block content %}
-  <section class="mx-auto max-w-2xl py-6 sm:py-10" aria-labelledby="profile-title">
-    <div class="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-neutral-200 pb-4">
-      <div class="min-w-0">
-        <h1 id="profile-title" class="text-h1">
-          {{ profile_user.display_name|default:profile_user.username }}
-        </h1>
-        <p class="mt-1 text-body text-neutral-500">@{{ profile_user.username }}</p>
-      </div>
-      <div class="flex shrink-0 items-center gap-2">
-        <form action="{% url 'logout' %}" method="post">
-          {% csrf_token %}
-          <button type="submit" class="btn-ghost">Sign out</button>
-        </form>
-        <a href="{% url 'saved:cabinet' %}" class="btn-secondary">Filing cabinet</a>
-        <a href="{% url 'profile_edit' %}" class="btn-primary">Edit profile</a>
-      </div>
-    </div>
-
-    <div class="card card-pad sm:p-6">
+{% block profile_content %}
+  <div class="space-y-6">
+    <section class="card card-pad sm:p-6" aria-labelledby="details-title">
+      <h2 id="details-title" class="sr-only">Details</h2>
       <dl class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
         <div>
           <dt class="field-label">College email</dt>
@@ -42,11 +26,8 @@
         <div>
           <dt class="field-label">Visibility</dt>
           <dd class="text-body text-neutral-900">
-            {% if profile_user.is_profile_public %}
-              Visible to other students
-            {% else %}
-              Only you can see this profile
-            {% endif %}
+            {% if profile_user.is_profile_public %}Visible to other students{% else %}Only you can see this profile{% endif %}
+            <a href="{% url 'profile_privacy' %}" class="ml-1 rounded-sm text-meta font-medium text-accent-700 hover:underline">Change</a>
           </dd>
         </div>
       </dl>
@@ -63,6 +44,25 @@
           <a href="{% url 'profile_edit' %}" class="btn-secondary mt-3">Add a bio</a>
         {% endif %}
       </div>
-    </div>
-  </section>
+    </section>
+
+    <section aria-labelledby="recent-posts-title">
+      <div class="mb-2 flex items-baseline justify-between gap-3">
+        <h2 id="recent-posts-title" class="text-h3">Recent posts</h2>
+        {% if post_count > recent_posts|length %}
+          <a href="{% url 'profile_posts' %}" class="rounded-sm text-meta font-medium text-accent-700 hover:underline">See all {{ post_count }}</a>
+        {% endif %}
+      </div>
+      {% if recent_posts %}
+        <ul class="card divide-y divide-neutral-200">
+          {% for post in recent_posts %}
+            {% include "accounts/partials/post_summary.html" %}
+          {% endfor %}
+        </ul>
+      {% else %}
+        {% url 'community:post_create' as new_post_url %}
+        {% include "partials/empty_state.html" with icon="chat" headline="No posts yet" description="Took a course worth warning people about, or one you’d recommend? Your first post helps the next student decide." action_label="Write a post" action_url=new_post_url %}
+      {% endif %}
+    </section>
+  </div>
 {% endblock %}

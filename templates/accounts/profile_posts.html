@@ -1,0 +1,35 @@
+{% extends "accounts/profile_base.html" %}
+
+{% block title %}Your posts · RamHub{% endblock %}
+
+{% block profile_content %}
+  <section aria-labelledby="posts-title">
+    <div class="mb-2 flex items-baseline justify-between gap-3">
+      <h2 id="posts-title" class="text-h3">Your posts</h2>
+      {% if page.paginator.count %}<span class="badge-neutral">{{ page.paginator.count }}</span>{% endif %}
+    </div>
+
+    {% if page.object_list %}
+      <ul class="card divide-y divide-neutral-200">
+        {% for post in page.object_list %}
+          {% include "accounts/partials/post_summary.html" %}
+        {% endfor %}
+      </ul>
+
+      {% if page.has_other_pages %}
+        <nav class="mt-4 flex items-center justify-between gap-3" aria-label="Pages of your posts">
+          {% if page.has_previous %}
+            <a href="?page={{ page.previous_page_number }}" class="btn-secondary">Newer</a>
+          {% else %}<span></span>{% endif %}
+          <span class="text-meta text-neutral-500">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+          {% if page.has_next %}
+            <a href="?page={{ page.next_page_number }}" class="btn-secondary">Older</a>
+          {% else %}<span></span>{% endif %}
+        </nav>
+      {% endif %}
+    {% else %}
+      {% url 'community:post_create' as new_post_url %}
+      {% include "partials/empty_state.html" with icon="chat" headline="No posts yet" description="Posts you write in the community feed show up here." action_label="Write a post" action_url=new_post_url %}
+    {% endif %}
+  </section>
+{% endblock %}

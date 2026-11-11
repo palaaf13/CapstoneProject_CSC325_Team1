@@ -1,0 +1,28 @@
+{% extends "accounts/profile_base.html" %}
+
+{% block title %}Privacy · RamHub{% endblock %}
+
+{% block profile_content %}
+  <section class="max-w-xl" aria-labelledby="privacy-title">
+    <h2 id="privacy-title" class="text-h3">Privacy</h2>
+    <p class="mt-1 text-body text-neutral-500">
+      Your posts always show your name. This setting is about your profile page: your major,
+      graduation year, and bio.
+    </p>
+
+    <div class="card card-pad mt-4 sm:p-6">
+      <form method="post" class="space-y-4" novalidate>
+        {% csrf_token %}
+        {% include "accounts/partials/form_errors.html" %}
+        {% include "accounts/partials/settings_field.html" with field=form.is_profile_public %}
+        <p class="text-meta text-neutral-500">
+          Other students can’t open profile pages yet. When they can, this choice decides whether
+          they see yours.
+        </p>
+        <div class="flex justify-end">
+          <button type="submit" class="btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% comment %}
+Layout for every profile and account-settings page: the student's header, then
+the section nav (a tab row on phones, a sidebar from md) beside the page.
+Pages fill {% block profile_content %}.
+{% endcomment %}
+
+{% block content %}
+  <section class="py-2 sm:py-4" aria-labelledby="profile-title">
+    <div class="mb-6 flex flex-col gap-4 border-b border-neutral-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex min-w-0 items-center gap-4">
+        {% include "partials/avatar.html" with person=profile_user size="lg" %}
+        <div class="min-w-0">
+          <h1 id="profile-title" class="truncate text-h1">{{ profile_user.public_name }}</h1>
+          <p class="mt-0.5 flex flex-wrap gap-x-2 text-meta text-neutral-500">
+            <span>@{{ profile_user.username }}</span>
+            {% if profile_user.major %}<span aria-hidden="true">&middot;</span><span>{{ profile_user.major }}</span>{% endif %}
+            {% if profile_user.grad_year %}<span aria-hidden="true">&middot;</span><span>Class of {{ profile_user.grad_year }}</span>{% endif %}
+          </p>
+        </div>
+      </div>
+      <div class="flex shrink-0 items-center gap-2">
+        <a href="{% url 'saved:cabinet' %}" class="btn-secondary">Filing cabinet</a>
+        <form action="{% url 'logout' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost">Sign out</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="md:grid md:grid-cols-[12rem_minmax(0,1fr)] md:gap-8">
+      <nav aria-label="Profile and settings"
+           class="-mx-4 mb-6 flex gap-1 overflow-x-auto border-b border-neutral-200 px-4 md:mx-0 md:mb-0 md:block md:space-y-5 md:overflow-visible md:border-0 md:px-0">
+        {% regroup profile_nav by group as nav_groups %}
+        {% for nav_group in nav_groups %}
+          <div class="flex shrink-0 md:block">
+            <p class="mb-1 hidden px-3 text-meta font-semibold uppercase tracking-wide text-neutral-500 md:block">{{ nav_group.grouper }}</p>
+            <ul class="flex gap-1 md:block md:space-y-0.5">
+              {% for item in nav_group.list %}
+                <li>
+                  <a href="{{ item.url }}"
+                     class="{% if item.is_active %}profile-nav-link-active{% else %}profile-nav-link{% endif %}"
+                     {% if item.is_active %}aria-current="page"{% endif %}>{{ item.label }}</a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endfor %}
+      </nav>
+
+      <div class="min-w-0">
+        {% block profile_content %}{% endblock %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

@@ -1,4 +1,6 @@
-"""Student account views: registration, sign-in, profiles, and password reset."""
+"""Student account views: registration, sign-in, and password reset.
+
+The profile and account-settings pages live in profile_views.py."""
 
 import logging
 from smtplib import SMTPException
@@ -6,7 +8,6 @@ from smtplib import SMTPException
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import (
     PasswordResetCompleteView,
     PasswordResetConfirmView,
@@ -27,7 +28,6 @@ from django.views.decorators.http import require_POST
 
 from apps.accounts import services
 from apps.accounts.forms import (
-    ProfileForm,
     RamHubPasswordResetForm,
     RamHubSetPasswordForm,
     RegistrationForm,
@@ -156,31 +156,6 @@ def sign_out(request: HttpRequest) -> HttpResponse:
     """Sign out. POST-only so a link or image on another site can't sign you out."""
     auth_logout(request)
     return redirect("home")
-
-
-@login_required
-def profile(request: HttpRequest) -> HttpResponse:
-    """Show the signed-in student their own profile."""
-    return render(request, "accounts/profile.html", {"profile_user": request.user})
-
-
-@login_required
-def profile_edit(request: HttpRequest) -> HttpResponse:
-    """Let the signed-in student edit their own profile.
-
-    The account edited is always request.user; no id is read from the request,
-    so a student cannot edit anyone else.
-    """
-    if request.method == "POST":
-        form = ProfileForm(request.POST, instance=request.user)
-        if form.is_valid():
-            services.update_profile(request.user, form.cleaned_data)
-            messages.success(request, "Your profile is saved.")
-            return redirect("profile")
-    else:
-        form = ProfileForm(instance=request.user)
-
-    return render(request, "accounts/profile_edit.html", {"form": form})
 
 
 # --------------------------------------------------------------------------

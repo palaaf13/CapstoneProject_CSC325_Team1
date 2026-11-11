@@ -3,6 +3,7 @@
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.accounts import profile_views
 from apps.accounts import views as account_views
 
 from . import views
@@ -49,6 +50,20 @@ urlpatterns = [
         name="password_reset_complete",
     ),
     # Always the signed-in student's own profile: no id in the URL to tamper with.
-    path("profile/", account_views.profile, name="profile"),
-    path("profile/edit/", account_views.profile_edit, name="profile_edit"),
+    path("profile/", profile_views.profile, name="profile"),
+    path("profile/posts/", profile_views.profile_posts, name="profile_posts"),
+    path("profile/edit/", profile_views.profile_edit, name="profile_edit"),
+    path("profile/settings/privacy/", profile_views.profile_privacy, name="profile_privacy"),
+    path("profile/settings/password/", profile_views.profile_password, name="profile_password"),
+    path("profile/settings/account/", profile_views.profile_account, name="profile_account"),
+    path(
+        "profile/settings/account/sign-out-others/",
+        profile_views.sign_out_other_devices,
+        name="sign_out_other_devices",
+    ),
+    path(
+        "profile/settings/account/delete/",
+        profile_views.delete_account,
+        name="delete_account",
+    ),
 ]

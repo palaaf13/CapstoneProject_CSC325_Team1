@@ -102,3 +102,33 @@ def test_unknown_or_malformed_post_is_404(client):
     assert client.get(reverse("community:post_detail", args=["nope"])).status_code == 404
     url = reverse("community:post_detail", args=["000000000000000000000000"])
     assert client.get(url).status_code == 404
+
+
+def test_feed_and_post_name_the_author_by_display_name(client, make_user, make_post):
+    author = make_user("ramfan42", display_name="Ram Student")
+    post = make_post(author=author)
+
+    feed = client.get(FEED_URL).content.decode()
+    client.force_login(author)
+    detail = client.get(reverse("community:post_detail", args=[post.pk])).content.decode()
+
+    for html in (feed, detail):
+        assert "Ram Student" in html
+        assert "ramfan42" not in html
+
+
+def test_comments_name_the_author_by_display_name(client, make_user, make_post):
+    post = make_post()
+    commenter = make_user("ramfan43", display_name="Comment Writer")
+    client.force_login(commenter)
+
+    client.post(reverse("community:comment_create", args=[post.pk]), {"body": "Library 2nd floor"})
+    detail = client.get(reverse("community:post_detail", args=[post.pk])).content.decode()
+
+    assert "Comment Writer" in detail
+
+
+def test_author_without_a_display_name_falls_back_to_username(client, make_user, make_post):
+    make_post(author=make_user("ramfan44"))
+
+    assert b"ramfan44" in client.get(FEED_URL).content

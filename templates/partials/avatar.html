@@ -1,0 +1,9 @@
+{% comment %}
+A student's picture: their initials on a round tile, until photo uploads exist.
+
+  {% include "partials/avatar.html" with person=user %}
+  {% include "partials/avatar.html" with person=user size="lg" %}
+
+Hidden from screen readers: the person's name is always beside it.
+{% endcomment %}
+<span class="avatar avatar-{{ person.monogram_tone }}{% if size == 'lg' %} avatar-lg{% endif %}" aria-hidden="true">{{ person.monogram }}</span>
