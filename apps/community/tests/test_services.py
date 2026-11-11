@@ -115,3 +115,9 @@ def test_strangers_cannot_remove_someone_elses_comment(make_post, make_user):
     comment = services.add_comment(make_user("writer"), post, "Mine")
     with pytest.raises(PermissionDenied):
         services.remove_comment(make_user("stranger"), post, str(comment.comment_id))
+
+
+def test_display_name_prefers_the_profile_display_name(make_user):
+    assert services.display_name(make_user("ramfan45", display_name="Ram")) == "Ram"
+    assert services.display_name(make_user("ramfan46")) == "ramfan46"
+    assert services.display_name(None) == "A former student"
