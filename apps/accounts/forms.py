@@ -2,7 +2,12 @@
 
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm, UserCreationForm
+from django.contrib.auth.forms import (
+    PasswordChangeForm,
+    PasswordResetForm,
+    SetPasswordForm,
+    UserCreationForm,
+)
 from django.http import HttpRequest
 from django.utils import timezone
 
@@ -111,11 +116,8 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = get_user_model()
-        fields = ("display_name", "major", "grad_year", "bio", "is_profile_public")
-        labels = {
-            "grad_year": "Graduation year",
-            "is_profile_public": "Show my profile to other students",
-        }
+        fields = ("display_name", "major", "grad_year", "bio")
+        labels = {"grad_year": "Graduation year"}
         help_texts = {
             "display_name": "The name other students see next to your posts.",
             "bio": "Up to 500 characters.",
@@ -180,3 +182,53 @@ class RamHubSetPasswordForm(SetPasswordForm):
         self.fields["new_password2"].widget.attrs.update(
             {"class": "field-input", "autocomplete": "new-password"}
         )
+
+
+class PrivacyForm(forms.Form):
+    is_profile_public = forms.BooleanField(
+        required=False, label="Show my profile to other students"
+    )
+
+
+class RamHubPasswordChangeForm(PasswordChangeForm):
+    """Change the password while signed in. Asks for the current one first."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["old_password"].label = "Current password"
+        self.fields["old_password"].widget.attrs.update(
+            {"class": "field-input", "autocomplete": "current-password"}
+        )
+        self.fields["new_password1"].widget.attrs.update(
+            {"class": "field-input", "autocomplete": "new-password"}
+        )
+        self.fields["new_password2"].label = "Confirm new password"
+        self.fields["new_password2"].widget.attrs.update(
+            {"class": "field-input", "autocomplete": "new-password"}
+        )
+
+
+class DeleteAccountForm(forms.Form):
+    """Confirm an account deletion with the current password."""
+
+    password = forms.CharField(
+        label="Current password",
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={"class": "field-input", "autocomplete": "current-password"}
+        ),
+    )
+    confirm = forms.BooleanField(
+        label="I understand this can’t be undone.",
+        error_messages={"required": "Tick the box to confirm."},
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_password(self) -> str:
+        password = self.cleaned_data["password"]
+        if not self.user.check_password(password):
+            raise forms.ValidationError("That password isn’t right.")
+        return password

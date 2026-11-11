@@ -3,13 +3,14 @@
 import hashlib
 
 from django.conf import settings
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, update_session_auth_hash
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.cache import cache
 from django.core.mail import EmailMessage, mailers
 from django.http import HttpRequest
 
 from apps.accounts.models import User, validate_college_email
+from apps.saved.models import SavedItem
 
 
 class EmailConfirmationTokenGenerator(PasswordResetTokenGenerator):
@@ -150,7 +151,7 @@ def send_registration_confirmation(user: User, confirmation_url: str) -> None:
         )
 
 
-PROFILE_FIELDS = ("display_name", "major", "grad_year", "bio", "is_profile_public")
+PROFILE_FIELDS = ("display_name", "major", "grad_year", "bio")
 
 
 def update_profile(user: User, changes: dict) -> User:
@@ -165,6 +166,62 @@ def update_profile(user: User, changes: dict) -> User:
             setattr(user, field, changes[field])
     user.save(update_fields=list(PROFILE_FIELDS))
     return user
+
+
+def set_profile_visibility(user: User, *, is_public: bool) -> User:
+    """Choose whether other students may see this profile."""
+    user.is_profile_public = is_public
+    user.save(update_fields=["is_profile_public"])
+    return user
+
+
+def recent_posts(user: User):
+    """This student's own posts, newest first. Removed posts are left out."""
+    return user.posts.filter(is_removed=False).order_by("-created_at")
+
+
+def sign_out_other_sessions(request: HttpRequest, user: User) -> None:
+    """End every session for this account except the one making the request.
+
+    Bumping session_epoch changes the user's session hash (see
+    User._get_session_auth_hash), so other sessions fail verification on
+    their next request. The current session is re-stamped with the new hash.
+    """
+    user.session_epoch = (user.session_epoch or 0) + 1
+    user.save(update_fields=["session_epoch"])
+    update_session_auth_hash(request, user)
+
+
+DELETED_FIRST_NAME = "Former"
+DELETED_LAST_NAME = "student"
+
+
+def delete_account(user: User) -> None:
+    """Close a student's account for good.
+
+    The account is anonymized, not removed: Post.author and the ratings
+    cascade on delete, so a hard delete would wipe their posts out of threads
+    other students replied to and silently change rating averages. Instead
+    everything personal is scrubbed, the email address is freed so it can
+    register again, the password is made unusable, and the feed names the
+    account "Former student". Saved items are private, so they are deleted.
+    """
+    SavedItem.objects.filter(user=user).delete()
+
+    user.username = f"deleted-{user.pk}"
+    user.email = f"deleted-{user.pk}@deleted.invalid"
+    user.first_name = DELETED_FIRST_NAME
+    user.last_name = DELETED_LAST_NAME
+    user.display_name = ""
+    user.major = ""
+    user.grad_year = None
+    user.bio = ""
+    user.avatar = ""
+    user.is_profile_public = False
+    user.courses_taken = []
+    user.is_active = False
+    user.set_unusable_password()
+    user.save()
 
 
 # Password-reset emails one address may receive per window, so the form can't
