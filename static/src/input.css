@@ -361,7 +361,7 @@
 
   /* --- Avatar: a student's initials ------------------------------------ */
   /* Photo uploads don't exist yet, so a student's picture is their initials
-     on one of the same four tones the club tiles use — round, so a person
+     on one of the same four tones the club tiles use â€” round, so a person
      never reads as a club. The tone is decoration and means nothing. */
   .avatar {
     @apply inline-flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full
