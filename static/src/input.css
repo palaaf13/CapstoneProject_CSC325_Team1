@@ -585,35 +585,86 @@
     @apply outline-accent-300;
   }
 
-  /* --- Cursor follower --------------------------------------------------- */
-  /* Decorative only. The system cursor is never hidden, and the follower is
-     not created at all on touch devices or with reduced motion. */
-  /* The green "cut": a crisp circle that trails the cursor and, through
-     "screen" blending, turns the dark page Farmingdale green beneath it while
-     white text stays white. Added by cursor.js for mouse users only. */
-  .cursor-cut {
-    @apply pointer-events-none fixed left-0 top-0 z-30 opacity-0;
-    width: clamp(11rem, 22vmin, 18rem);
-    aspect-ratio: 1;
+  /* --- Cursor watercolor ------------------------------------------------- */
+  /* A broad, airy watercolor wash that drifts after the mouse like silk.
+     Three soft blobs of deep green follow at different speeds, so
+     they trail and overlap like wet paint. Each blob also breathes on an 8s
+     cloudlike loop of its own, animating only transform and opacity.
+     Decorative only: it never takes clicks, the system cursor stays visible,
+     and "screen" blending tints the dark page while white text stays white.
+     cursor.js adds it for mouse users only; touch and reduced motion never
+     get it. */
+  .cursor-aura {
+    @apply pointer-events-none fixed inset-0 z-30 overflow-hidden opacity-0;
     mix-blend-mode: screen;
+    will-change: opacity;
+  }
+
+  .cursor-wash {
+    @apply absolute left-0 top-0;
+    width: clamp(21rem, 47vmin, 37rem);
+    aspect-ratio: 1.35;
     will-change: transform;
   }
 
-  .cursor-cut-shape {
-    @apply h-full w-full rounded-full;
-    background: radial-gradient(circle,
-      var(--color-accent-600) 0%, var(--color-accent-600) 68%,
-      color-mix(in srgb, var(--color-accent-600) 55%, transparent) 70.5%, transparent 71%);
+  .cursor-wash-shape {
+    @apply absolute inset-0;
+    filter: blur(38px);
+    animation: wash-drift-a 8s ease-in-out infinite;
   }
 
-  .cursor-follower {
-    @apply pointer-events-none fixed left-0 top-0 z-50 h-8 w-8 rounded-full border
-           border-accent-300 bg-accent-300/0 opacity-0 transition-colors duration-500;
-    transform: translate3d(-100px, -100px, 0);
+  /* Uneven corners make each blob a pool of paint rather than a circle. */
+  .cursor-wash-a .cursor-wash-shape {
+    border-radius: 58% 42% 55% 45% / 46% 60% 40% 54%;
+    background:
+      radial-gradient(ellipse at 38% 40%, color-mix(in srgb, var(--color-accent-400) 95%, transparent) 0%, transparent 64%),
+      radial-gradient(ellipse at 70% 65%, color-mix(in srgb, var(--color-accent-600) 90%, transparent) 0%, transparent 62%);
   }
 
-  .cursor-follower.is-engaged {
-    @apply bg-accent-300/20;
+  .cursor-wash-b {
+    width: clamp(18rem, 39vmin, 31rem);
+  }
+
+  .cursor-wash-b .cursor-wash-shape {
+    border-radius: 44% 56% 38% 62% / 58% 44% 56% 42%;
+    background:
+      radial-gradient(ellipse at 55% 45%, color-mix(in srgb, #2f8f6a 90%, transparent) 0%, transparent 62%),
+      radial-gradient(ellipse at 30% 70%, color-mix(in srgb, var(--color-accent-500) 80%, transparent) 0%, transparent 60%);
+    animation-name: wash-drift-b;
+    animation-delay: -2.7s;
+  }
+
+  .cursor-wash-c {
+    width: clamp(15rem, 32vmin, 26rem);
+  }
+
+  .cursor-wash-c .cursor-wash-shape {
+    border-radius: 62% 38% 48% 52% / 40% 58% 42% 60%;
+    background:
+      radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--color-accent-300) 75%, transparent) 0%, transparent 66%);
+    animation-name: wash-drift-c;
+    animation-delay: -5.3s;
+  }
+
+  @keyframes wash-drift-a {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1, 1); opacity: 0.50; }
+    33% { transform: translate3d(4%, -3%, 0) rotate(14deg) scale(1.08, 0.94); opacity: 0.37; }
+    66% { transform: translate3d(-3%, 4%, 0) rotate(-10deg) scale(0.95, 1.07); opacity: 0.45; }
+  }
+
+  @keyframes wash-drift-b {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1.04, 0.96); opacity: 0.32; }
+    50% { transform: translate3d(-5%, -4%, 0) rotate(-22deg) scale(0.94, 1.1); opacity: 0.46; }
+  }
+
+  @keyframes wash-drift-c {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(0.96); opacity: 0.27; }
+    50% { transform: translate3d(5%, 3%, 0) rotate(18deg) scale(1.12); opacity: 0.40; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cursor-aura { display: none; }
+    .cursor-wash-shape { animation: none; }
   }
 
   /* --- Feature strip ----------------------------------------------------- */
@@ -624,6 +675,7 @@
     @apply relative;
   }
 
+  /* strip.js sets the exact height (travel + one screen); this is the fallback. */
   html.strip-pinned .strip-stage {
     height: 320svh;
   }
@@ -865,7 +917,8 @@
     --fly: 0;
   }
 
-  .galaxy-stage.galaxy-pinned { height: 230svh; }
+  /* Taller than the screen so the dive into the core has room to play out. */
+  .galaxy-stage.galaxy-pinned { height: 320svh; }
 
   .galaxy-sticky {
     @apply sticky top-0 flex h-svh w-full items-center justify-center overflow-hidden;

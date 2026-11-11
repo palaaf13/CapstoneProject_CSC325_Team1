@@ -26,6 +26,9 @@ const STREAK = new THREE.Color("#d0ebda"); // --color-accent-100
 const SHAPE = { radius: 6, arms: 4, spin: 1.05, scatter: 0.38, scatterPower: 3 };
 // Sit the core below the headline, like a horizon, so the text stays clear.
 const GALAXY_Y = -1.9;
+// How far the scroll dive flies in: the galaxy grows to 1 + DIVE_DEPTH times
+// its size around the camera, which ends the dive deep in the bright core.
+const DIVE_DEPTH = 40;
 
 
 // A white mortarboard on a soft glow. The shader tints it per particle.
@@ -460,7 +463,7 @@ function start() {
 
     fly += (flyTarget - fly) * 0.08;
     // The world swells past the camera, so the dive reads as flying in.
-    world.scale.setScalar(1 + fly * fly * 7);
+    world.scale.setScalar(1 + fly * fly * DIVE_DEPTH);
     // Rise to meet the camera while diving in.
     world.position.y = GALAXY_Y * (1 - fly);
     if (shootingCaps) shootingCaps(delta, Math.max(0, 1 - fly * 2));
