@@ -3,7 +3,11 @@
 from collections.abc import Iterable, Mapping
 from typing import TypedDict
 
-from apps.catalog.models import ProfessorRatingSummary
+from django.db import transaction
+
+from apps.catalog.models import CourseRatingSummary, ProfessorRatingSummary
+
+from .models import CourseRating
 
 RATING_MIN = 1
 RATING_MAX = 5
@@ -68,6 +72,29 @@ def summarize_course_ratings(
         "avg_usefulness": calculate_average(rating["usefulness"] for rating in values),
         "count": len(values),
     }
+
+
+def submit_course_rating(
+    *, user, course, difficulty: int, workload: int, usefulness: int, semester: str
+) -> CourseRating:
+    """Save one student rating and refresh the course's embedded summary."""
+    with transaction.atomic():
+        rating = CourseRating.objects.create(
+            user=user,
+            course=course,
+            difficulty=difficulty,
+            workload=workload,
+            usefulness=usefulness,
+            semester=semester,
+        )
+        summary_data = summarize_course_ratings(
+            CourseRating.objects.filter(course=course).values(
+                "difficulty", "workload", "usefulness"
+            )
+        )
+        course.rating_summary = CourseRatingSummary(**summary_data)
+        course.save(update_fields=["rating_summary"])
+    return rating
 
 
 def summarize_professor_ratings(

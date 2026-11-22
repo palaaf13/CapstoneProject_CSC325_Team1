@@ -72,7 +72,32 @@
 
       <section aria-labelledby="advice-heading">
         <h2 id="advice-heading" class="sr-only">Student advice</h2>
-        {% include "partials/empty_state.html" with icon="chat" headline="Advice and ratings are not open yet" description="Once accounts are live, students who took this course can rate it and write about what to expect. That work is scheduled for a later sprint." %}
+        <div class="card card-pad">
+          <h2 class="text-h3">Rate this course</h2>
+          {% if request.user.is_authenticated %}
+            {% if has_rated %}
+              <p class="mt-2 text-meta text-neutral-600">You have already rated this course.</p>
+            {% else %}
+              <form method="post" action="{% url 'ratings:course_rating_create' course.slug %}" class="mt-4 space-y-4">
+                {% csrf_token %}
+                {% for field in rating_form %}
+                  <div>
+                    <label for="{{ field.id_for_label }}" class="field-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<p class="mt-1 text-meta text-red-700">{{ error }}</p>{% endfor %}
+                  </div>
+                {% endfor %}
+                {% for error in rating_form.non_field_errors %}<p class="text-meta text-red-700">{{ error }}</p>{% endfor %}
+                <button type="submit" class="btn-primary">Submit rating</button>
+              </form>
+            {% endif %}
+          {% else %}
+            <p class="mt-2 text-meta text-neutral-600">
+              <a class="text-accent-700 hover:underline" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Sign in</a>
+              to submit a rating.
+            </p>
+          {% endif %}
+        </div>
       </section>
     </div>
 

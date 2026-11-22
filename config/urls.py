@@ -13,6 +13,7 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("", include("apps.community.urls")),
     path("", include("apps.catalog.urls")),
+    path("", include("apps.ratings.urls")),
     path("", include("apps.campus.urls")),
     path("", include("apps.saved.urls")),
     # Site-level pages

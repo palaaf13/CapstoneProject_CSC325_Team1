@@ -16,6 +16,8 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
+from apps.ratings.forms import CourseRatingForm
+from apps.ratings.models import CourseRating
 from apps.saved import services as saved
 
 from . import services
@@ -122,6 +124,11 @@ def course_detail(request: HttpRequest, code: str) -> HttpResponse:
     course = services.get_course_by_code(code)
     if course is None:
         raise Http404(f"No course with code {code!r}")
+    has_rated = (
+        CourseRating.objects.filter(user=request.user, course=course).exists()
+        if request.user.is_authenticated
+        else False
+    )
     return render(
         request,
         "catalog/course_detail.html",
@@ -129,6 +136,8 @@ def course_detail(request: HttpRequest, code: str) -> HttpResponse:
             "course": course,
             "professors": services.professors_for_course(course),
             "is_saved": saved.is_saved(request.user, course),
+            "has_rated": has_rated,
+            "rating_form": CourseRatingForm(),
         },
     )
 
