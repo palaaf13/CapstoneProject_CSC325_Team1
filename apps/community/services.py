@@ -15,10 +15,14 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 
+from apps.catalog.models import Professor
+
 from .forms import FeedQuery
 from .models import Comment, Post, Vote, VoteTarget
 
 PAGE_SIZE = 20
+# How many threads a professor's page shows before "See all" links to the feed.
+PROFESSOR_THREADS_SHOWN = 5
 
 
 # -- permissions -----------------------------------------------------------
@@ -43,11 +47,27 @@ def can_remove_comment(user, comment: Comment) -> bool:
 
 
 # -- reading ---------------------------------------------------------------
-def feed_posts(query: FeedQuery) -> QuerySet[Post]:
-    """The feed for one set of filters. A removed post stays only while it has comments."""
-    posts = Post.objects.filter(Q(is_removed=False) | Q(comment_count__gt=0)).select_related(
-        "author"
+def _visible_posts() -> QuerySet[Post]:
+    """Every post a reader should see. A removed post stays only while it has comments."""
+    return Post.objects.filter(Q(is_removed=False) | Q(comment_count__gt=0)).select_related(
+        "author", "professor"
     )
+
+
+def get_professor(slug: str) -> Professor | None:
+    """The professor with this directory slug, or None."""
+    if not slug:
+        return None
+    return Professor.objects.filter(slug=slug).first()
+
+
+def feed_posts(query: FeedQuery, professor: Professor | None = None) -> QuerySet[Post]:
+    """The feed for one set of filters, optionally narrowed to one professor's threads."""
+    posts = _visible_posts()
+    if professor is not None:
+        # Filter on the resolved id, not professor__slug: a slug lookup would
+        # compile to a $lookup join across every post.
+        posts = posts.filter(professor=professor)
     if query.kind:
         posts = posts.filter(kind=query.kind)
     if query.tag:
@@ -61,11 +81,17 @@ def feed_posts(query: FeedQuery) -> QuerySet[Post]:
     return posts.order_by("-created_at")
 
 
+def professor_threads(professor: Professor) -> tuple[list[Post], int]:
+    """The newest threads about one professor, and how many there are in all."""
+    posts = _visible_posts().filter(professor=professor).order_by("-created_at")
+    return list(posts[:PROFESSOR_THREADS_SHOWN]), posts.count()
+
+
 def get_post(post_id: str) -> Post | None:
     """The post with this id, or None for a missing or malformed id."""
     if not ObjectId.is_valid(post_id):
         return None
-    return Post.objects.select_related("author").filter(pk=ObjectId(post_id)).first()
+    return Post.objects.select_related("author", "professor").filter(pk=ObjectId(post_id)).first()
 
 
 def votes_by(user, posts: Iterable[Post]) -> dict[ObjectId, int]:
@@ -97,8 +123,19 @@ def display_name(user) -> str:
 
 
 # -- writing ---------------------------------------------------------------
-def create_post(*, author, kind: str, title: str, body: str, tags: list[str]) -> Post:
-    return Post.objects.create(author=author, kind=kind, title=title, body=body, tags=tags)
+def create_post(
+    *,
+    author,
+    kind: str,
+    title: str,
+    body: str,
+    tags: list[str],
+    professor: Professor | None = None,
+) -> Post:
+    """A new post. With `professor`, it is a thread on that professor's page."""
+    return Post.objects.create(
+        author=author, kind=kind, title=title, body=body, tags=tags, professor=professor
+    )
 
 
 def edit_post(user, post: Post, *, kind: str, title: str, body: str, tags: list[str]) -> Post:

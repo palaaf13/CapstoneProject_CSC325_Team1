@@ -51,4 +51,4 @@ def test_feed_query_keeps_valid_values():
     query = FeedQueryForm(
         {"sort": "top", "kind": "question", "tag": "#CSC325", "q": " notes "}
     ).to_query()
-    assert query == ("notes", "question", "csc325", "top", 1)
+    assert query == ("notes", "question", "csc325", "top", 1, "")

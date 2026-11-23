@@ -71,7 +71,12 @@ def _page_url(query: FeedQuery, page_number: int) -> str:
 # -- reading ---------------------------------------------------------------
 def feed(request: HttpRequest) -> HttpResponse:
     query = FeedQueryForm(request.GET).to_query()
-    page = Paginator(services.feed_posts(query), services.PAGE_SIZE).get_page(query.page)
+    professor = services.get_professor(query.professor)
+    if professor is None and query.professor:
+        # A stale or mistyped slug falls back to the whole feed, like a bad sort.
+        query = query._replace(professor="")
+    posts = services.feed_posts(query, professor)
+    page = Paginator(posts, services.PAGE_SIZE).get_page(query.page)
     my_votes = services.votes_by(request.user, page.object_list)
     rows = [{"post": p, "my_vote": my_votes.get(p.pk, 0)} for p in page.object_list]
 
@@ -82,7 +87,8 @@ def feed(request: HttpRequest) -> HttpResponse:
         "total": page.paginator.count,
         "sorts": SORTS,
         "kinds": PostKind.choices,
-        "is_filtered": bool(query.q or query.kind or query.tag),
+        "professor": professor,
+        "is_filtered": bool(query.q or query.kind or query.tag or professor),
         "clear_url": reverse("community:feed"),
         "prev_url": _page_url(query, page.previous_page_number()) if page.has_previous() else None,
         "next_url": _page_url(query, page.next_page_number()) if page.has_next() else None,
@@ -133,6 +139,20 @@ def post_create(request: HttpRequest) -> HttpResponse:
         post = services.create_post(author=request.user, **form.cleaned_data)
         return redirect("community:post_detail", post_id=post.pk)
     return render(request, "community/post_form.html", {"form": form, "post": None})
+
+
+@login_required_for_feed
+def professor_post_create(request: HttpRequest, slug: str) -> HttpResponse:
+    """Start a thread about one professor. The slug comes from the URL, checked here."""
+    professor = services.get_professor(slug)
+    if professor is None:
+        raise Http404("No such professor.")
+    form = PostForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        post = services.create_post(author=request.user, professor=professor, **form.cleaned_data)
+        return redirect("community:post_detail", post_id=post.pk)
+    context = {"form": form, "post": None, "professor": professor}
+    return render(request, "community/post_form.html", context)
 
 
 @login_required_for_feed

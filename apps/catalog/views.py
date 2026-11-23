@@ -16,6 +16,7 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
+from apps.community import services as community
 from apps.saved import services as saved
 
 from . import services
@@ -136,6 +137,8 @@ def course_detail(request: HttpRequest, code: str) -> HttpResponse:
 def professor_detail(request: HttpRequest, slug: str) -> HttpResponse:
     """One professor, keyed on the directory slug."""
     professor = get_object_or_404(Professor, slug=slug)
+    threads, thread_count = community.professor_threads(professor)
+    my_votes = community.votes_by(request.user, threads)
     return render(
         request,
         "catalog/professor_detail.html",
@@ -143,5 +146,8 @@ def professor_detail(request: HttpRequest, slug: str) -> HttpResponse:
             "professor": professor,
             "courses": services.courses_for_professor(professor),
             "is_saved": saved.is_saved(request.user, professor),
+            "thread_rows": [{"post": p, "my_vote": my_votes.get(p.pk, 0)} for p in threads],
+            "thread_count": thread_count,
+            "all_threads_url": f"{reverse('community:feed')}?{urlencode({'professor': slug})}",
         },
     )

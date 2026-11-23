@@ -11,7 +11,11 @@ Three MongoDB decisions shape this file (see CLAUDE.md):
 2. ``score`` and ``comment_count`` are denormalized onto the Post so the feed
    can sort and render rows without touching Vote or unpacking every thread.
    ``services`` keeps them in step; nothing else should write them.
-3. Votes are their own collection keyed on (user, target_type, target_id), as
+3. A post may be about one professor (``Post.professor``). That is a real
+   ForeignKey because a professor is an independent record, and it is the
+   entity link from CLAUDE.md's data model. Posts without one are general
+   feed posts. Course, club and job links will sit beside it, one at most.
+4. Votes are their own collection keyed on (user, target_type, target_id), as
    in CLAUDE.md's data model, so the same table can carry comment votes later.
 
 User content is soft-deleted (``is_removed``) so thread structure survives.
@@ -60,6 +64,15 @@ class Post(models.Model):
     title = models.CharField(max_length=200)
     body = models.TextField(max_length=5000, blank=True)
     tags = ArrayField(models.CharField(max_length=MAX_TAG_LENGTH), default=list, blank=True)
+    # What the thread is about. Null for a general feed post. SET_NULL so a
+    # professor dropping out of the directory never deletes students' threads.
+    professor = models.ForeignKey(
+        "catalog.Professor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="posts",
+    )
     comments = EmbeddedModelArrayField(Comment, default=list, blank=True)
 
     # Denormalized — written only by services.py.
@@ -75,6 +88,7 @@ class Post(models.Model):
         indexes = [
             models.Index(fields=["-created_at"], name="community_post_new_idx"),
             models.Index(fields=["-score", "-created_at"], name="community_post_top_idx"),
+            models.Index(fields=["professor", "-created_at"], name="community_post_prof_idx"),
         ]
 
     def __str__(self) -> str:

@@ -53,6 +53,7 @@
     </div>
 
     {% if query.tag %}<input type="hidden" name="tag" value="{{ query.tag }}">{% endif %}
+    {% if professor %}<input type="hidden" name="professor" value="{{ professor.slug }}">{% endif %}
 
     <noscript><button type="submit" class="btn-primary">Search</button></noscript>
 
@@ -65,6 +66,14 @@
     <p class="mb-3 flex items-center gap-2 text-meta text-neutral-600">
       Showing <span class="badge-accent">#{{ query.tag }}</span>
       <a href="{% url 'community:feed' %}" class="rounded-sm text-accent-700 underline hover:text-accent-800">Show all tags</a>
+    </p>
+  {% endif %}
+
+  {% if professor %}
+    <p class="mb-3 flex flex-wrap items-center gap-2 text-meta text-neutral-600">
+      Threads about
+      <a href="{% url 'catalog:professor_detail' professor.slug %}" class="badge-accent hover:underline">{{ professor.full_name }}</a>
+      <a href="{% url 'community:feed' %}" class="rounded-sm text-accent-700 underline hover:text-accent-800">Show all posts</a>
     </p>
   {% endif %}
 
