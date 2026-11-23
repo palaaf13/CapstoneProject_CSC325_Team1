@@ -725,7 +725,33 @@ shows the result, and the rest of the site never touches the AI.
 | The search loop never finishes | Cut off after 4 calls; fallback | `test_a_runaway_tool_loop_is_cut_off` |
 | A link that isn't farmingdale.edu | The link is removed, the words stay | `test_links_outside_farmingdale_edu_are_removed`, `test_links_off_farmingdale_edu_never_reach_the_page` |
 | HTML or script in the answer | Escaped, never run | `test_model_html_is_escaped` |
-| A student hits the hourly limit | No call; fallback | `test_hourly_limit_stops_asking_the_ai` |
+| A student hits the hourly limit | No call; fallback | `test_hourly_limit_stops_asking_the_ai`, `test_the_hourly_limit_holds_however_requests_arrive` |
+| The database fails before the call, or while recording usage after it | Fallback (`unavailable`) before; the answer is still shown after | `test_every_fallback_reason_renders_a_working_page`, `test_a_database_failure_after_answering_still_shows_the_answer` |
+
+Every one of those reasons is rendered end to end and checked for the fallback box, the matching
+RamHub links, and that the student's question never reaches the logs
+(`test_every_fallback_reason_renders_a_working_page`).
+
+### Hardening from code review
+
+Nick's review of the PR raised six points, and each one was fixed before merging:
+
+- **Links are checked by parsing, not pattern-matching.** `is_allowed_url` uses `urlsplit` and
+  rejects anything a browser and Python might read differently: backslashes, whitespace,
+  `user@` parts, percent-encoded hosts, and ports other than 80 or 443. It allows only
+  `farmingdale.edu` and its subdomains (`test_is_allowed_url`, 25 cases).
+- **The eval's page fetcher only follows redirects that stay on farmingdale.edu**, so a link
+  can't bounce it to another or internal host
+  (`test_the_page_fetcher_only_follows_redirects_that_stay_on_farmingdale_edu`).
+- **The hourly limit can't be beaten with a burst.** Each question claims its slot *before* the
+  API call, and only the first 30 in an hour, by timestamp, go through
+  (`test_the_hourly_limit_holds_however_requests_arrive`).
+- **A database failure never breaks the page.** Before the call it falls back; after the call the
+  answer is still shown.
+- **Logs never include the question.** On a failure only the reason and the exception's type are
+  logged, never its message (`test_fallback_logs_never_include_the_error_text`).
+- **Three.js is pinned with Subresource Integrity hashes** in the page's import map, so a
+  changed CDN file is refused by browsers that support import-map integrity.
 
 ### Unit tests never call the API
 

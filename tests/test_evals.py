@@ -264,3 +264,23 @@ def test_forbidden_answers_are_not_in_the_expected_ones(case):
     for group in expected["must_mention"]:
         for word in group:
             assert word not in expected.get("forbidden", []), case["id"]
+
+
+def test_the_page_fetcher_only_follows_redirects_that_stay_on_farmingdale_edu():
+    import urllib.error
+    import urllib.request
+
+    from evals import sources
+
+    handler = sources._FSCOnlyRedirects()
+    request = urllib.request.Request("https://www.farmingdale.edu/a")
+    kept = handler.redirect_request(request, None, 302, "Found", {}, "/b/")
+    assert kept.full_url == "https://www.farmingdale.edu/b/"
+    for target in (
+        "http://169.254.169.254/latest/",
+        "https://evil.example.com/",
+        "file:///etc/passwd",
+    ):
+        with pytest.raises(urllib.error.HTTPError):
+            handler.redirect_request(request, None, 302, "Found", {}, target)
+    assert sources.fetch("https://evil.example.com/") is None

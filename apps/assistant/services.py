@@ -4,6 +4,7 @@ non-AI fallback. The prompt, the search loop and the link rules live in
 rambo.py, shared with the evaluation suite.
 """
 
+import logging
 import re
 from dataclasses import dataclass
 from datetime import timedelta
@@ -18,6 +19,8 @@ from config.search import site_search
 from . import rambo
 from .models import RamboQuestion
 from .rambo import RamboResult
+
+logger = logging.getLogger(__name__)
 
 STOPWORDS = {
     "about", "anyone", "best", "campus", "class", "classes", "could", "does", "farmingdale",
@@ -50,10 +53,38 @@ def questions_this_hour(user) -> int:
     return RamboQuestion.objects.filter(user=user, asked_at__gte=since).count()
 
 
+def _reserve_slot(user) -> RamboQuestion | None:
+    """Claim one of the student's hourly questions *before* calling the API.
+
+    Insert first, then count the rows up to and including this one. However
+    requests interleave, each slot's place in line is fixed by its timestamp,
+    so only the first N in an hour pass; a burst of simultaneous requests
+    can't slip extra questions through. Returns None when over the limit."""
+    slot = RamboQuestion.objects.create(
+        user=user, model=settings.RAMBO_MODEL, prompt_version=rambo.PROMPT_VERSION
+    )
+    since = timezone.now() - timedelta(hours=1)
+    earlier = RamboQuestion.objects.filter(
+        user=user, asked_at__gte=since, asked_at__lte=slot.asked_at
+    )
+    if earlier.count() > settings.RAMBO_HOURLY_LIMIT:
+        slot.delete()
+        return None
+    return slot
+
+
 def ask(user, question: str, history: list[dict]) -> RamboResult:
     """Ask Rambo on a student's behalf: enforce the hourly limit and record the
-    question (not its text) for cost tracking."""
-    if questions_this_hour(user) >= settings.RAMBO_HOURLY_LIMIT:
+    question's cost (never its text). The student always gets an answer or the
+    fallback: a database problem here degrades to the fallback, not an error."""
+    if not " ".join((question or "").split()):
+        return RamboResult(fallback_reason="empty_question")
+    try:
+        slot = _reserve_slot(user)
+    except Exception as exc:
+        logger.warning("Rambo could not reserve a question slot: %s", type(exc).__name__)
+        return RamboResult(fallback_reason="unavailable")
+    if slot is None:
         return RamboResult(fallback_reason="hourly_limit")
 
     result = rambo.ask(
@@ -62,17 +93,15 @@ def ask(user, question: str, history: list[dict]) -> RamboResult:
         history=history,
         model=settings.RAMBO_MODEL,
     )
-    if result.fallback_reason != "empty_question":
-        RamboQuestion.objects.create(
-            user=user,
-            fallback_reason=result.fallback_reason or "",
-            api_calls=result.usage.get("api_calls", 0),
-            input_tokens=result.usage.get("input_tokens", 0),
-            output_tokens=result.usage.get("output_tokens", 0),
-            web_searches=result.usage.get("web_searches", 0),
-            model=settings.RAMBO_MODEL,
-            prompt_version=rambo.PROMPT_VERSION,
-        )
+    try:
+        slot.fallback_reason = result.fallback_reason or ""
+        slot.api_calls = result.usage.get("api_calls", 0)
+        slot.input_tokens = result.usage.get("input_tokens", 0)
+        slot.output_tokens = result.usage.get("output_tokens", 0)
+        slot.web_searches = result.usage.get("web_searches", 0)
+        slot.save()
+    except Exception as exc:  # The answer is still worth showing.
+        logger.warning("Rambo could not record a question's usage: %s", type(exc).__name__)
     return result
 
 

@@ -22,6 +22,7 @@ import re
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import anthropic
 
@@ -48,7 +49,7 @@ WEB_SEARCH_TOOL = {
     "allowed_domains": ["farmingdale.edu"],
 }
 
-_FSC_URL = re.compile(r"^https?://([a-z0-9-]+\.)*farmingdale\.edu(?:[/?#]|$)", re.IGNORECASE)
+ALLOWED_HOST = "farmingdale.edu"
 _MD_LINK = re.compile(r"\[([^\]\n]+)\]\(([^)\s]+)\)")
 _BARE_URL = re.compile(r"(?<!\]\()(?<!\()\bhttps?://[^\s)\]]+", re.IGNORECASE)
 
@@ -108,8 +109,28 @@ def load_prompt() -> str:
 
 
 def is_allowed_url(url: str) -> bool:
-    """farmingdale.edu and its subdomains. Nothing else."""
-    return bool(_FSC_URL.match(url))
+    """An http(s) link to farmingdale.edu or one of its subdomains. Nothing else.
+
+    Parsed, not pattern-matched, and strict about anything a browser and Python
+    might read differently: no backslashes, whitespace or control characters,
+    no user:password@ part, no percent-encoded host, no port but 80 or 443."""
+    if not isinstance(url, str) or not url or "\\" in url:
+        return False
+    if any(ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in url):
+        return False
+    try:
+        parts = urlsplit(url)
+        port = parts.port
+    except ValueError:
+        return False
+    if parts.scheme.lower() not in ("http", "https") or not parts.netloc:
+        return False
+    if parts.username is not None or parts.password is not None or "@" in parts.netloc:
+        return False
+    if "%" in parts.netloc or port not in (None, 80, 443):
+        return False
+    host = (parts.hostname or "").rstrip(".")
+    return host == ALLOWED_HOST or host.endswith("." + ALLOWED_HOST)
 
 
 def clean_links(text: str, keep: Callable[[str], bool] = is_allowed_url) -> tuple[str, int]:
@@ -144,7 +165,7 @@ def _run_tool(tool: Tool | None, name: str, tool_input: dict) -> tuple[str, bool
     try:
         result = tool.run(tool_input if isinstance(tool_input, dict) else {})
     except Exception as exc:  # A broken lookup should not end the conversation.
-        logger.exception("Rambo tool %s failed", name)
+        logger.warning("Rambo tool %s failed: %s", name, type(exc).__name__)
         return f"The {name} lookup failed ({type(exc).__name__}). Answer without it.", True
     body = json.dumps(result, ensure_ascii=False, default=str)
     if len(body) > MAX_TOOL_RESULT_CHARS:
@@ -153,7 +174,10 @@ def _run_tool(tool: Tool | None, name: str, tool_input: dict) -> tuple[str, bool
 
 
 def _fallback(reason: str, usage: dict, detail: object = "") -> RamboResult:
-    logger.warning("Rambo fell back (%s) %s", reason, detail)
+    # Only the reason and, for errors, the exception's type: never its message,
+    # which could echo part of the request (and so the student's question).
+    kind = type(detail).__name__ if isinstance(detail, BaseException) else detail
+    logger.warning("Rambo fell back: %s %s", reason, kind)
     return RamboResult(fallback_reason=reason, usage=usage)
 
 
@@ -212,8 +236,7 @@ def ask(
         except anthropic.APIStatusError as exc:
             return _fallback(f"api_error_{exc.status_code}", usage, exc)
         except Exception as exc:  # The page must never break because of the AI.
-            logger.exception("Unexpected error calling Rambo")
-            return _fallback(f"unexpected_error:{type(exc).__name__}", usage)
+            return _fallback(f"unexpected_error:{type(exc).__name__}", usage, exc)
 
         usage["api_calls"] += 1
         served_by = getattr(response, "model", "") or served_by

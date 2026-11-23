@@ -6,13 +6,24 @@
 {% block rambo_button %}{% endblock %}
 
 {% block extra_head %}
-  {# Three.js for the 3D Rambo, from a CDN at the same pinned version as the landing page. #}
+  {% comment %}
+  Three.js for the 3D Rambo, from a CDN at the same pinned version as the
+  landing page. Each file has a Subresource Integrity hash: if the CDN ever
+  served different code, the browser refuses to run it (browsers without
+  import-map integrity support load it as before). To change versions, re-hash:
+    curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A
+  {% endcomment %}
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <script type="importmap">
     {
       "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
         "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      },
+      "integrity": {
+        "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js": "sha384-IDC7sAMAIMB/TZ6dgKKPPAKZ2bXXXP8+FBMBC8cU319eBhKITx+PaalhfDkDNH28",
+        "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/environments/RoomEnvironment.js": "sha384-9ItPPH2vgKbkvgrqTKq7ptGYe+WuAnqlZtlqleJW4/CJjnM5R7C+efD6iS7ADPJ9",
+        "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/objects/MarchingCubes.js": "sha384-j6MQ+4tROPfoG01YLkZzswNB+66fuwtNYSEBRs9nqqggZX6WIHGiq5PllKss2Cnh"
       }
     }
   </script>

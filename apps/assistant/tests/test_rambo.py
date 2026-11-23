@@ -201,10 +201,25 @@ def test_web_search_citations_become_sources_if_they_are_farmingdale():
         ("https://www.farmingdale.edu/x", True),
         ("https://farmingdale.edu", True),
         ("http://library.farmingdale.edu/hours", True),
+        ("HTTPS://WWW.FARMINGDALE.EDU/Registrar/", True),  # mixed case
+        ("https://farmingdale.edu:443/x", True),
+        ("https://farmingdale.edu./x", True),  # trailing-dot form of the same host
         ("//evil.com/x", False),
+        ("//farmingdale.edu/x", False),  # scheme-relative
         ("https://farmingdale.edu.evil.com/", False),
         ("https://evilfarmingdale.edu/", False),
         ("javascript:alert(1)", False),
+        ("ftp://farmingdale.edu/x", False),
+        ("https://farmingdale.edu\\@evil.example.com/", False),  # backslash
+        ("https://farmingdale.edu@evil.example.com/", False),  # userinfo
+        ("https://evil.example.com@www.farmingdale.edu/", False),  # userinfo
+        ("https://user:pw@www.farmingdale.edu/", False),
+        ("https://farmingdale%2eedu/", False),  # encoded host
+        ("https://www%2Efarmingdale.edu/", False),
+        ("https://farmingdale.edu:8080/", False),  # odd port
+        ("https://farmingdale.edu:notaport/", False),
+        ("https://www.farmingdale.edu /x", False),  # whitespace
+        ("https://www.farmingdale.edu/\tx", False),
     ],
 )
 def test_is_allowed_url(url, ok):
@@ -214,3 +229,12 @@ def test_is_allowed_url(url, ok):
 def test_clean_links_with_a_custom_rule():
     text, removed = clean_links("[a](/x/) [b](/y/)", keep=lambda url: url == "/x/")  # noqa: E501
     assert (text, removed) == ("[a](/x/) b", 1)
+
+
+def test_fallback_logs_never_include_the_error_text(caplog):
+    """An exception's message could echo the request; only its type is logged."""
+    secret = "my question about my financial aid appeal"
+    with caplog.at_level("WARNING"):
+        run(FakeClient(RuntimeError(secret)), question=secret)
+    assert "RuntimeError" in caplog.text
+    assert secret not in caplog.text

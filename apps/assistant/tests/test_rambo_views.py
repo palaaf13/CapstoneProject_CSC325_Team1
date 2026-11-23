@@ -4,8 +4,19 @@ import pytest
 
 from apps.assistant import services
 from apps.assistant.models import RamboQuestion
+from apps.assistant.models import RamboQuestion as RamboQuestionModel
 
-from .fakes import TIMEOUT, FakeClient, answer
+from .fakes import (
+    CONNECTION,
+    OVERLOADED,
+    RATE_LIMIT,
+    TIMEOUT,
+    FakeClient,
+    answer,
+    calls_tool,
+    response,
+    text_block,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -162,3 +173,76 @@ def test_get_client_is_none_without_a_key_or_when_disabled(settings):
     settings.ANTHROPIC_API_KEY = "x"
     settings.RAMBO_ENABLED = False
     assert services.get_client() is None
+
+
+# -- every fallback reason, rendered end to end ------------------------------
+FAILURES = {
+    "timeout": [TIMEOUT],
+    "connection_error": [CONNECTION],
+    "rate_limited": [RATE_LIMIT],
+    "api_error_529": [OVERLOADED],
+    "unexpected_error:RuntimeError": [RuntimeError("boom")],
+    "refused": [response(stop_reason="refusal")],
+    "truncated": [response(stop_reason="max_tokens")],
+    "invalid_output": [response(text_block("   "))],
+    "too_many_steps": [calls_tool("nope", {})],
+}
+
+
+@pytest.mark.parametrize("reason", [*FAILURES, "ai_disabled", "hourly_limit", "unavailable"])
+def test_every_fallback_reason_renders_a_working_page(
+    client, student, ai, settings, monkeypatch, reason, caplog
+):
+    question = "How do I get a parking permit?"
+    if reason in FAILURES:
+        ai.results = list(FAILURES[reason])
+    elif reason == "ai_disabled":
+        monkeypatch.setattr(services, "get_client", lambda: None)
+    elif reason == "hourly_limit":
+        settings.RAMBO_HOURLY_LIMIT = 0
+    elif reason == "unavailable":
+
+        def broken(*args, **kwargs):
+            raise RuntimeError("database down")
+
+        monkeypatch.setattr(services, "_reserve_slot", broken)
+
+    with caplog.at_level("WARNING"):
+        response_ = client.post(ASK, {"question": question}, **HTMX)
+
+    assert response_.status_code == 200
+    body = response_.content.decode()
+    assert 'data-testid="rambo-fallback"' in body
+    assert f'data-reason="{reason}"' in body
+    if reason == "hourly_limit":
+        assert "Rambo needs a breather" in body
+    else:
+        assert "answer right now." in body
+    assert 'href="/parking/"' in body  # the non-AI links still help
+    assert 'data-testid="rambo-answer"' not in body
+    assert question not in caplog.text  # never logged
+
+
+def test_a_database_failure_after_answering_still_shows_the_answer(
+    client, student, ai, monkeypatch
+):
+    def broken_save(self, *args, **kwargs):
+        raise RuntimeError("database down")
+
+    monkeypatch.setattr(RamboQuestionModel, "save", broken_save)
+    monkeypatch.setattr(services, "_reserve_slot", lambda user: RamboQuestionModel(user=user))
+    body = client.post(ASK, {"question": "How do I order a transcript?"}, **HTMX).content
+    assert b'data-testid="rambo-answer"' in body
+
+
+def test_the_hourly_limit_holds_however_requests_arrive(student, settings):
+    settings.RAMBO_HOURLY_LIMIT = 2
+    slots = [services._reserve_slot(student) for _ in range(4)]
+    assert [slot is not None for slot in slots] == [True, True, False, False]
+    assert RamboQuestion.objects.filter(user=student).count() == 2
+
+
+def test_the_rambo_page_pins_three_js_with_integrity_hashes(client, student):
+    body = client.get(PAGE).content.decode()
+    assert '"integrity"' in body
+    assert body.count("sha384-") == 3
