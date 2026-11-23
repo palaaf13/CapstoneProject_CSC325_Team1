@@ -32,6 +32,18 @@ COLLEGE_EMAIL_DOMAIN = env.str("COLLEGE_EMAIL_DOMAIN", default="farmingdale.edu"
 LOGIN_URL = "login"
 
 # --------------------------------------------------------------------------
+# AI review summary (apps.assistant)
+# --------------------------------------------------------------------------
+# No key means no AI: course and professor pages show the non-AI fallback.
+# The key lives in Vercel's environment and in GitHub Secrets, never here.
+ANTHROPIC_API_KEY = env.str("ANTHROPIC_API_KEY", default="")
+AI_SUMMARY_MODEL = env.str("AI_SUMMARY_MODEL", default="claude-haiku-5-5")
+AI_SUMMARIES_ENABLED = env.bool("AI_SUMMARIES_ENABLED", default=True)
+# Seconds per attempt. The summary loads after the page, so a slow call only
+# delays that one box, and the SDK retries once on a timeout or 5xx.
+AI_TIMEOUT_SECONDS = env.float("AI_TIMEOUT_SECONDS", default=8.0)
+
+# --------------------------------------------------------------------------
 # Email
 # --------------------------------------------------------------------------
 MAILERS = {

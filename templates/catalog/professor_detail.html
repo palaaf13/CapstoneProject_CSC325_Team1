@@ -76,6 +76,10 @@
             <a href="{% url 'login' %}?next={{ rate_url|urlencode }}" class="btn-primary" data-testid="rate-professor">Sign in to rate</a>
           {% endif %}
         </div>
+        {% if comments|length >= ai_min_reviews %}
+          {% url 'assistant:professor_summary' professor.slug as summary_url %}
+          {% include "assistant/partials/summary_slot.html" with url=summary_url count=comments|length %}
+        {% endif %}
         {% include "ratings/partials/comment_list.html" with comments=comments show_course=True empty_text="No written reviews on RamHub yet. Took a class with this instructor? Rate how they teach and leave a tip for the next student." %}
       </section>
     </div>

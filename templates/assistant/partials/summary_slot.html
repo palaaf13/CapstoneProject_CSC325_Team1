@@ -1,0 +1,16 @@
+{% comment %}
+Placeholder for the AI summary. htmx replaces it with the summary (or the
+fallback) once the page has loaded, so the page never waits on the AI.
+Only rendered when there are enough written reviews to summarize.
+
+  url    the summary endpoint
+  count  how many written reviews there are
+{% endcomment %}
+<div hx-get="{{ url }}" hx-trigger="load" hx-swap="outerHTML"
+     class="border-b border-neutral-200 px-4 py-4" data-testid="ai-summary-slot" aria-busy="true">
+  <p class="flex items-center gap-1.5 text-meta font-semibold text-neutral-500">
+    {% include "partials/icons/sparkles.html" %}
+    Summarizing {{ count }} reviews&hellip;
+  </p>
+  <noscript><p class="mt-1 text-meta text-neutral-500">Turn on JavaScript to see the AI summary.</p></noscript>
+</div>

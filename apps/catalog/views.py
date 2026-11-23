@@ -16,6 +16,7 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
+from apps.assistant.summarizer import MIN_REVIEWS
 from apps.ratings import services as ratings
 from apps.saved import services as saved
 
@@ -135,6 +136,7 @@ def course_detail(request: HttpRequest, code: str) -> HttpResponse:
             "is_saved": saved.is_saved(request.user, course),
             "my_rating": ratings.course_rating_by(request.user, course),
             "comments": ratings.course_comments(course, limit=COMMENTS_SHOWN),
+            "ai_min_reviews": MIN_REVIEWS,
         },
     )
 
@@ -151,5 +153,6 @@ def professor_detail(request: HttpRequest, slug: str) -> HttpResponse:
             "is_saved": saved.is_saved(request.user, professor),
             "my_rating": ratings.professor_rating_by(request.user, professor),
             "comments": ratings.professor_comments(professor, limit=COMMENTS_SHOWN),
+            "ai_min_reviews": MIN_REVIEWS,
         },
     )

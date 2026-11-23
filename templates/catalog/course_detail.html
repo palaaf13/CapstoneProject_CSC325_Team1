@@ -82,6 +82,10 @@
             <a href="{% url 'login' %}?next={{ rate_url|urlencode }}" class="btn-primary" data-testid="rate-course">Sign in to rate</a>
           {% endif %}
         </div>
+        {% if comments|length >= ai_min_reviews %}
+          {% url 'assistant:course_summary' course.slug as summary_url %}
+          {% include "assistant/partials/summary_slot.html" with url=summary_url count=comments|length %}
+        {% endif %}
         {% include "ratings/partials/comment_list.html" with comments=comments empty_text="No written advice yet. Took this course? Your rating and a sentence or two help the next student." %}
       </section>
     </div>

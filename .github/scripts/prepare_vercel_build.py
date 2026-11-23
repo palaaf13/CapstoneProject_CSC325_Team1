@@ -39,6 +39,9 @@ VERCELIGNORE = [
     "staticfiles/",
     "tests/",
     "apps/*/tests/",
+    # The eval suite runs in CI, not on the site. prompts/ is NOT listed: the
+    # AI review summary reads its prompt file at runtime.
+    "evals/",
     ".vscode/",
     ".claude/",
 ]
