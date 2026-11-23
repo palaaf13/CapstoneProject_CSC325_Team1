@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% comment %}
+Report a post, comment, or rating. One form for all four; `target` says which.
+{% endcomment %}
+
+{% block title %}Report this {{ target.noun }} · RamHub{% endblock %}
+
+{% block content %}
+  <nav aria-label="Breadcrumb" class="mb-3 text-meta">
+    <a href="{{ target.back_url }}" class="rounded-sm text-neutral-500 hover:text-neutral-900 hover:underline">
+      &larr; Back
+    </a>
+  </nav>
+
+  {% include "partials/page_header.html" with title="Report this "|add:target.noun subtitle="Reports go to RamHub's moderators. The person you report is not told who reported them." %}
+
+  <form method="post" class="card card-pad max-w-2xl space-y-6" novalidate>
+    {% csrf_token %}
+
+    <div>
+      <p class="field-label">You're reporting</p>
+      <blockquote class="border-l-2 border-neutral-300 pl-3 text-body text-neutral-700" data-testid="report-preview">
+        {{ target.preview|truncatechars:240 }}
+      </blockquote>
+    </div>
+
+    <fieldset {% if form.reason.errors %}aria-invalid="true" aria-describedby="reason-error"{% endif %}>
+      <legend class="field-label">{{ form.reason.label }}</legend>
+      <div class="space-y-2">
+        {% for choice in form.reason %}
+          <label for="{{ choice.id_for_label }}" class="flex cursor-pointer items-center gap-2 text-body text-neutral-800">
+            <input type="radio" name="{{ form.reason.html_name }}" value="{{ choice.data.value }}"
+                   id="{{ choice.id_for_label }}" class="h-4 w-4 accent-accent-600"
+                   {% if choice.data.selected %}checked{% endif %}>
+            {{ choice.choice_label }}
+          </label>
+        {% endfor %}
+      </div>
+      {% if form.reason.errors %}<p class="field-error" id="reason-error">{{ form.reason.errors.0 }}</p>{% endif %}
+    </fieldset>
+
+    <div>
+      <label for="{{ form.note.id_for_label }}" class="field-label">{{ form.note.label }}</label>
+      <textarea name="{{ form.note.html_name }}" id="{{ form.note.id_for_label }}" rows="3"
+                maxlength="{{ form.note.field.max_length }}"
+                aria-describedby="{% if form.note.errors %}note-error{% else %}note-hint{% endif %}"
+                class="{% if form.note.errors %}field-input-error{% else %}field-input{% endif %}"
+                {% if form.note.errors %}aria-invalid="true"{% endif %}>{{ form.note.value|default:'' }}</textarea>
+      {% if form.note.errors %}<p class="field-error" id="note-error">{{ form.note.errors.0 }}</p>
+      {% else %}<p class="field-hint" id="note-hint">{{ form.note.help_text }}</p>{% endif %}
+    </div>
+
+    <div class="flex flex-wrap justify-end gap-2 border-t border-neutral-200 pt-4">
+      <a href="{{ target.back_url }}" class="btn-ghost">Cancel</a>
+      <button type="submit" class="btn-primary">Send report</button>
+    </div>
+  </form>
+{% endblock %}

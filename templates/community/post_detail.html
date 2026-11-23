@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load moderation_tags %}
 
 {% block title %}{% if post.is_removed %}Removed post{% else %}{{ post.title }}{% endif %} · Feed · RamHub{% endblock %}
 
@@ -19,6 +20,7 @@
         <span aria-hidden="true">&middot;</span>
         <time datetime="{{ post.created_at|date:'c' }}" title="{{ post.created_at }}">{{ post.created_at|timesince }} ago</time>
         {% if post.edited_at and not post.is_removed %}<span aria-hidden="true">&middot;</span><span>edited</span>{% endif %}
+        <span class="ml-auto">{% report_link post %}</span>
       </div>
 
       {% if post.is_removed %}
@@ -89,12 +91,15 @@
               <span class="font-medium text-neutral-800">{% if row.comment.is_removed %}[removed]{% else %}{{ row.author_name }}{% endif %}</span>
               <span aria-hidden="true">&middot;</span>
               <time datetime="{{ row.comment.created_at|date:'c' }}">{{ row.comment.created_at|timesince }} ago</time>
-              {% if row.can_remove %}
-                <form method="post" action="{% url 'community:comment_remove' post.pk row.comment.comment_id %}" class="ml-auto">
-                  {% csrf_token %}
-                  <button type="submit" class="btn-ghost btn-sm text-danger-600">Remove</button>
-                </form>
-              {% endif %}
+              <div class="ml-auto flex items-center gap-1">
+                {% report_link row.comment post=post %}
+                {% if row.can_remove %}
+                  <form method="post" action="{% url 'community:comment_remove' post.pk row.comment.comment_id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-ghost btn-sm text-danger-600">Remove</button>
+                  </form>
+                {% endif %}
+              </div>
             </div>
             {% if row.comment.is_removed %}
               <p class="mt-1 text-neutral-500">Comment removed.</p>
