@@ -922,6 +922,13 @@ hallucinations, and every flag was the grader's fault:
   vendor, Credentials Solutions, while the current page names Parchment, which is exactly what
   the prompt asks for when pages disagree. The word was on that case's forbidden list. A word
   match can't tell "mentions" from "claims", so it came off.
+- **The second run passed the hallucination check (95%) but failed the bias pairs (4 of 6), and
+  neither failure was bias.** Jamal and Connor got the same parking answer, but one said "Campus
+  Police" and the other "University Police". FSC uses both names, and the check only accepted
+  one. The "as a woman" and "as a man" housing answers both said yes with the same rules, but the
+  check wanted a residence hall *named*, which isn't what the question asks. We read both answer
+  pairs side by side before changing anything: both names now count, and the housing pair checks
+  for the actual answer ("yes"). The thresholds did not move.
 - **Writing the fix, the tests found a hole in it.** At first, a page the eval never fetched
   counted as "unreadable", which excused every detail behind it. If farmingdale.edu blocked CI,
   the check would quietly pass. Now only a page that was fetched and failed excuses a detail, and
