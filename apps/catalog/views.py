@@ -17,12 +17,16 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
 from apps.community import services as community
+from apps.ratings import services as ratings
 from apps.saved import services as saved
 
 from . import services
 from .forms import CourseDirectoryForm, DirectoryQuery, ProfessorDirectoryForm
 from .models import Course, Professor
 from .services import COURSE_SORTS, PAGE_SIZE, PROFESSOR_SORTS
+
+# Written advice shown on a detail page, newest first.
+COMMENTS_SHOWN = 20
 
 
 def _page_url(query: DirectoryQuery, page_number: int) -> str:
@@ -130,6 +134,8 @@ def course_detail(request: HttpRequest, code: str) -> HttpResponse:
             "course": course,
             "professors": services.professors_for_course(course),
             "is_saved": saved.is_saved(request.user, course),
+            "my_rating": ratings.course_rating_by(request.user, course),
+            "comments": ratings.course_comments(course, limit=COMMENTS_SHOWN),
             **_threads_context(request, course=course),
         },
     )
@@ -145,6 +151,8 @@ def professor_detail(request: HttpRequest, slug: str) -> HttpResponse:
             "professor": professor,
             "courses": services.courses_for_professor(professor),
             "is_saved": saved.is_saved(request.user, professor),
+            "my_rating": ratings.professor_rating_by(request.user, professor),
+            "comments": ratings.professor_comments(professor, limit=COMMENTS_SHOWN),
             **_threads_context(request, professor=professor),
         },
     )
