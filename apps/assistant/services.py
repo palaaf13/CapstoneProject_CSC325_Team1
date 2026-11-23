@@ -1,27 +1,23 @@
 """
-Django side of Rambo: settings, the API client, the hourly limit, checking the
-links in an answer, and the non-AI fallback. The prompt and the tool loop live
-in rambo.py, shared with the evaluation suite.
+Django side of Rambo: settings, the API client, the hourly limit, and the
+non-AI fallback. The prompt, the search loop and the link rules live in
+rambo.py, shared with the evaluation suite.
 """
 
 import re
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import timedelta
 
 import anthropic
 from django.conf import settings
-from django.urls import Resolver404, resolve, reverse
+from django.urls import reverse
 from django.utils import timezone
 
-from apps.campus.models import Club
-from apps.catalog import services as catalog
-from apps.catalog.models import Professor
 from config.search import site_search
 
 from . import rambo
 from .models import RamboQuestion
 from .rambo import RamboResult
-from .tools import ramhub_tools
 
 STOPWORDS = {
     "about", "anyone", "best", "campus", "class", "classes", "could", "does", "farmingdale",
@@ -54,46 +50,18 @@ def questions_this_hour(user) -> int:
     return RamboQuestion.objects.filter(user=user, asked_at__gte=since).count()
 
 
-def ramhub_link_exists(url: str) -> bool:
-    """A RamHub path in an answer must lead somewhere real: the page resolves,
-    and a course, professor or club it names exists."""
-    if not url.startswith("/") or url.startswith("//"):
-        return rambo.is_allowed_url(url)
-    try:
-        match = resolve(url.split("?")[0].split("#")[0])
-    except Resolver404:
-        return False
-    name, kwargs = match.view_name, match.kwargs
-    if name == "catalog:course_detail":
-        return catalog.get_course_by_code(kwargs["code"]) is not None
-    if name == "catalog:professor_detail":
-        return Professor.objects.filter(slug=kwargs["slug"]).exists()
-    if name == "campus:club_detail":
-        return Club.objects.filter(slug=kwargs["slug"]).exists()
-    return True
-
-
 def ask(user, question: str, history: list[dict]) -> RamboResult:
-    """Ask Rambo on a student's behalf: enforce the hourly limit, check the
-    answer's links, and record the question (not its text) for cost tracking."""
+    """Ask Rambo on a student's behalf: enforce the hourly limit and record the
+    question (not its text) for cost tracking."""
     if questions_this_hour(user) >= settings.RAMBO_HOURLY_LIMIT:
         return RamboResult(fallback_reason="hourly_limit")
 
     result = rambo.ask(
         question,
-        tools=ramhub_tools(),
         client=get_client(),
         history=history,
         model=settings.RAMBO_MODEL,
     )
-    if result.ok:
-        text, removed = rambo.clean_links(result.answer.text, keep=ramhub_link_exists)
-        if removed:
-            answer = replace(
-                result.answer, text=text, links_removed=result.answer.links_removed + removed
-            )
-            result = replace(result, answer=answer)
-
     if result.fallback_reason != "empty_question":
         RamboQuestion.objects.create(
             user=user,
@@ -127,8 +95,9 @@ def _result_link(key: str, obj) -> Link:
 
 
 def fallback_links(question: str, *, limit: int = 6) -> list[Link]:
-    """When Rambo can't answer: RamHub pages that match the question's words.
-    No AI involved, just the site's own search and guide pages."""
+    """When Rambo can't answer: RamHub pages that match the question's words,
+    from the site's own search and guide pages. No AI involved. (Rambo itself
+    answers from farmingdale.edu; this is only the safety net.)"""
     words = [w for w in re.findall(r"[a-z0-9]+", question.lower()) if len(w) > 2]
     links: dict[str, Link] = {}
     labels = {"campus:parking": "Parking guide", "campus:jobs": "Jobs guide",

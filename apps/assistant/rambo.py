@@ -1,11 +1,12 @@
 """
-Rambo: a student asks a question about Farmingdale State College, Claude
-answers it using RamHub's own data (through tools) and farmingdale.edu
-(through web search).
+Rambo: a student asks a question about Farmingdale State College, and Claude
+answers it from the college's official website, searching farmingdale.edu and
+citing the pages it used.
 
-No Django imports here on purpose. The tools are passed in, so the site
-(apps/assistant/services.py) and the evaluation suite (evals/) run exactly the
-same prompt, loop, and checks.
+No Django imports here on purpose: the site (apps/assistant/services.py) and
+the evaluation suite (evals/) run exactly the same prompt, loop, and checks.
+Client-side tools can still be passed in, but Rambo currently uses none: every
+answer comes from farmingdale.edu.
 
 ``ask`` never raises. Every way the AI can fail (no key, timeout, network
 error, rate limit, API error, refusal, truncation, a runaway tool loop, or an
@@ -26,23 +27,24 @@ import anthropic
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "rambo_v1"
+PROMPT_VERSION = "rambo_v2"
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / f"{PROMPT_VERSION}.txt"
 DEFAULT_MODEL = "claude-haiku-5-5"
 
 MAX_QUESTION_CHARS = 500
 MAX_HISTORY_TURNS = 4  # earlier question/answer pairs sent along for follow-ups
-MAX_API_CALLS = 6  # one question: look things up a few times, then answer
+MAX_API_CALLS = 4  # one question: a search loop or two, then the answer
 MAX_OUTPUT_TOKENS = 4000
 MAX_ANSWER_CHARS = 4000
 MAX_TOOL_RESULT_CHARS = 6000
 
 # The basic web search tool: the newer dynamic-filtering version is not
-# available on Claude Haiku 5.5. Limited to the college's own site.
+# available on Claude Haiku 5.5. Limited to the college's own site, so every
+# fact Rambo can see comes from farmingdale.edu.
 WEB_SEARCH_TOOL = {
     "type": "web_search_20250305",
     "name": "web_search",
-    "max_uses": 2,
+    "max_uses": 3,
     "allowed_domains": ["farmingdale.edu"],
 }
 
@@ -106,9 +108,7 @@ def load_prompt() -> str:
 
 
 def is_allowed_url(url: str) -> bool:
-    """RamHub paths ("/courses/BCS-109/") and farmingdale.edu. Nothing else."""
-    if url.startswith("/") and not url.startswith("//"):
-        return True
+    """farmingdale.edu and its subdomains. Nothing else."""
     return bool(_FSC_URL.match(url))
 
 
@@ -160,7 +160,7 @@ def _fallback(reason: str, usage: dict, detail: object = "") -> RamboResult:
 def ask(
     question: str,
     *,
-    tools: list[Tool],
+    tools: list[Tool] = (),
     client: anthropic.Anthropic | None,
     history: list[dict] | None = None,
     model: str = DEFAULT_MODEL,

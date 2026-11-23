@@ -20,10 +20,10 @@ SESSION_KEY = "rambo_chat"
 KEEP_EXCHANGES = 10
 
 SUGGESTIONS = [
-    "What are the prerequisites for BCS 230?",
-    "How much is a parking ticket?",
-    "What clubs are there for coding?",
-    "When is the library open on Sunday?",
+    "How do I order an official transcript?",
+    "How do I get a parking permit?",
+    "Where is the Tutoring Center?",
+    "When does the next semester start?",
 ]
 
 

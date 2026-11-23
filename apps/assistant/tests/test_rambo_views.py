@@ -1,12 +1,11 @@
-"""The Rambo page, its fallback path, the hourly limit and the RamHub tools.
-The AI is always mocked."""
+"""The Rambo page, its fallback path and the hourly limit. The AI is always mocked."""
 
 import pytest
 
-from apps.assistant import services, tools
+from apps.assistant import services
 from apps.assistant.models import RamboQuestion
 
-from .fakes import TIMEOUT, FakeClient, answer, calls_tool
+from .fakes import TIMEOUT, FakeClient, answer
 
 pytestmark = pytest.mark.django_db
 
@@ -19,7 +18,12 @@ HTMX = {"HTTP_HX_REQUEST": "true"}
 def ai(settings, monkeypatch):
     """Turn Rambo on with a fake client; set ai.results to control replies."""
     settings.ANTHROPIC_API_KEY = "test-key-not-real"
-    fake = FakeClient(answer("BCS 109 is **3 credits**. [BCS 109](/courses/BCS-109/)"))
+    fake = FakeClient(
+        answer(
+            "Order it through the **Registrar's Office**. "
+            "[Transcripts](https://www.farmingdale.edu/registrar/transcripts/)"
+        )
+    )
     monkeypatch.setattr(services, "get_client", lambda: fake)
     return fake
 
@@ -37,9 +41,10 @@ def test_rambo_requires_sign_in(client):
     assert response.status_code == 204 and "/login/" in response["HX-Redirect"]
 
 
-def test_page_shows_suggestions(client, student):
+def test_page_shows_suggestions_and_the_3d_stage(client, student):
     body = client.get(PAGE).content
-    assert b"Ask Rambo" in body and b"How much is a parking ticket?" in body
+    assert b"Ask Rambo" in body and b"How do I get a parking permit?" in body
+    assert b"data-rambo-3d" in body and b"rambo3d.js" in body
     assert b'data-testid="ask-rambo"' not in body  # no floating button on its own page
 
 
@@ -47,30 +52,36 @@ def test_floating_button_is_on_other_pages(client):
     assert b'data-testid="ask-rambo"' in client.get("/about/").content
 
 
-def test_answer_from_a_mocked_ai(client, student, ai, make_course):
-    make_course(code="BCS 109", title="Introduction to Programming")
-    response = client.post(ASK, {"question": "How many credits is BCS 109?"}, **HTMX)
+def test_answer_from_a_mocked_ai(client, student, ai):
+    response = client.post(ASK, {"question": "How do I order a transcript?"}, **HTMX)
 
     assert response.status_code == 200
     body = response.content
     assert b'data-testid="rambo-answer"' in body
-    assert b"<strong>3 credits</strong>" in body
-    assert b'href="/courses/BCS-109/"' in body
+    assert b"<strong>Registrar&#x27;s Office</strong>" in body
+    assert b'href="https://www.farmingdale.edu/registrar/transcripts/"' in body
+    assert b'target="_blank"' in body
     # Kept in the session for follow-ups; logged without the question text.
-    assert client.session["rambo_chat"][-1]["answer"].startswith("BCS 109 is")
+    assert client.session["rambo_chat"][-1]["answer"].startswith("Order it")
     logged = RamboQuestion.objects.get()
     assert logged.user == student and logged.fallback_reason == "" and logged.api_calls == 1
+    assert logged.prompt_version == "rambo_v2"
     assert not hasattr(logged, "question")
 
 
-def test_follow_up_questions_carry_history(client, student, ai, make_course):
-    make_course(code="BCS 109")
-    client.post(ASK, {"question": "How many credits is BCS 109?"}, **HTMX)
-    client.post(ASK, {"question": "And prerequisites?"}, **HTMX)
+def test_rambo_only_gets_the_farmingdale_edu_search(client, student, ai):
+    client.post(ASK, {"question": "Where is the registrar?"}, **HTMX)
+    assert [t["name"] for t in ai.calls[0]["tools"]] == ["web_search"]
+    assert ai.calls[0]["tools"][0]["allowed_domains"] == ["farmingdale.edu"]
+
+
+def test_follow_up_questions_carry_history(client, student, ai):
+    client.post(ASK, {"question": "How do I order a transcript?"}, **HTMX)
+    client.post(ASK, {"question": "How much does it cost?"}, **HTMX)
     sent = ai.calls[-1]["messages"]
     assert [m["content"] for m in sent if m["role"] == "user"] == [
-        "How many credits is BCS 109?",
-        "And prerequisites?",
+        "How do I order a transcript?",
+        "How much does it cost?",
     ]
 
 
@@ -80,7 +91,6 @@ def test_fallback_with_no_key_shows_matching_ramhub_pages(client, student, make_
 
     assert b'data-testid="rambo-fallback"' in body
     assert b'data-reason="ai_disabled"' in body
-    assert b"Rambo can&#x27;t answer right now." in body or b"Rambo can't answer right now." in body
     assert b'href="/parking/"' in body
     assert b'href="/courses/BCS-109/"' in body
     assert RamboQuestion.objects.get().fallback_reason == "ai_disabled"
@@ -115,18 +125,16 @@ def test_empty_question_is_a_form_error_not_a_call(client, student, ai):
     assert ai.calls == [] and not RamboQuestion.objects.exists()
 
 
-def test_without_javascript_the_form_still_works(client, student, ai, make_course):
-    make_course(code="BCS 109")
-    response = client.post(ASK, {"question": "How many credits is BCS 109?"})
+def test_without_javascript_the_form_still_works(client, student, ai):
+    response = client.post(ASK, {"question": "How do I order a transcript?"})
     assert response.status_code == 302
-    assert b"3 credits" in client.get(PAGE).content
+    assert b"Registrar" in client.get(PAGE).content
 
 
-def test_links_to_ramhub_pages_that_do_not_exist_are_unlinked(client, student, ai):
-    ai.results = [answer("Try [CSC 999](/courses/CSC-999/) or [parking](/parking/).")]
+def test_links_off_farmingdale_edu_never_reach_the_page(client, student, ai):
+    ai.results = [answer("Try [this](https://evil.example.com/) or [RamHub](/parking/).")]
     body = client.post(ASK, {"question": "q"}, **HTMX).content
-    assert b'href="/courses/CSC-999/"' not in body and b"CSC 999" in body
-    assert b'href="/parking/"' in body
+    assert b"evil.example.com" not in body and b'href="/parking/"' not in body
 
 
 def test_model_html_is_escaped(client, student, ai):
@@ -140,53 +148,6 @@ def test_start_over_clears_the_conversation(client, student, ai):
     client.post(ASK, {"question": "hi"}, **HTMX)
     client.post("/rambo/clear/")
     assert "rambo_chat" not in client.session
-
-
-def test_tool_loop_end_to_end_with_real_ramhub_data(client, student, ai, make_course):
-    make_course(code="BCS 230", title="Foundations II", prereq_text="BCS 120 or CSC 111")
-    ai.results = [
-        calls_tool("search_courses", {"query": "BCS 230"}),
-        answer("You need BCS 120 or CSC 111."),
-    ]
-    client.post(ASK, {"question": "Prereqs for BCS 230?"}, **HTMX)
-    tool_result = ai.calls[1]["messages"][-1]["content"][0]["content"]
-    assert "BCS 120 or CSC 111" in tool_result and "/courses/BCS-230/" in tool_result
-
-
-# -- the tools on their own ---------------------------------------------------
-def test_search_courses_by_code_and_by_words(make_course):
-    make_course(
-        code="MTH 150", title="Calculus I", credits=4, description="Limits and derivatives."
-    )
-    by_code = tools.search_courses({"query": "MTH 150"})["courses"][0]
-    assert (by_code["credits"], by_code["url"]) == (4, "/courses/MTH-150/")
-    assert tools.search_courses({"query": "limits derivatives"})["courses"][0]["code"] == "MTH 150"
-
-
-def test_search_professors_labels_rmp_ratings(make_professor):
-    make_professor(first_name="Ada", last_name="Lovelace", rmp_num_ratings=12, rmp_avg_rating=4.5)
-    found = tools.search_professors({"query": "lovelace"})["professors"][0]
-    assert found["url"] == "/professors/ada-lovelace/"
-    assert found["ratemyprofessors"]["count"] == 12 and found["ramhub_student_ratings"] is None
-
-
-def test_search_clubs(make_club):
-    make_club("Cybersecurity Club", summary="Capture the flag practice.")
-    found = tools.search_clubs({"query": "cyber"})["clubs"][0]
-    assert found["name"] == "Cybersecurity Club" and found["url"] == "/clubs/cybersecurity-club/"
-
-
-def test_campus_guides_are_plain_text_of_the_real_pages():
-    parking = tools.campus_guide({"topic": "parking"})
-    assert "$35" in parking["text"] and "<" not in parking["text"]
-    assert parking["url"] == "/parking/"
-    assert "7:45" in tools.campus_guide({"topic": "facilities"})["text"]
-    assert "error" in tools.campus_guide({"topic": "weather"})
-
-
-def test_upcoming_events_is_empty_safe():
-    result = tools.upcoming_events({})
-    assert result["events"] == [] and result["all_events_url"] == "/events/"
 
 
 def test_unit_tests_cannot_build_a_real_client(settings):

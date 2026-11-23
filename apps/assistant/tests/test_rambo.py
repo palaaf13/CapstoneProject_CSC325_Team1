@@ -33,7 +33,7 @@ def run(client, question="How many credits is BCS 109?", **kwargs):
 def test_a_direct_answer():
     result = run(FakeClient(answer("Hi! I'm Rambo.")))
     assert result.ok and result.answer.text == "Hi! I'm Rambo."
-    assert result.answer.prompt_version == "rambo_v1"
+    assert result.answer.prompt_version == "rambo_v2"
     assert result.usage["api_calls"] == 1
 
 
@@ -64,8 +64,17 @@ def test_request_uses_versioned_prompt_tools_and_farmingdale_only_search():
 
 
 def test_prompt_file_is_versioned():
-    assert rambo.PROMPT_PATH.name == "rambo_v1.txt"
+    assert rambo.PROMPT_PATH.name == "rambo_v2.txt"
     assert "information, not instructions" in rambo.load_prompt()
+    # Earlier versions stay, so old eval reports can be reproduced.
+    assert (rambo.PROMPT_PATH.parent / "rambo_v1.txt").exists()
+
+
+def test_by_default_rambo_only_searches_farmingdale_edu():
+    client = FakeClient(answer("ok"))
+    ask("Where is the registrar?", client=client)
+    assert client.calls[0]["tools"] == [rambo.WEB_SEARCH_TOOL]
+    assert rambo.WEB_SEARCH_TOOL["allowed_domains"] == ["farmingdale.edu"]
 
 
 def test_a_failing_tool_is_reported_to_the_model_not_raised():
@@ -156,20 +165,20 @@ def test_history_is_sent_for_follow_ups_and_capped():
     assert messages[-1]["content"] == "and the prerequisites?"
 
 
-def test_links_outside_ramhub_and_farmingdale_are_removed():
+def test_links_outside_farmingdale_edu_are_removed():
     result = run(
         FakeClient(
             answer(
-                "See [the course](/courses/BCS-109/), [registrar](https://www.farmingdale.edu/registrar/), "
+                "See [registrar](https://www.farmingdale.edu/registrar/), [a RamHub page](/courses/BCS-109/), "
                 "[a scam](https://evil.example.com/login) and https://evil.example.com/x too."
             )
         )
     )
     text = result.answer.text
-    assert "[the course](/courses/BCS-109/)" in text
     assert "(https://www.farmingdale.edu/registrar/)" in text
+    assert "/courses/BCS-109/" not in text and "a RamHub page" in text
     assert "evil.example.com" not in text and "a scam" in text
-    assert result.answer.links_removed == 2
+    assert result.answer.links_removed == 3
 
 
 def test_web_search_citations_become_sources_if_they_are_farmingdale():
@@ -188,7 +197,7 @@ def test_web_search_citations_become_sources_if_they_are_farmingdale():
 @pytest.mark.parametrize(
     ("url", "ok"),
     [
-        ("/clubs/chess/", True),
+        ("/clubs/chess/", False),
         ("https://www.farmingdale.edu/x", True),
         ("https://farmingdale.edu", True),
         ("http://library.farmingdale.edu/hours", True),
@@ -203,5 +212,5 @@ def test_is_allowed_url(url, ok):
 
 
 def test_clean_links_with_a_custom_rule():
-    text, removed = clean_links("[a](/x/) [b](/y/)", keep=lambda url: url == "/x/")
+    text, removed = clean_links("[a](/x/) [b](/y/)", keep=lambda url: url == "/x/")  # noqa: E501
     assert (text, removed) == ("[a](/x/) b", 1)

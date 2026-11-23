@@ -3,16 +3,16 @@ Run Rambo's evaluation suite against the real API:
 
     python -m evals.run
 
-Needs ANTHROPIC_API_KEY and a database loaded with RamHub's real data
-(`python manage.py migrate && python manage.py seed_demo`). Asks every golden
+Needs ANTHROPIC_API_KEY, nothing else: no database. Asks every golden
 question three times and every counterfactual pair once, through the same
-`rambo.ask` and RamHub tools the site uses; scores the answers with
-evals/checks.py; writes evals/results/latest.md and latest.json; and exits 1
-if any metric is below its threshold in evals/thresholds.json. CI runs this as
-the Eval stage on every pull request into main.
+`rambo.ask` the site uses (Claude Haiku 5.5 searching farmingdale.edu);
+scores the answers with evals/checks.py; writes evals/results/latest.md and
+latest.json; and exits 1 if any metric is below its threshold in
+evals/thresholds.json. CI runs this as the Eval stage on every pull request
+into main.
 
-One run is 72 questions to Claude Haiku 5.5 (a few API calls each, plus a few
-farmingdale.edu web searches) and costs roughly 30 to 50 cents.
+One run is 75 questions, most with a farmingdale.edu web search or two, and
+costs roughly $1 to $2.
 """
 
 from __future__ import annotations
@@ -33,7 +33,6 @@ GOLDEN = HERE / "rambo" / "golden.jsonl"
 PAIRS = HERE / "rambo" / "counterfactual_pairs.jsonl"
 THRESHOLDS = HERE / "thresholds.json"
 RESULTS = HERE / "results"
-MIN_SEEDED_COURSES = 1000
 
 
 def load_jsonl(path: Path) -> list[dict]:
@@ -88,7 +87,7 @@ def _passes_facts(result, expected: dict) -> bool:
 
 
 def run_suite(
-    ask: Ask, known, *, model: str, prompt_version: str, runs: int = 3, workers: int = 6
+    ask: Ask, *, model: str, prompt_version: str, runs: int = 3, workers: int = 6
 ) -> Report:
     from . import checks
 
@@ -115,8 +114,9 @@ def run_suite(
         for attempt in attempts:
             valid.append(attempt.ok)
             if attempt.ok:
+                history = " ".join(turn["answer"] for turn in case.get("history", []))
                 problems = checks.hallucination_problems(
-                    attempt, expected.get("forbidden", []), known
+                    attempt, expected.get("forbidden", []), history
                 )
                 clean.append(not problems)
                 row["runs"].append(
@@ -149,7 +149,7 @@ def run_suite(
     offset = len(golden) * runs
     for j, pair in enumerate(pairs):
         a, b = results[offset + 2 * j], results[offset + 2 * j + 1]
-        same, why = checks.same_judgement(a, b, pair["expected"], known)
+        same, why = checks.same_judgement(a, b, pair["expected"])
         parity.append(same)
         report.pairs.append(
             {
@@ -270,24 +270,6 @@ def write_results(report: Report, out: Path) -> str:
     return markdown
 
 
-def known_from_database():
-    """What exists in RamHub's database, for the hallucination checks."""
-    from apps.assistant.services import ramhub_link_exists
-    from apps.campus.models import Club
-    from apps.catalog.models import Course, Professor
-
-    from .checks import Known
-
-    return Known(
-        course_codes=set(Course.objects.values_list("code", flat=True)),
-        club_names=set(Club.objects.values_list("name", flat=True)),
-        professor_last_names={
-            n.lower() for n in Professor.objects.values_list("last_name", flat=True)
-        },
-        link_exists=ramhub_link_exists,
-    )
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Run Rambo's evaluation suite against the real API."
@@ -306,30 +288,17 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.dev")
-    import django
-
-    django.setup()
-    from apps.assistant import rambo
-    from apps.assistant.tools import ramhub_tools
-    from apps.catalog.models import Course
-
-    if Course.objects.count() < MIN_SEEDED_COURSES:
-        print(
-            "The database has no RamHub data. Run: python manage.py migrate && python manage.py seed_demo"
-        )
-        return 2
-
     import anthropic
 
-    client = anthropic.Anthropic(max_retries=4, timeout=90)
-    tools = ramhub_tools()
+    from apps.assistant import rambo
+
+    client = anthropic.Anthropic(max_retries=4, timeout=120)
 
     def ask(question: str, history: list[dict]):
-        return rambo.ask(question, tools=tools, client=client, history=history, model=args.model)
+        return rambo.ask(question, client=client, history=history, model=args.model)
 
     report = run_suite(
-        ask, known_from_database(), model=args.model, prompt_version=rambo.PROMPT_VERSION,
+        ask, model=args.model, prompt_version=rambo.PROMPT_VERSION,
         runs=args.runs, workers=args.workers,
     )  # fmt: skip
     print(write_results(report, args.out))
