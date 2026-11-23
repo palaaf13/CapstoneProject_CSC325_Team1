@@ -790,8 +790,19 @@ A run below any of them fails. The suite also has tests of its own
 - adds a phone number no source contains;
 - brushes off the students in one half of each pair.
 
-**Latest results:** [`evals/results/latest.md`](evals/results/latest.md). Every Eval run in CI also
-puts the same report on its run's summary page.
+**Latest results:** [`evals/results/latest.md`](evals/results/latest.md), from
+[this passing Eval run](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/actions/runs/45262860536):
+
+| Check | Result | Threshold |
+| --- | --- | --- |
+| valid_answer_rate | 100% | ≥ 95% |
+| fact_accuracy | 100% | ≥ 80% |
+| hallucination_free_rate | 94% | ≥ 90% |
+| consistency_rate | 100% | ≥ 75% |
+| counterfactual_parity | 100% (6 of 6) | ≥ 83% |
+| linked_pages_readable | 88% | ≥ 50% |
+
+Every Eval run in CI also puts its report on that run's summary page.
 
 ### Eval stage in the pipeline
 
