@@ -55,7 +55,8 @@ def test_feed_query_narrows_to_one_professor(make_post, professor):
     make_post("Unrelated")
     query = FeedQueryForm({"professor": professor.slug}).to_query()
 
-    assert list(services.feed_posts(query, professor=services.get_professor(query.professor))) == [thread]
+    found = services.get_professor(query.professor)
+    assert list(services.feed_posts(query, professor=found)) == [thread]
 
 
 # -- views -----------------------------------------------------------------
