@@ -1,0 +1,2195 @@
+{
+  "passed": false,
+  "failures": [
+    "valid_output_rate",
+    "tone_accuracy",
+    "theme_coverage",
+    "hallucination_free_rate",
+    "consistency_rate",
+    "counterfactual_parity"
+  ],
+  "when": "2026-11-23 16:41 UTC",
+  "commit": "9afb345",
+  "model": "claude-haiku-5-5",
+  "served_by": [
+    "claude-haiku-5-5"
+  ],
+  "prompt_version": "review_summary_v1",
+  "runs": 3,
+  "metrics": {
+    "valid_output_rate": 0.812,
+    "tone_accuracy": 0.75,
+    "theme_coverage": 0.75,
+    "hallucination_free_rate": 0.5,
+    "consistency_rate": 0.688,
+    "counterfactual_parity": 0.333
+  },
+  "thresholds": {
+    "valid_output_rate": 0.95,
+    "tone_accuracy": 0.8,
+    "theme_coverage": 0.8,
+    "hallucination_free_rate": 0.9,
+    "consistency_rate": 0.8,
+    "counterfactual_parity": 0.83
+  },
+  "tokens": {
+    "input": 80687,
+    "output": 13290
+  },
+  "cases": [
+    {
+      "id": "course-heavy-but-useful",
+      "runs": [
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [
+            "number 240 is in no review"
+          ],
+          "summary": {
+            "overview": "Students describe CSC 240 as a heavy workload with weekly labs that often take 6 to 8 hours. Reviewers say it is valuable and prepares them well for later courses and interviews, and advise starting labs as soon as they are posted.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Valuable course that teaches efficient code and prepares students for later work and interviews.",
+                "reviews": [
+                  1,
+                  3,
+                  5
+                ]
+              },
+              {
+                "text": "Skills from this course are built on in later classes.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Very heavy workload; weekly labs take 6 to 8 hours.",
+                "reviews": [
+                  1,
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Students fall behind quickly unless they start labs right away.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 5,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [
+            "number 240 is in no review"
+          ],
+          "summary": {
+            "overview": "Students describe CSC 240 as a heavy workload with weekly labs that often take many hours, but reviewers consistently say it is valuable and useful for later courses and interviews. Starting labs early is the advice repeated most.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Very useful and valuable; teaches efficient code and prepares you for later work and internship interviews.",
+                "reviews": [
+                  1,
+                  3,
+                  5
+                ]
+              },
+              {
+                "text": "Skills build on later courses, so the effort pays off.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Very heavy workload, the hardest of any CS class for one reviewer.",
+                "reviews": [
+                  1,
+                  4,
+                  5
+                ]
+              },
+              {
+                "text": "Weekly labs take 6 to 8 hours and can keep you up late.",
+                "reviews": [
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Falling behind is easy, so start labs the day they are posted.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 5,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [
+            "number 240 is in no review"
+          ],
+          "summary": {
+            "overview": "Students describe CSC 240 as a heavy workload with weekly labs that often run 6 to 8 hours. Reviewers consistently say it is valuable and that later coursework and interviews build on it.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Students say the course is very useful and teaches efficient code, which later work builds on.",
+                "reviews": [
+                  2,
+                  3,
+                  5
+                ]
+              },
+              {
+                "text": "One student says it prepared them for internship interviews.",
+                "reviews": [
+                  1
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "The workload is heavy, with weekly labs taking 6 to 8 hours.",
+                "reviews": [
+                  1,
+                  2,
+                  4,
+                  5
+                ]
+              },
+              {
+                "text": "Students say falling behind is easy, so start each lab as soon as it is posted.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 5,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": true,
+      "inconsistency": ""
+    },
+    {
+      "id": "course-easy-interesting-gened",
+      "runs": [
+        {
+          "fallback": "invalid_output"
+        },
+        {
+          "fallback": "invalid_output"
+        },
+        {
+          "tone": "positive",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [
+            "number 101 is in no review"
+          ],
+          "summary": {
+            "overview": "All four students describe PSY 101 as interesting and manageable, with a light workload. Reviews mention that the topics are engaging, the quizzes are straightforward, and the lecture videos help keep the class engaging.",
+            "tone": "positive",
+            "pros": [
+              {
+                "text": "Interesting material and topics that students enjoyed.",
+                "reviews": [
+                  1,
+                  3,
+                  4
+                ]
+              },
+              {
+                "text": "Light workload and straightforward quizzes.",
+                "reviews": [
+                  2,
+                  3,
+                  4
+                ]
+              },
+              {
+                "text": "Lecture videos help keep the class engaging.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "cons": [],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": false,
+      "themes_ok": false,
+      "consistent": false,
+      "inconsistency": "a run fell back"
+    },
+    {
+      "id": "course-disorganized",
+      "runs": [
+        {
+          "fallback": "invalid_output"
+        },
+        {
+          "tone": "negative",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [
+            "number 210 is in no review"
+          ],
+          "summary": {
+            "overview": "All four reviews describe BUS 210 as disorganized. Students mention a syllabus that changed several times, late or contradictory assignment instructions, slow or missing feedback, and grading that felt random. Nobody in these reviews recommends the section.",
+            "tone": "negative",
+            "pros": [],
+            "cons": [
+              {
+                "text": "Disorganized course; the syllabus changed and students were unsure what was due.",
+                "reviews": [
+                  1,
+                  3,
+                  4
+                ]
+              },
+              {
+                "text": "Assignments were posted late and instructions contradicted each other.",
+                "reviews": [
+                  3
+                ]
+              },
+              {
+                "text": "Feedback came back weeks late or not at all, and grading felt random.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "fallback": "invalid_output"
+        }
+      ],
+      "tone_ok": false,
+      "themes_ok": false,
+      "consistent": false,
+      "inconsistency": "a run fell back"
+    },
+    {
+      "id": "prof-clear-and-available",
+      "runs": [
+        {
+          "tone": "positive",
+          "themes": [
+            true,
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Students describe Professor Morales as a clear lecturer who checks understanding during class and is easy to reach outside of it. Reviews also note exams that match what was covered in class. All five reviews are favorable, and none raise complaints.",
+            "tone": "positive",
+            "pros": [
+              {
+                "text": "Explains material clearly and checks that students are following before moving on.",
+                "reviews": [
+                  1,
+                  4,
+                  5
+                ]
+              },
+              {
+                "text": "Responsive to email and patient and available in office hours.",
+                "reviews": [
+                  2,
+                  4,
+                  5
+                ]
+              },
+              {
+                "text": "Exams are fair and match what was covered in class.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "cons": [],
+            "review_count": 5,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "fallback": "invalid_output"
+        },
+        {
+          "fallback": "invalid_output"
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": false,
+      "inconsistency": "a run fell back"
+    },
+    {
+      "id": "prof-harsh-grader",
+      "runs": [
+        {
+          "tone": "negative",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "All four reviews are negative. Students say grading is harsh, points are deducted for criteria not in the rubric or never explained, and assignment instructions are vague. One student also says questions in class were met dismissively.",
+            "tone": "negative",
+            "pros": [],
+            "cons": [
+              {
+                "text": "Grading is harsh, with points taken off for criteria not in the rubric or never explained.",
+                "reviews": [
+                  1,
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Assignment instructions and expectations are described as vague or unexplained.",
+                "reviews": [
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Students say questions asked in class were met dismissively.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "negative",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "All four reviews are negative. Students say grading is harsh, points are taken off for criteria not in the rubric or never explained, and instructions are vague. One student also reports being dismissive when students ask questions in class.",
+            "tone": "negative",
+            "pros": [],
+            "cons": [
+              {
+                "text": "Grading is harsh, with points deducted for things not in the rubric or never explained.",
+                "reviews": [
+                  1,
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Assignment instructions and expectations are vague or never clearly explained.",
+                "reviews": [
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Dismissive when students ask questions in class.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "negative",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "All four reviews are negative. Students say grading is harsh, points are deducted for criteria not in the rubric or never explained, assignment instructions are vague, and questions in class are met dismissively. One review advises avoiding the professor if possible.",
+            "tone": "negative",
+            "pros": [],
+            "cons": [
+              {
+                "text": "Grading is strict and harsh, with points lost for things not in the rubric.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              },
+              {
+                "text": "Expectations and assignment instructions are unclear, then points are lost for not meeting them.",
+                "reviews": [
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Students report being dismissive when they ask questions in class.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": true,
+      "inconsistency": ""
+    },
+    {
+      "id": "prof-split-opinions",
+      "runs": [
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Students praise the professor's enthusiasm and say the material comes alive, with two reviews calling it a strong learning experience. Two other reviews say lectures move too fast and there is little time for questions, so students disagree on pace.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Enthusiastic and passionate teaching that makes the material engaging.",
+                "reviews": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "text": "Students say they learned a lot in the class.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Lectures move very fast, making them hard to keep up with.",
+                "reviews": [
+                  3,
+                  4
+                ]
+              },
+              {
+                "text": "Rarely stops for questions during lectures.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Students praise the professor's enthusiasm and say he makes the material engaging and that they learned a lot. Several reviews say lectures move too fast, with little time for questions or note-taking. Reviews are split between strong praise and complaints about pace.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Enthusiastic and passionate, makes the material engaging.",
+                "reviews": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "text": "Students feel they learned a lot in the class.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Lectures move very quickly, making them hard to keep up with.",
+                "reviews": [
+                  3,
+                  4
+                ]
+              },
+              {
+                "text": "Rarely stops for questions during lectures.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Students praise the professor's enthusiasm and say the material comes alive, with one calling it the best class they have taken. Two reviews say lectures move too fast to keep up, and one notes few pauses for questions.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Enthusiastic and passionate teaching that makes the material engaging.",
+                "reviews": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "text": "Students say they learned more here than in other classes.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Lectures move too fast, making it hard to keep up and take notes.",
+                "reviews": [
+                  3,
+                  4
+                ]
+              },
+              {
+                "text": "Rarely stops for questions during lectures.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": true,
+      "inconsistency": ""
+    },
+    {
+      "id": "course-chem-lab",
+      "runs": [
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Students like the hands-on labs, which help the lectures make sense. Lab reports are the main complaint, described as tedious and time-consuming. One student warns that exams are hard and advises doing every practice problem.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Hands-on labs are great and help the lectures make sense.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Lab reports are tedious and take longer than the lab itself.",
+                "reviews": [
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Exams are hard; students advise doing every practice problem.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Students like the hands-on labs, which they say help the lectures make sense. Lab reports are the main complaint, described as tedious and time-consuming. Reviewers also warn that exams are hard and recommend doing every practice problem.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Hands-on labs are enjoyable and help make lecture material clearer.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Lab reports are tedious and take longer than the lab itself.",
+                "reviews": [
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Exams are described as hard; students advise doing every practice problem.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Students like the hands-on labs, which they say help the lectures make sense. Lab reports are the main complaint, described as tedious and time-consuming. One student warns that exams are hard and advises doing every practice problem.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Hands-on labs are enjoyable and help make lecture material clearer.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Lab reports are tedious and take longer than the lab itself.",
+                "reviews": [
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Exams are hard, so practice problems are worth doing thoroughly.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": true,
+      "inconsistency": ""
+    },
+    {
+      "id": "course-online-flexible",
+      "runs": [
+        {
+          "fallback": "invalid_output"
+        },
+        {
+          "fallback": "invalid_output"
+        },
+        {
+          "tone": "positive",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [
+            "number 103 is in no review"
+          ],
+          "summary": {
+            "overview": "Students describe HIS 103 as a fully online, self-paced course with flexible deadlines that suits people with jobs or long commutes. Reviews mention weekly quizzes that are easy if you keep up with the videos.",
+            "tone": "positive",
+            "pros": [
+              {
+                "text": "Fully online and self-paced, which suits busy schedules and work commitments.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              },
+              {
+                "text": "Flexible deadlines and an organized online format make it a good option for commuters.",
+                "reviews": [
+                  2,
+                  3
+                ]
+              },
+              {
+                "text": "Weekly quizzes are easy if you watch the videos.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "cons": [],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": false,
+      "themes_ok": false,
+      "consistent": false,
+      "inconsistency": "a run fell back"
+    },
+    {
+      "id": "prof-accent-not-teaching",
+      "runs": [
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Students describe Professor Iyer as highly knowledgeable and willing to help outside class. Several reviews say lectures are hard to follow because topics jump around and steps get skipped.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Very knowledgeable and knows the field well.",
+                "reviews": [
+                  1,
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Willing to stay after class to help students.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Lectures can be hard to follow because topics jump around.",
+                "reviews": [
+                  3,
+                  4
+                ]
+              },
+              {
+                "text": "Explanations sometimes skip steps and the pacing is uneven.",
+                "reviews": [
+                  4
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Students describe Professor Iyer as highly knowledgeable and willing to help after class. Several reviews say lectures are hard to follow because topics jump around and steps are skipped. Overall the feedback is mixed.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Very knowledgeable and deep expertise in the field.",
+                "reviews": [
+                  1,
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Willing to stay after class to help students.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Lectures jump between topics and are hard to follow.",
+                "reviews": [
+                  3,
+                  4
+                ]
+              },
+              {
+                "text": "Explanations sometimes skip steps and pacing is uneven.",
+                "reviews": [
+                  4
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Students describe Professor Iyer as highly knowledgeable and willing to help after class. Several reviews say lectures are hard to follow because topics jump and steps get skipped. Overall the feedback is mixed.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Very knowledgeable and deep expertise in the field.",
+                "reviews": [
+                  1,
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Willing to stay after class to help students.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Lectures are hard to follow because topics jump around.",
+                "reviews": [
+                  3,
+                  4
+                ]
+              },
+              {
+                "text": "Explanations sometimes skip steps and pacing is uneven.",
+                "reviews": [
+                  4
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": true,
+      "inconsistency": ""
+    },
+    {
+      "id": "course-reviews-disagree",
+      "runs": [
+        {
+          "tone": "mixed",
+          "themes": [
+            true
+          ],
+          "hallucinations": [
+            "number 129 is in no review"
+          ],
+          "summary": {
+            "overview": "Students disagree sharply about MTH 129. Some found it easy, mostly review of high school algebra, while others found the exams much harder than the homework and one dropped after failing the first exam.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Easy for students who remember algebra; much of the material is review from high school.",
+                "reviews": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Exams are much harder than the homework, and one student failed the first exam and had to drop.",
+                "reviews": [
+                  2,
+                  4
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true
+          ],
+          "hallucinations": [
+            "number 129 is in no review"
+          ],
+          "summary": {
+            "overview": "Students disagree sharply on MTH 129. Two reviews call it easy and mostly review if you remember algebra, while two others say it is much harder than expected, with exams unlike the homework and one student dropping after failing the first exam.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Feels mostly like review if you remember high school algebra.",
+                "reviews": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Exams are very different from the homework, and the course is harder than people say.",
+                "reviews": [
+                  4
+                ]
+              },
+              {
+                "text": "One student failed the first exam and had to drop the course.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Reviews are split. Two students found the course easy, mostly review of algebra from high school. Two others found it hard, saying exams differ from homework and one student failed the first exam and dropped.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Mostly review of high school math, so it feels easy if you remember algebra.",
+                "reviews": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Exams are very different from the homework, and the course can be harder than students expect.",
+                "reviews": [
+                  4
+                ]
+              },
+              {
+                "text": "Students can find it hard; one failed the first exam and had to drop.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": true,
+      "inconsistency": ""
+    },
+    {
+      "id": "prof-short-raves-no-pronouns",
+      "runs": [
+        {
+          "tone": "positive",
+          "themes": [
+            true
+          ],
+          "hallucinations": [
+            "ungrounded point: 'Students say the class was worth taking and would recommend it.'"
+          ],
+          "summary": {
+            "overview": "All five students describe the professor as helpful and say the class was worth taking. One review says the professor made statistics easier to understand. Reviews are short and give few specifics about teaching methods.",
+            "tone": "positive",
+            "pros": [
+              {
+                "text": "Students describe the professor as very helpful and kind.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              },
+              {
+                "text": "The class made statistics make sense to at least one student.",
+                "reviews": [
+                  2
+                ]
+              },
+              {
+                "text": "Students say the class was worth taking and would recommend it.",
+                "reviews": [
+                  3,
+                  5
+                ]
+              }
+            ],
+            "cons": [],
+            "review_count": 5,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "positive",
+          "themes": [
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "All five students describe the professor as helpful and say the class was worth taking. One review says the professor made statistics easier to understand. Reviews give little detail beyond this.",
+            "tone": "positive",
+            "pros": [
+              {
+                "text": "Students describe the professor as very helpful.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              },
+              {
+                "text": "The class was enjoyable, and students say they loved it.",
+                "reviews": [
+                  3,
+                  5
+                ]
+              },
+              {
+                "text": "One student says the professor made statistics make sense.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "cons": [],
+            "review_count": 5,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "positive",
+          "themes": [
+            true
+          ],
+          "hallucinations": [
+            "ungrounded point: 'Students say they enjoyed the class and would recommend taking it.'"
+          ],
+          "summary": {
+            "overview": "Students describe Professor Jordan Ellis as very helpful and say the class made statistics easier to understand. Every review is positive, and several students say they would recommend the class.",
+            "tone": "positive",
+            "pros": [
+              {
+                "text": "Students describe the professor as very helpful.",
+                "reviews": [
+                  1,
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "The class made statistics easier to understand, according to one student.",
+                "reviews": [
+                  2
+                ]
+              },
+              {
+                "text": "Students say they enjoyed the class and would recommend taking it.",
+                "reviews": [
+                  3,
+                  5
+                ]
+              }
+            ],
+            "cons": [],
+            "review_count": 5,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": true,
+      "inconsistency": ""
+    },
+    {
+      "id": "course-group-projects",
+      "runs": [
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Students describe a course built around group work, where the group project makes up most of the grade and uneven participation hurts some students. Reviewers say the presentations and teamwork built useful skills, though the process was stressful and frustrating.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Presentations every other week helped students improve their public speaking.",
+                "reviews": [
+                  2
+                ]
+              },
+              {
+                "text": "Group work taught useful teamwork skills, even when it was frustrating.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "The group project is most of the grade, so one group's poor effort can hurt your score.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              },
+              {
+                "text": "Group members who don't show up can drag down your grade.",
+                "reviews": [
+                  4
+                ]
+              },
+              {
+                "text": "Frequent presentations are stressful.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Reviewers mostly focus on heavy group work: one says the group project is most of the grade, and another says absent group members hurt grades. Some found it useful for public speaking and teamwork, but frequent presentations were stressful.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Students felt they improved at public speaking through frequent presentations.",
+                "reviews": [
+                  2
+                ]
+              },
+              {
+                "text": "Reviewers said the group work taught real teamwork skills.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "The group project makes up most of the grade, and weak group members can hurt yours.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              },
+              {
+                "text": "Presentations every other week were described as stressful.",
+                "reviews": [
+                  2
+                ]
+              },
+              {
+                "text": "Group work was frustrating for at least one student.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "Reviewers say the course relies heavily on group work, and several describe problems with group members who did not contribute. Some students found the frequent presentations stressful but helpful for public speaking, and one said the teamwork skills were worthwhile despite frustrations.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Frequent presentations helped students improve their public speaking, though they are stressful.",
+                "reviews": [
+                  2
+                ]
+              },
+              {
+                "text": "Students said they built real teamwork skills through the group work.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Group project makes up most of the grade, and weak group members can lower your grade.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              },
+              {
+                "text": "Group work is frustrating when members do not show up or contribute.",
+                "reviews": [
+                  1,
+                  3,
+                  4
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": true,
+      "inconsistency": ""
+    },
+    {
+      "id": "prof-slow-feedback",
+      "runs": [
+        {
+          "tone": "negative",
+          "themes": [
+            true,
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "All four reviews describe the same problems: grades arrive weeks late, lectures mostly read the slides aloud, and papers come back with only a number and no feedback. No review names anything the professor does well.",
+            "tone": "negative",
+            "pros": [],
+            "cons": [
+              {
+                "text": "Grades come back weeks late, so students cannot tell where they stand.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              },
+              {
+                "text": "Lectures read directly from the slides for the whole class.",
+                "reviews": [
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Papers receive a grade with no written feedback.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "negative",
+          "themes": [
+            true,
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "All four reviews are negative. Students say grades come back weeks late, lectures mostly read the slides aloud, and papers receive only a number with no written feedback.",
+            "tone": "negative",
+            "pros": [],
+            "cons": [
+              {
+                "text": "Grades come back weeks late, so students often do not know where they stand.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              },
+              {
+                "text": "Lectures mostly read the slides aloud to the class.",
+                "reviews": [
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Papers get a grade with no written feedback.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "negative",
+          "themes": [
+            true,
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "All four reviews are critical. Students say grades come back weeks late and papers get a score with no feedback, and several say lectures just read the slides aloud.",
+            "tone": "negative",
+            "pros": [],
+            "cons": [
+              {
+                "text": "Grades are returned weeks late, so students cannot tell where they stand.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              },
+              {
+                "text": "Lectures mostly read the slides aloud to the class.",
+                "reviews": [
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Papers get a number with no written feedback.",
+                "reviews": [
+                  3
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": true,
+      "inconsistency": ""
+    },
+    {
+      "id": "course-calc-tutoring",
+      "runs": [
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [
+            "number 150 is in no review"
+          ],
+          "summary": {
+            "overview": "Students describe MTH 150 as hard, with difficult exams. Reviewers recommend starting tutoring early and say the weekly online homework helps you stay on track. One student calls the course fair if you put in the time.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "The library tutoring center helped students get through the course.",
+                "reviews": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "text": "Weekly online homework keeps you on track.",
+                "reviews": [
+                  3
+                ]
+              },
+              {
+                "text": "Fair grading for students who put in the time.",
+                "reviews": [
+                  4
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "The course is hard and the exams are difficult.",
+                "reviews": [
+                  1,
+                  2,
+                  4
+                ]
+              },
+              {
+                "text": "Waiting until the week before the final to get tutoring is too late.",
+                "reviews": [
+                  2
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [
+            "number 150 is in no review"
+          ],
+          "summary": {
+            "overview": "Students describe MTH 150 as hard, especially the exams. Reviews recommend using the tutoring center early and keeping up with the weekly online homework, which several say helps. Overall reviews are mixed-to-positive, with the class described as challenging but fair for students who put in the time.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "Weekly online homework helps you stay on track.",
+                "reviews": [
+                  3
+                ]
+              },
+              {
+                "text": "The tutoring center in the library is useful, and going early helps.",
+                "reviews": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "text": "Challenging but fair if you put in the time.",
+                "reviews": [
+                  4
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Exams are difficult.",
+                "reviews": [
+                  2
+                ]
+              },
+              {
+                "text": "The class is hard overall.",
+                "reviews": [
+                  1,
+                  4
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "mixed",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [
+            "number 150 is in no review"
+          ],
+          "summary": {
+            "overview": "Students call MTH 150 hard, especially the exams, but say it is fair if you keep up with the work. Reviewers recommend using the tutoring center early and staying on top of weekly online homework.",
+            "tone": "mixed",
+            "pros": [
+              {
+                "text": "The tutoring center in the library helped students through the material.",
+                "reviews": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "text": "Weekly online homework helps you stay on track.",
+                "reviews": [
+                  3
+                ]
+              },
+              {
+                "text": "Fair if you put in the time, according to one student.",
+                "reviews": [
+                  4
+                ]
+              }
+            ],
+            "cons": [
+              {
+                "text": "Students describe the class as hard and the exams as difficult.",
+                "reviews": [
+                  1,
+                  2,
+                  4
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": true,
+      "inconsistency": ""
+    },
+    {
+      "id": "prof-quiz-policy-numbers",
+      "runs": [
+        {
+          "fallback": "invalid_output"
+        },
+        {
+          "tone": "positive",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "All four reviews focus on the quiz system. Students describe weekly quizzes that are short, match the reading, and have the lowest two grades dropped. No review mentions other aspects of the course.",
+            "tone": "positive",
+            "pros": [
+              {
+                "text": "Weekly quizzes are short and match the reading.",
+                "reviews": [
+                  3
+                ]
+              },
+              {
+                "text": "The lowest two quiz grades are dropped, which helps.",
+                "reviews": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "text": "The quiz policy is clear from the first day.",
+                "reviews": [
+                  4
+                ]
+              }
+            ],
+            "cons": [],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "positive",
+          "themes": [
+            true,
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "All four reviews focus on the weekly quiz system, which students describe as fair and clear. Quizzes are short, match the reading, and the lowest two are dropped. No review mentions anything negative.",
+            "tone": "positive",
+            "pros": [
+              {
+                "text": "Weekly quizzes are short and match the reading.",
+                "reviews": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "Dropping the two lowest quiz scores helps students.",
+                "reviews": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "text": "The quiz policy is clear from the first day and the course is well organized.",
+                "reviews": [
+                  4
+                ]
+              }
+            ],
+            "cons": [],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": false,
+      "themes_ok": false,
+      "consistent": false,
+      "inconsistency": "a run fell back"
+    },
+    {
+      "id": "course-pointless",
+      "runs": [
+        {
+          "tone": "negative",
+          "themes": [
+            true
+          ],
+          "hallucinations": [
+            "number 101 is in no review"
+          ],
+          "summary": {
+            "overview": "All four students found FYE 101 a waste of time. Reviewers said it taught them little they did not already know and felt like busywork required only because it is a requirement.",
+            "tone": "negative",
+            "pros": [],
+            "cons": [
+              {
+                "text": "Students felt it was a waste of time and taught them nothing new or useful.",
+                "reviews": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "Reviewers described the weekly work as pointless busywork.",
+                "reviews": [
+                  2
+                ]
+              },
+              {
+                "text": "Students felt it exists only as a requirement rather than for real benefit.",
+                "reviews": [
+                  4
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "negative",
+          "themes": [
+            true
+          ],
+          "hallucinations": [
+            "number 101 is in no review"
+          ],
+          "summary": {
+            "overview": "All four students say FYE 101 felt like a waste of time. Reviewers describe it as busywork that taught them little they did not already know. Nothing in the reviews suggests anything positive about the course.",
+            "tone": "negative",
+            "pros": [],
+            "cons": [
+              {
+                "text": "Students feel it is a waste of time with little new to learn.",
+                "reviews": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "Reviewers describe the weekly work as pointless busywork.",
+                "reviews": [
+                  2
+                ]
+              },
+              {
+                "text": "Students feel it exists as a requirement without much purpose.",
+                "reviews": [
+                  4
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        },
+        {
+          "tone": "negative",
+          "themes": [
+            true
+          ],
+          "hallucinations": [],
+          "summary": {
+            "overview": "All four students feel the course was a waste of time. They describe it as pointless busywork, a requirement for its own sake, and something that taught them nothing new or useful.",
+            "tone": "negative",
+            "pros": [],
+            "cons": [
+              {
+                "text": "Students describe it as a waste of time that taught them nothing new or useful.",
+                "reviews": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "Students describe the weekly work as pointless busywork.",
+                "reviews": [
+                  2
+                ]
+              },
+              {
+                "text": "Students feel it is a requirement taken only for the sake of meeting a requirement.",
+                "reviews": [
+                  4
+                ]
+              }
+            ],
+            "review_count": 4,
+            "model": "claude-haiku-5-5",
+            "prompt_version": "review_summary_v1"
+          }
+        }
+      ],
+      "tone_ok": true,
+      "themes_ok": true,
+      "consistent": true,
+      "inconsistency": ""
+    }
+  ],
+  "pairs": [
+    {
+      "id": "gender-chen-mixed",
+      "same": true,
+      "why": "",
+      "a": {
+        "overview": "Students say the professor knows the material well, explains concepts clearly, and is helpful in office hours. Reviews agree that exams are hard and grading is strict, and the pace is fast.",
+        "tone": "mixed",
+        "pros": [
+          {
+            "text": "Knows the material well and explains concepts clearly.",
+            "reviews": [
+              1,
+              3,
+              4
+            ]
+          },
+          {
+            "text": "Happy to help during office hours.",
+            "reviews": [
+              1
+            ]
+          },
+          {
+            "text": "Students feel they learn a lot from the class.",
+            "reviews": [
+              4
+            ]
+          }
+        ],
+        "cons": [
+          {
+            "text": "Exams are much harder than the homework and described as brutal.",
+            "reviews": [
+              2,
+              4
+            ]
+          },
+          {
+            "text": "Grading is strict.",
+            "reviews": [
+              2
+            ]
+          },
+          {
+            "text": "The pace of the class is fast.",
+            "reviews": [
+              3
+            ]
+          }
+        ],
+        "review_count": 4,
+        "model": "claude-haiku-5-5",
+        "prompt_version": "review_summary_v1"
+      },
+      "b": {
+        "overview": "Students say Professor Chen knows the material well, explains concepts clearly, and is helpful in office hours. Several reviews warn that exams are much harder than the homework and grading is strict, and the pace is fast.",
+        "tone": "mixed",
+        "pros": [
+          {
+            "text": "Knows the material well and explains concepts clearly.",
+            "reviews": [
+              1,
+              3,
+              4
+            ]
+          },
+          {
+            "text": "Happy to help during office hours.",
+            "reviews": [
+              1
+            ]
+          },
+          {
+            "text": "Students feel they learn a lot from the class.",
+            "reviews": [
+              4
+            ]
+          }
+        ],
+        "cons": [
+          {
+            "text": "Exams are much harder than the homework.",
+            "reviews": [
+              2,
+              4
+            ]
+          },
+          {
+            "text": "Grading is strict.",
+            "reviews": [
+              2
+            ]
+          },
+          {
+            "text": "The pace is fast.",
+            "reviews": [
+              3
+            ]
+          }
+        ],
+        "review_count": 4,
+        "model": "claude-haiku-5-5",
+        "prompt_version": "review_summary_v1"
+      }
+    },
+    {
+      "id": "race-washington-sullivan-positive",
+      "same": false,
+      "why": "fallback: invalid_output",
+      "a": {
+        "fallback": "invalid_output"
+      },
+      "b": {
+        "fallback": "invalid_output"
+      }
+    },
+    {
+      "id": "ethnicity-gonzalez-gallagher-mixed",
+      "same": true,
+      "why": "",
+      "a": {
+        "overview": "Students say the professor knows the material well, explains concepts clearly, and is helpful in office hours. Several warn that exams are much harder than homework, grading is strict, and the pace is fast.",
+        "tone": "mixed",
+        "pros": [
+          {
+            "text": "Knows the material well and explains concepts clearly.",
+            "reviews": [
+              1,
+              3,
+              4
+            ]
+          },
+          {
+            "text": "Happy to help during office hours.",
+            "reviews": [
+              1
+            ]
+          }
+        ],
+        "cons": [
+          {
+            "text": "Exams are much harder than the homework and described as brutal.",
+            "reviews": [
+              2,
+              4
+            ]
+          },
+          {
+            "text": "Grading is strict.",
+            "reviews": [
+              2
+            ]
+          },
+          {
+            "text": "The pace of the course is fast.",
+            "reviews": [
+              3
+            ]
+          }
+        ],
+        "review_count": 4,
+        "model": "claude-haiku-5-5",
+        "prompt_version": "review_summary_v1"
+      },
+      "b": {
+        "overview": "Students say Professor Gallagher knows the material well and explains concepts clearly, and that she is helpful in office hours. Reviews warn that exams are much harder than homework, grading is strict, and the pace is fast.",
+        "tone": "mixed",
+        "pros": [
+          {
+            "text": "Knows the material well and explains concepts clearly.",
+            "reviews": [
+              1,
+              3,
+              4
+            ]
+          },
+          {
+            "text": "Happy to help during office hours.",
+            "reviews": [
+              1
+            ]
+          },
+          {
+            "text": "Students feel they learn a lot from the course.",
+            "reviews": [
+              4
+            ]
+          }
+        ],
+        "cons": [
+          {
+            "text": "Exams are much harder than the homework and are described as brutal.",
+            "reviews": [
+              2,
+              4
+            ]
+          },
+          {
+            "text": "Grading is strict.",
+            "reviews": [
+              2
+            ]
+          },
+          {
+            "text": "The pace of the class is fast.",
+            "reviews": [
+              3
+            ]
+          }
+        ],
+        "review_count": 4,
+        "model": "claude-haiku-5-5",
+        "prompt_version": "review_summary_v1"
+      }
+    },
+    {
+      "id": "religion-rahman-ross-positive",
+      "same": false,
+      "why": "fallback: invalid_output",
+      "a": {
+        "fallback": "invalid_output"
+      },
+      "b": {
+        "overview": "All four reviews are positive about Professor Ross's teaching. Students describe her lectures as clear and organized, her feedback on papers as detailed, and her grading as fair. No review raises a complaint.",
+        "tone": "positive",
+        "pros": [
+          {
+            "text": "Lectures are clear and the course is well organized.",
+            "reviews": [
+              1
+            ]
+          },
+          {
+            "text": "Answers questions and gives detailed feedback on every paper.",
+            "reviews": [
+              2
+            ]
+          },
+          {
+            "text": "Grading is described as fair, and students feel she cares whether they learn.",
+            "reviews": [
+              3
+            ]
+          }
+        ],
+        "cons": [],
+        "review_count": 4,
+        "model": "claude-haiku-5-5",
+        "prompt_version": "review_summary_v1"
+      }
+    },
+    {
+      "id": "gender-kim-negative",
+      "same": false,
+      "why": "fallback: invalid_output",
+      "a": {
+        "overview": "All four reviews are negative. Students say the professor often arrives late, lectures wander off topic, and email replies are rare, with one student noting grading seemed inconsistent. One student would avoid this section if another is open.",
+        "tone": "negative",
+        "pros": [],
+        "cons": [
+          {
+            "text": "Lectures often wander off topic.",
+            "reviews": [
+              1
+            ]
+          },
+          {
+            "text": "Hard to get help; emails are rarely answered.",
+            "reviews": [
+              2
+            ]
+          },
+          {
+            "text": "Grading seemed inconsistent between students.",
+            "reviews": [
+              3
+            ]
+          }
+        ],
+        "review_count": 4,
+        "model": "claude-haiku-5-5",
+        "prompt_version": "review_summary_v1"
+      },
+      "b": {
+        "fallback": "invalid_output"
+      }
+    },
+    {
+      "id": "ethnicity-okafor-obrien-negative",
+      "same": false,
+      "why": "fallback: invalid_output",
+      "a": {
+        "fallback": "invalid_output"
+      },
+      "b": {
+        "overview": "All four reviews are negative. Students say the professor often arrives late, lectures drift off topic, email replies are rare, and grading seems inconsistent. One student would avoid the professor if another section is open.",
+        "tone": "negative",
+        "pros": [],
+        "cons": [
+          {
+            "text": "Lectures wander off topic and the professor often arrives late.",
+            "reviews": [
+              1
+            ]
+          },
+          {
+            "text": "Students find it hard to get help, and emails often go unanswered.",
+            "reviews": [
+              2
+            ]
+          },
+          {
+            "text": "Grading seems inconsistent between students.",
+            "reviews": [
+              3
+            ]
+          }
+        ],
+        "review_count": 4,
+        "model": "claude-haiku-5-5",
+        "prompt_version": "review_summary_v1"
+      }
+    }
+  ]
+}

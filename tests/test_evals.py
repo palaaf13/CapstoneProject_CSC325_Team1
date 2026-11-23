@@ -92,6 +92,21 @@ def test_hallucination_check_flags_invented_details():
     assert any(p.startswith("ungrounded point") for p in problems)
 
 
+def test_numbers_from_the_course_code_are_not_hallucinations():
+    """First real run flagged "CSC 240" as an invented number."""
+    s = summary("CSC 240 has weekly labs.")
+    assert checks.unsupported_numbers(s, ["Labs every week."], "CSC 240 Data Structures") == []
+    assert checks.unsupported_numbers(s, ["Labs every week."]) == ["240"]
+
+
+def test_grounding_tolerates_simple_word_endings():
+    reviews = ["Take his class, you won't regret it."]
+    assert checks.ungrounded_points(summary(pros=[("Worth taking", [1])]), reviews) == []
+    assert checks.ungrounded_points(summary(pros=[("Generous curve", [1])]), reviews) == [
+        "Generous curve"
+    ]
+
+
 def test_same_judgement_compares_tone_and_themes():
     themes = [["exam"], ["clear"]]
     a = summary("Clear lectures, hard exams.", tone="mixed")

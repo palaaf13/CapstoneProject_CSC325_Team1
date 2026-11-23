@@ -48,9 +48,21 @@ def covered_themes(summary: ReviewSummary, themes: list[list[str]]) -> list[bool
     return [any(_contains(text, word) for word in group) for group in themes]
 
 
+_SUFFIXES = ("ing", "ed", "es", "ly", "s")
+
+
+def _stem(word: str) -> str:
+    """Crude: drop one common suffix, keep at most four letters ("taking" -> "tak")."""
+    for suffix in _SUFFIXES:
+        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+            word = word[: -len(suffix)]
+            break
+    return word[:4]
+
+
 def _stems(text: str) -> set[str]:
     words = re.findall(r"[a-z']+", text.lower())
-    return {w[:4] for w in words if len(w) >= 4 and w not in STOPWORDS}
+    return {_stem(w) for w in words if len(w) >= 4 and w not in STOPWORDS}
 
 
 def ungrounded_points(summary: ReviewSummary, reviews: list[str]) -> list[str]:
@@ -68,14 +80,15 @@ def ungrounded_points(summary: ReviewSummary, reviews: list[str]) -> list[str]:
     return bad
 
 
-def unsupported_numbers(summary: ReviewSummary, reviews: list[str]) -> list[str]:
-    """Numbers in the summary that appear in no review: invented specifics."""
-    source = " ".join(reviews)
+def unsupported_numbers(summary: ReviewSummary, reviews: list[str], subject: str = "") -> list[str]:
+    """Numbers in the summary that appear in no review (or in the subject, e.g.
+    the 240 in "CSC 240"): invented specifics."""
+    source = " ".join([subject, *reviews])
     return [n for n in re.findall(r"\d+(?:\.\d+)?", summary_text(summary)) if n not in source]
 
 
 def hallucination_problems(
-    summary: ReviewSummary, reviews: list[str], forbidden: list[str]
+    summary: ReviewSummary, reviews: list[str], forbidden: list[str], subject: str = ""
 ) -> list[str]:
     """Everything in the summary the reviews do not support. Empty means clean.
 
@@ -87,7 +100,9 @@ def hallucination_problems(
     """
     text = summary_text(summary)
     problems = [f"mentions {term!r}" for term in forbidden if _contains(text, term)]
-    problems += [f"number {n} is in no review" for n in unsupported_numbers(summary, reviews)]
+    problems += [
+        f"number {n} is in no review" for n in unsupported_numbers(summary, reviews, subject)
+    ]
     problems += [f"ungrounded point: {p!r}" for p in ungrounded_points(summary, reviews)]
     return problems
 

@@ -626,7 +626,7 @@ below it.
 course / professor page ──(htmx, after the page loads)──► /courses/<code>/summary/
     apps/assistant/services.py   cache lookup (prompt version + model + exact review texts)
         └─ miss ─► apps/assistant/summarizer.py
-                     prompt:  prompts/review_summary_v1.txt
+                     prompt:  prompts/review_summary_v2.txt
                      model:   Claude Haiku 5.5 (AI_SUMMARY_MODEL), structured JSON output
                      checks:  JSON shape, lengths, tone, and every cited review number exists
                    ├─ valid ─► cached, shown
@@ -635,7 +635,7 @@ course / professor page ──(htmx, after the page loads)──► /courses/<co
 
 | Piece | Where |
 | --- | --- |
-| Prompt (versioned) | [`prompts/review_summary_v1.txt`](prompts/review_summary_v1.txt) |
+| Prompt (versioned) | [`prompts/review_summary_v2.txt`](prompts/review_summary_v2.txt) (current), [`v1`](prompts/review_summary_v1.txt) |
 | Request, validation, fallback reasons | [`apps/assistant/summarizer.py`](apps/assistant/summarizer.py): no Django, so the eval suite runs the exact same code |
 | Settings, API client, cache, fallback text | [`apps/assistant/services.py`](apps/assistant/services.py) |
 | The box | [`templates/assistant/partials/review_summary.html`](templates/assistant/partials/review_summary.html) |
@@ -650,11 +650,17 @@ how we would judge a switch.
 
 ### Prompt versioning
 
-The prompt lives in its own file, `prompts/review_summary_v1.txt`, and
-`summarizer.PROMPT_VERSION` names the file the code loads. **A released prompt file is never
-edited.** To change the prompt, copy it to `review_summary_v2.txt`, change `PROMPT_VERSION`, run
-the eval suite, and open a PR. The version is part of the cache key, so every page regenerates
-its summary with the new prompt. Each eval report records which version it measured.
+The prompt lives in its own file in `prompts/`, and `summarizer.PROMPT_VERSION` names the file the
+code loads. **A prompt file is never edited once it has been evaluated.** To change the prompt,
+copy it to the next version, change `PROMPT_VERSION`, run the eval suite, and open a PR. Old
+versions stay in the folder, so any past eval report can be reproduced. The version is part of
+the cache key, so every page regenerates its summary with the new prompt. Each eval report
+records which version it measured.
+
+| Version | What changed | Eval |
+| --- | --- | --- |
+| `review_summary_v1` | First version | [Failed](evals/results/history/2026-11-23-prompt-v1.md): Haiku returned 4–5 pros or cons in 14 of 60 calls, and the validator rejected those summaries |
+| `review_summary_v2` | "Never more than 3, most shared first"; points as plain statements; reuse the reviewers' words | [latest](evals/results/latest.md) |
 
 ### API key
 
@@ -809,6 +815,22 @@ and ran the full suite locally. These are the mistakes we found, and how:
   contains no forbidden term.
 - **It wrapped the icon in a smaller box.** The sparkles icon sets its own size, so the wrapper
   would have clipped it. We found it reading the icon's markup, and removed the wrapper.
+- **Its first prompt and validator disagreed with the model.** The first real eval run
+  ([report](evals/results/history/2026-11-23-prompt-v1.md)) failed every metric. The summaries
+  were accurate, but Haiku listed 4 or 5 pros or cons in 14 of 60 calls despite "up to 3", and
+  the validator rejected each of those whole summaries. That pushed them to the fallback, which
+  also failed 4 of the 6 bias pairs. Prompt v2 says "never more than 3, most shared first", and
+  the validator now keeps the first three instead of throwing the summary away. A test covers it
+  (`test_extra_points_are_trimmed_not_rejected`).
+- **Its hallucination check flagged course numbers.** The same run reported "number 240 is in no
+  review" for *CSC 240 Data Structures*. The number comes from the subject line, which the model
+  is given. We found it reading the failure table. The check now counts the subject as a source,
+  with a test.
+- **Its grounding check was too literal about word endings.** "Worth taking" was flagged as not
+  matching a review that said "Take his class". The check now drops a simple suffix (-ing, -ed,
+  -s) before comparing. A test makes sure an invented point ("Generous curve") is still flagged.
+  We changed the grader only where its own failure table showed a correct summary being marked
+  wrong. The thresholds did not move.
 - **Something it had not caused but did surface:** the ratings app had never had a migration, so
   its collections did not exist in production. Adding the rating form made the gap visible, and
   RH-19 adds `0001_initial`.

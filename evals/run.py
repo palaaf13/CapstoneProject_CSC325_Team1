@@ -111,7 +111,7 @@ def run_suite(summarize: Summarize, *, model: str, runs: int = 3, workers: int =
                 s = attempt.summary
                 coverage = checks.covered_themes(s, expected["themes"])
                 problems = checks.hallucination_problems(
-                    s, case["reviews"], expected.get("forbidden", [])
+                    s, case["reviews"], expected.get("forbidden", []), case["subject"]
                 )
                 row["runs"].append(
                     {

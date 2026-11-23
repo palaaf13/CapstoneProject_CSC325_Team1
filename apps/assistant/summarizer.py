@@ -23,7 +23,7 @@ import anthropic
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "review_summary_v1"
+PROMPT_VERSION = "review_summary_v2"
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / f"{PROMPT_VERSION}.txt"
 DEFAULT_MODEL = "claude-haiku-5-5"
 
@@ -167,10 +167,14 @@ def parse_summary(text: str, review_count: int, *, model: str = "") -> ReviewSum
         raw = data.get(side)
         if not isinstance(raw, list):
             raise InvalidSummary(f"{side} is not a list")
-        if len(raw) > MAX_POINTS:
-            raise InvalidSummary(f"{len(raw)} {side}, at most {MAX_POINTS}")
         if not all(isinstance(item, dict) for item in raw):
             raise InvalidSummary(f"{side} has a non-object item")
+        if len(raw) > MAX_POINTS:
+            # The prompt asks for the most-shared points first, so the extras
+            # are the weakest. Dropping them is safe; rejecting the whole
+            # summary for it (what v1 did) sent good summaries to the fallback.
+            logger.info("AI review summary gave %d %s; keeping %d", len(raw), side, MAX_POINTS)
+            raw = raw[:MAX_POINTS]
         points[side] = tuple(
             _clean_point(item, review_count, f"{side}[{i}]") for i, item in enumerate(raw)
         )
