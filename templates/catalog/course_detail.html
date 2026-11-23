@@ -70,10 +70,7 @@
         </section>
       {% endif %}
 
-      <section aria-labelledby="advice-heading">
-        <h2 id="advice-heading" class="sr-only">Student advice</h2>
-        {% include "partials/empty_state.html" with icon="chat" headline="Advice and ratings are not open yet" description="Once accounts are live, students who took this course can rate it and write about what to expect. That work is scheduled for a later sprint." %}
-      </section>
+      {% include "community/partials/entity_threads.html" with name=course.code hide="course" empty_description="Ask what to expect, or share advice from when you took it: workload, exams, which section worked for you. Keep it to your own experience." %}
     </div>
 
     <aside class="space-y-6">

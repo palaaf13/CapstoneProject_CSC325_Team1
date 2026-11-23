@@ -8,6 +8,10 @@
       <a href="{% url 'catalog:professor_detail' post.professor.slug %}#threads" class="rounded-sm text-neutral-500 hover:text-neutral-900 hover:underline">
         &larr; {{ post.professor.full_name }}
       </a>
+    {% elif post.course %}
+      <a href="{% url 'catalog:course_detail' post.course.slug %}#threads" class="rounded-sm text-neutral-500 hover:text-neutral-900 hover:underline">
+        &larr; {{ post.course.code }} {{ post.course.title }}
+      </a>
     {% else %}
       <a href="{% url 'community:feed' %}" class="rounded-sm text-neutral-500 hover:text-neutral-900 hover:underline">
         &larr; Back to the feed
@@ -28,6 +32,9 @@
         {% if post.professor %}
           <span aria-hidden="true">&middot;</span>
           <span>About <a href="{% url 'catalog:professor_detail' post.professor.slug %}" class="rounded-sm font-medium text-accent-700 hover:underline">{{ post.professor.full_name }}</a></span>
+        {% elif post.course %}
+          <span aria-hidden="true">&middot;</span>
+          <span>About <a href="{% url 'catalog:course_detail' post.course.slug %}" class="rounded-sm font-mono font-semibold text-accent-700 hover:underline">{{ post.course.code }}</a></span>
         {% endif %}
       </div>
 

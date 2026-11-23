@@ -1,7 +1,8 @@
 {% comment %}
 One post in the feed. Needs `post` and `my_vote`. Dense on purpose: vote
 column, then kind, title, a short excerpt, tags, and a meta line.
-Pass `hide_professor=True` on a professor's own page, where the link is redundant.
+Pass `hide_about="professor"` or `"course"` on that page itself, where the
+link back to it is redundant.
 {% endcomment %}
 <article class="flex gap-3 border-b border-neutral-200 px-3 py-3 last:border-b-0">
   {% include "community/partials/vote.html" %}
@@ -12,10 +13,15 @@ Pass `hide_professor=True` on a professor's own page, where the link is redundan
       <span>{% if post.is_removed %}[removed]{% else %}{{ post.author.get_full_name|default:post.author.get_username }}{% endif %}</span>
       <span aria-hidden="true">&middot;</span>
       <time datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|timesince }} ago</time>
-      {% if post.professor and not hide_professor %}
+      {% if post.professor and hide_about != "professor" %}
         <span aria-hidden="true">&middot;</span>
         <a href="{% url 'catalog:professor_detail' post.professor.slug %}" class="rounded-sm font-medium text-accent-700 hover:underline">
           <span class="sr-only">About </span>{{ post.professor.full_name }}
+        </a>
+      {% elif post.course and hide_about != "course" %}
+        <span aria-hidden="true">&middot;</span>
+        <a href="{% url 'catalog:course_detail' post.course.slug %}" class="rounded-sm font-mono font-semibold text-accent-700 hover:underline">
+          <span class="sr-only">About </span>{{ post.course.code }}
         </a>
       {% endif %}
     </div>

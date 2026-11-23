@@ -1,0 +1,37 @@
+{% comment %}
+The "Discussion" section on a professor or course page. Needs the context that
+catalog.views._threads_context builds: thread_rows, thread_count,
+new_thread_url, all_threads_url. Pass `name` (who or what the threads are
+about), `empty_description`, and `hide` ("professor" or "course") so each row
+leaves out the link back to the page it is already on.
+{% endcomment %}
+<section id="threads" aria-labelledby="threads-heading">
+  <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+    <h2 id="threads-heading" class="text-h3">
+      Discussion
+      {% if thread_count %}<span class="badge-neutral ml-1 align-middle">{{ thread_count }}</span>{% endif %}
+    </h2>
+    {% if thread_rows %}
+      <a href="{{ new_thread_url }}" class="btn-secondary btn-sm">Start a thread</a>
+    {% endif %}
+  </div>
+
+  {% if thread_rows %}
+    <div class="card overflow-hidden">
+      {% for row in thread_rows %}
+        {% include "community/partials/post_row.html" with post=row.post my_vote=row.my_vote hide_about=hide %}
+      {% endfor %}
+    </div>
+    {% if thread_count > thread_rows|length %}
+      <p class="mt-2 text-right text-meta">
+        <a href="{{ all_threads_url }}" class="rounded-sm font-medium text-accent-700 underline hover:text-accent-800">
+          See all {{ thread_count }} threads
+        </a>
+      </p>
+    {% endif %}
+  {% else %}
+    {% with headline="No threads about "|add:name|add:" yet" %}
+      {% include "partials/empty_state.html" with icon="chat" headline=headline description=empty_description action_label="Start a thread" action_url=new_thread_url %}
+    {% endwith %}
+  {% endif %}
+</section>

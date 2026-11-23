@@ -21,7 +21,7 @@ from apps.saved import services as saved
 
 from . import services
 from .forms import CourseDirectoryForm, DirectoryQuery, ProfessorDirectoryForm
-from .models import Professor
+from .models import Course, Professor
 from .services import COURSE_SORTS, PAGE_SIZE, PROFESSOR_SORTS
 
 
@@ -130,6 +130,7 @@ def course_detail(request: HttpRequest, code: str) -> HttpResponse:
             "course": course,
             "professors": services.professors_for_course(course),
             "is_saved": saved.is_saved(request.user, course),
+            **_threads_context(request, course=course),
         },
     )
 
@@ -137,8 +138,6 @@ def course_detail(request: HttpRequest, code: str) -> HttpResponse:
 def professor_detail(request: HttpRequest, slug: str) -> HttpResponse:
     """One professor, keyed on the directory slug."""
     professor = get_object_or_404(Professor, slug=slug)
-    threads, thread_count = community.threads_about(professor=professor)
-    my_votes = community.votes_by(request.user, threads)
     return render(
         request,
         "catalog/professor_detail.html",
@@ -146,8 +145,26 @@ def professor_detail(request: HttpRequest, slug: str) -> HttpResponse:
             "professor": professor,
             "courses": services.courses_for_professor(professor),
             "is_saved": saved.is_saved(request.user, professor),
-            "thread_rows": [{"post": p, "my_vote": my_votes.get(p.pk, 0)} for p in threads],
-            "thread_count": thread_count,
-            "all_threads_url": f"{reverse('community:feed')}?{urlencode({'professor': slug})}",
+            **_threads_context(request, professor=professor),
         },
     )
+
+
+def _threads_context(
+    request: HttpRequest, *, professor: Professor | None = None, course: Course | None = None
+) -> dict:
+    """What community/partials/entity_threads.html needs, for one professor or course."""
+    threads, thread_count = community.threads_about(professor=professor, course=course)
+    my_votes = community.votes_by(request.user, threads)
+    if professor is not None:
+        new_thread_url = reverse("community:professor_post_create", args=[professor.slug])
+        feed_filter = {"professor": professor.slug}
+    else:
+        new_thread_url = reverse("community:course_post_create", args=[course.slug])
+        feed_filter = {"course": course.slug}
+    return {
+        "thread_rows": [{"post": p, "my_vote": my_votes.get(p.pk, 0)} for p in threads],
+        "thread_count": thread_count,
+        "new_thread_url": new_thread_url,
+        "all_threads_url": f"{reverse('community:feed')}?{urlencode(feed_filter)}",
+    }

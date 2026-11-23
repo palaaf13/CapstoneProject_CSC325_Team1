@@ -54,6 +54,7 @@
 
     {% if query.tag %}<input type="hidden" name="tag" value="{{ query.tag }}">{% endif %}
     {% if professor %}<input type="hidden" name="professor" value="{{ professor.slug }}">{% endif %}
+    {% if course %}<input type="hidden" name="course" value="{{ course.slug }}">{% endif %}
 
     <noscript><button type="submit" class="btn-primary">Search</button></noscript>
 
@@ -69,10 +70,10 @@
     </p>
   {% endif %}
 
-  {% if professor %}
+  {% if about %}
     <p class="mb-3 flex flex-wrap items-center gap-2 text-meta text-neutral-600">
       Threads about
-      <a href="{% url 'catalog:professor_detail' professor.slug %}" class="badge-accent hover:underline">{{ professor.full_name }}</a>
+      <a href="{{ about.url }}" class="badge-accent hover:underline">{{ about.name }}</a>
       <a href="{% url 'community:feed' %}" class="rounded-sm text-accent-700 underline hover:text-accent-800">Show all posts</a>
     </p>
   {% endif %}
