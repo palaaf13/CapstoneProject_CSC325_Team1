@@ -81,6 +81,7 @@ def test_thresholds_cover_every_metric():
         "hallucination_free_rate",
         "consistency_rate",
         "counterfactual_parity",
+        "linked_pages_readable",
     }
 
 
@@ -110,12 +111,82 @@ def test_hallucination_check_flags_unbacked_specifics():
     for expected in (
         "says 'Hubert Keen'",
         "tried to link 1 page(s) off farmingdale.edu",
-        "phone number 934-420-9999 is in no cited source",
-        "email registrar@farmingdale.edu is in no cited source",
-        "year 1946 is in no cited source",
-        "amount $75 is in no cited source",
+        "phone number 934-420-9999 is on no page Rambo linked",
+        "email registrar@farmingdale.edu is on no page Rambo linked",
+        "year 1946 is on no page Rambo linked",
+        "amount $75 is on no page Rambo linked",
     ):
         assert expected in problems
+
+
+def test_specifics_are_checked_against_the_pages_rambo_linked():
+    url = "https://www.farmingdale.edu/registrar/index.shtml"
+    page = '<p>Call 934-420-2776 or <a href="mailto:regoffice@farmingdale.edu">email us</a>.</p>'
+    r = result(
+        f"Call 934-420-2776 or email regoffice@farmingdale.edu. [Registrar]({url})", sources=()
+    )
+    assert checks.hallucination_problems(r, [], pages={url: page}) == []
+
+    wrong = result(f"Call 934-420-9999. [Registrar]({url})", sources=())
+    assert checks.hallucination_problems(wrong, [], pages={url: page}) == [
+        "phone number 934-420-9999 is on no page Rambo linked"
+    ]
+
+
+def test_a_phone_number_is_not_also_read_as_a_year():
+    """The first real run flagged the "2000" in 934-420-2000 as an invented year."""
+    url = "https://www.farmingdale.edu/contact/"
+    r = result(f"The main line is 934-420-2000. [Contact]({url})", sources=())
+    assert checks.hallucination_problems(r, [], pages={url: "934-420-2000"}) == []
+
+
+def test_details_behind_an_unreadable_page_are_unverified_not_hallucinated():
+    pdf = "https://www.farmingdale.edu/residence-life/guide-2025-2026.pdf"
+    r = result(f"A permit is $30. [Handbook]({pdf})", sources=())
+    problems, unverified = checks.unsupported_specifics(r, pages={pdf: None})
+    assert problems == [] and unverified == ["amount $30 (a linked page couldn't be read)"]
+    # A page that was never fetched is not an excuse.
+    assert checks.unsupported_specifics(r, pages={})[0] == ["amount $30 is on no page Rambo linked"]
+    # The year in the link address itself counts as evidence.
+    assert checks.unsupported_specifics(
+        result(f"See the 2025 handbook. [Handbook]({pdf})", sources=()), pages={pdf: None}
+    ) == ([], [])
+
+
+def test_the_run_fails_if_farmingdale_edu_cannot_be_read():
+    def linking(question, history):
+        good = oracle(question, history)
+        return result(
+            good.answer.text + " [FSC](https://www.farmingdale.edu/x/)", evidence=good.evidence
+        )
+
+    report = run.run_suite(
+        linking, model="fake", prompt_version="rambo_v2", runs=1, workers=2,
+        fetch_pages=lambda urls: dict.fromkeys(urls),
+    )  # fmt: skip
+    assert report.metrics["linked_pages_readable"] == 0.0
+    assert "linked_pages_readable" in report.failures
+
+
+def test_the_runner_fetches_each_linked_page_once(tmp_path):
+    fetched = []
+
+    def fake_fetch(urls):
+        urls = sorted(set(urls))
+        fetched.extend(urls)
+        return dict.fromkeys(urls, "page")
+
+    def linking(question, history):
+        good = oracle(question, history)
+        text = good.answer.text + " [FSC](https://www.farmingdale.edu/x/)"
+        return result(text, evidence=good.evidence)
+
+    report = run.run_suite(
+        linking, model="fake", prompt_version="rambo_v2", runs=1, workers=2,
+        fetch_pages=fake_fetch,
+    )  # fmt: skip
+    assert fetched == ["https://www.farmingdale.edu/x/"]
+    assert report.pages == {"linked": 1, "readable": 1}
 
 
 def test_earlier_turns_count_as_evidence_for_follow_ups():

@@ -55,6 +55,7 @@ class Report:
     pairs: list[dict] = field(default_factory=list)
     served_by: list[str] = field(default_factory=list)
     usage: dict[str, int] = field(default_factory=dict)
+    pages: dict[str, int] = field(default_factory=dict)
 
     @property
     def failures(self) -> list[str]:
@@ -87,8 +88,16 @@ def _passes_facts(result, expected: dict) -> bool:
 
 
 def run_suite(
-    ask: Ask, *, model: str, prompt_version: str, runs: int = 3, workers: int = 6
+    ask: Ask,
+    *,
+    model: str,
+    prompt_version: str,
+    runs: int = 3,
+    workers: int = 6,
+    fetch_pages=None,
 ) -> Report:
+    """`fetch_pages(urls) -> {url: html or None}` reads the pages Rambo linked;
+    the real run uses evals.sources.fetch_all, the tests pass a fake."""
     from . import checks
 
     golden, pairs = load_jsonl(GOLDEN), load_jsonl(PAIRS)
@@ -97,9 +106,14 @@ def run_suite(
     with ThreadPoolExecutor(max_workers=workers) as pool:
         results = list(pool.map(lambda job: ask(*job), jobs))
 
+    # Read every farmingdale.edu page Rambo linked, once, for the hallucination check.
+    linked = [url for r in results if r.ok for url in checks.linked_urls(r)]
+    pages = fetch_pages(linked) if fetch_pages else {}
+
     report = Report(
         model=model, prompt_version=prompt_version, runs=runs, thresholds=load_thresholds()
     )
+    report.pages = {"linked": len(pages), "readable": sum(1 for v in pages.values() if v)}
     report.served_by = sorted({r.answer.model for r in results if r.ok and r.answer.model})
     report.usage = {
         key: sum(r.usage.get(key, 0) for r in results)
@@ -116,8 +130,9 @@ def run_suite(
             if attempt.ok:
                 history = " ".join(turn["answer"] for turn in case.get("history", []))
                 problems = checks.hallucination_problems(
-                    attempt, expected.get("forbidden", []), history
+                    attempt, expected.get("forbidden", []), history, pages
                 )
+                unverified = checks.unsupported_specifics(attempt, history, pages)[1]
                 clean.append(not problems)
                 row["runs"].append(
                     {
@@ -128,6 +143,8 @@ def run_suite(
                         ),
                         "passes": _passes_facts(attempt, expected),
                         "hallucinations": problems,
+                        "unverified": unverified,
+                        "linked": checks.linked_urls(attempt),
                     }
                 )
             else:
@@ -167,7 +184,11 @@ def run_suite(
             }
         )
 
+    linked, readable = report.pages["linked"], report.pages["readable"]
     report.metrics = {
+        # If farmingdale.edu can't be read (blocked, down), the hallucination
+        # check would have nothing to check against; this fails the run instead.
+        "linked_pages_readable": round(readable / linked, 3) if linked else 1.0,
         "valid_answer_rate": _rate(valid),
         "fact_accuracy": _rate(facts),
         "hallucination_free_rate": _rate(clean),
@@ -213,7 +234,9 @@ def to_markdown(report: Report, *, when: str, sha: str) -> str:
         "",
         f"{len(report.cases)} golden questions × {report.runs} runs, {len(report.pairs)} counterfactual pairs. "
         f"{u.get('api_calls', 0)} API calls, {u.get('input_tokens', 0):,} input / "
-        f"{u.get('output_tokens', 0):,} output tokens, {u.get('web_searches', 0)} web searches.",
+        f"{u.get('output_tokens', 0):,} output tokens, {u.get('web_searches', 0)} web searches. "
+        f"Hallucination check read {report.pages.get('readable', 0)} of the "
+        f"{report.pages.get('linked', 0)} farmingdale.edu pages Rambo linked.",
         "",
         "## Golden questions",
         "",
@@ -258,6 +281,7 @@ def write_results(report: Report, out: Path) -> str:
         "metrics": report.metrics,
         "thresholds": report.thresholds,
         "usage": report.usage,
+        "pages": report.pages,
         "cases": report.cases,
         "pairs": report.pairs,
     }
@@ -297,9 +321,11 @@ def main(argv: list[str] | None = None) -> int:
     def ask(question: str, history: list[dict]):
         return rambo.ask(question, client=client, history=history, model=args.model)
 
+    from .sources import fetch_all
+
     report = run_suite(
         ask, model=args.model, prompt_version=rambo.PROMPT_VERSION,
-        runs=args.runs, workers=args.workers,
+        runs=args.runs, workers=args.workers, fetch_pages=fetch_all,
     )  # fmt: skip
     print(write_results(report, args.out))
     return 0 if report.passed else 1

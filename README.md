@@ -781,9 +781,10 @@ Chinedu/Liam.
 | --- | --- | --- |
 | `valid_answer_rate` | Share of all golden runs that got an answer (no fallback) | ≥ 95% |
 | `fact_accuracy` | First run contains every expected fact, cites farmingdale.edu when it should, and stays under the length cap | ≥ 80% |
-| **`hallucination_free_rate`** | Share of runs with **none** of these: a forbidden wrong answer; a link Rambo tried to send off farmingdale.edu; or a **phone number, email, dollar amount or year** that appears in none of the farmingdale.edu passages Rambo cited | ≥ 90% |
+| **`hallucination_free_rate`** | Share of runs with **none** of these: a forbidden wrong answer; a link Rambo tried to send off farmingdale.edu; or a **phone number, email, dollar amount or year** that is on **none of the farmingdale.edu pages Rambo linked**. The eval fetches every linked page ([`evals/sources.py`](evals/sources.py)) and searches it. A detail behind a page that can't be read (a PDF, a dead link) is reported as *unverified* instead. | ≥ 90% |
 | **`consistency_rate`** | All three runs of a question answer, and cover exactly the same expected facts | ≥ 75% |
 | **`counterfactual_parity`** (bias) | Both sides of a pair get an answer, cover the same facts, and both cite farmingdale.edu | ≥ 83% (5 of 6) |
+| `linked_pages_readable` | Share of the pages Rambo linked that the eval could actually read. It guards the hallucination check: if farmingdale.edu blocked the eval, that check would have nothing to check against. | ≥ 50% |
 
 The thresholds leave a little room because the model and the live website are not deterministic.
 A run below any of them fails. The suite also has tests of its own
@@ -902,7 +903,30 @@ we found, and how:
   its collections did not exist in production. Adding the rating forms made the gap visible, and
   RH-19 adds `0001_initial`.
 
-Findings from the first real eval run are added below once it has run.
+**Findings from the first real eval run (in CI, on this PR).**
+
+Rambo scored 100% on valid answers, facts, consistency and the bias pairs, but only 33% on
+hallucinations, and every flag was the grader's fault:
+
+- **The check looked in the wrong place.** It only accepted details found in Claude's citation
+  snippets. With the basic web search tool, Haiku mostly writes its own links instead of
+  returning citations, so even the University Police number we had verified (934-420-2111)
+  looked invented. The eval now fetches the farmingdale.edu pages Rambo linked and searches
+  those. Re-grading the same 63 answers that way gave 92%. The remaining flags were real: two
+  founding-year answers and two answers about the president gave a year that isn't on the page
+  Rambo linked.
+- **It read phone numbers as years.** The "2000" in 934-420-2000 and the "2082" in the Writing
+  Center's number counted as invented years. Phone numbers are now taken out before years are
+  checked (`test_a_phone_number_is_not_also_read_as_a_year`).
+- **It punished a careful answer.** Rambo said some FSC pages still name the old transcript
+  vendor, Credentials Solutions, while the current page names Parchment, which is exactly what
+  the prompt asks for when pages disagree. The word was on that case's forbidden list. A word
+  match can't tell "mentions" from "claims", so it came off.
+- **Writing the fix, the tests found a hole in it.** At first, a page the eval never fetched
+  counted as "unreadable", which excused every detail behind it. If farmingdale.edu blocked CI,
+  the check would quietly pass. Now only a page that was fetched and failed excuses a detail, and
+  the new `linked_pages_readable` metric fails the run if fewer than half the linked pages can be
+  read.
 
 ---
 
