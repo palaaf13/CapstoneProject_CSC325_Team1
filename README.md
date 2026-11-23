@@ -464,7 +464,7 @@ teammate, and passed the pipeline.
 | RH-30 Filing cabinet | Save courses, professors, and clubs; see and remove them in one place | [#26](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/issues/26) | [#18](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/pull/18) | `apps/saved/tests/test_saved.py` |
 | RH-39 Events in search | Search also finds upcoming club events | [#28](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/issues/28) | [#31](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/pull/31) | `apps/campus/tests/test_event_search.py` |
 | RH-40 Save events | Save club events to the filing cabinet | [#29](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/issues/29) | [#32](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/pull/32) | `apps/saved/tests/test_saved_events.py` |
-| RH-31 Rambo AI assistant (sprint 3) | The LLM feature: answers FSC questions from RamHub's data and farmingdale.edu, with a fallback ([details](#rambo-the-ai-assistant-llm-feature)) | [#49](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/issues/49) | [#54](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/pull/54) | `apps/assistant/tests/`, `tests/test_evals.py` |
+| RH-31 Rambo AI assistant (sprint 3) | The LLM feature: answers FSC questions from RamHub's data and farmingdale.edu, with a fallback ([details](#rambo-the-ai-assistant-llm-feature)) | [#49](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/issues/49) | [#55](https://github.com/palaaf13/CapstoneProject_CSC325_Team1/pull/55) | `apps/assistant/tests/`, `tests/test_evals.py` |
 
 **Epic: Community Feed & Campus Tabs**
 
