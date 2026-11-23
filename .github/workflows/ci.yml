@@ -1,8 +1,11 @@
-# RamHub's one pipeline: Setup -> Dependencies -> Test -> Deploy.
+# RamHub's one pipeline: Setup -> Dependencies -> Test -> Eval / Deploy.
 #
-# Every pull request to main and every push to main runs it. Pull requests stop
-# after Test (Deploy shows as skipped). A push to main — which, with the branch
-# ruleset on, only happens when a reviewed PR merges — goes on to Deploy.
+# Every pull request to main and every push to main runs it. Pull requests run
+# Test and then Eval (Rambo's evaluation suite, against the real API). A push
+# to main — which, with the branch ruleset on, only happens when a reviewed PR
+# merges — skips Eval (the PR already ran it) and goes on to Deploy.
+# A weekly scheduled run repeats Eval so a change on the model provider's side
+# shows up even in a week with no pull requests.
 #
 # Branch protection requires the "Test" job by name. Rename it and the ruleset
 # in .github/rulesets/protect-main.json has to change too.
@@ -13,6 +16,9 @@ on:
     branches: [main]
   push:
     branches: [main]
+  schedule:
+    - cron: "0 13 * * 1" # Mondays 13:00 UTC: Eval only
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -250,7 +256,115 @@ jobs:
         run: pytest
 
   # ---------------------------------------------------------------------------
-  # Stage 4: only for pushes to main. Migrate the production database, deploy
+  # Stage 4a: pull requests (and the weekly schedule) only. Runs Rambo's
+  # evaluation suite against the real API, over a database seeded with RamHub's
+  # real data, and fails when any metric drops below evals/thresholds.json. Unit tests in Test never call the
+  # API; this is the only job that does, and the only one with the key.
+  # ---------------------------------------------------------------------------
+  eval:
+    name: Eval
+    needs: [setup, dependencies, test]
+    if: github.event_name != 'push'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      MONGODB_URI: mongodb://localhost:27017/?directConnection=true
+      MONGODB_NAME: ramhub_eval
+      DEBUG: "False"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check the API key is set
+        # GitHub does not pass secrets to pull requests from forks; teammates
+        # push branches to this repository, so theirs get it.
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::GitHub secret ANTHROPIC_API_KEY is not set. See 'Secrets' in the README."
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ needs.setup.outputs.python-version }}
+
+      - name: Restore the virtualenv from Dependencies
+        uses: actions/cache/restore@v5
+        with:
+          path: .venv
+          key: ${{ needs.setup.outputs.venv-key }}
+          fail-on-cache-miss: true
+
+      - name: Put the virtualenv on PATH
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Generate a throwaway SECRET_KEY
+        run: |
+          key="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
+          echo "::add-mask::$key"
+          echo "SECRET_KEY=$key" >> "$GITHUB_ENV"
+
+      - name: Start MongoDB as a single-node replica set
+        # Not a plain `services:` container. MongoDB only supports transactions
+        # on a replica set, and pytest-django's @django_db isolation relies on
+        # them — a standalone mongod still passes but silently degrades every
+        # test to truncate-between-tests. `services:` cannot pass --replSet, so
+        # the container is started by hand here.
+        run: |
+          set -euo pipefail
+          docker run -d --name mongo -p 27017:27017 mongo:8.0 --replSet rs0 --bind_ip_all
+
+          echo "Waiting for mongod to accept connections..."
+          for _ in $(seq 1 60); do
+            if [ "$(docker inspect -f '{{.State.Running}}' mongo)" != "true" ]; then
+              echo "mongod exited during startup. Container logs:"
+              docker logs mongo
+              exit 1
+            fi
+            if docker exec mongo mongosh --quiet --eval 'db.adminCommand({ping:1}).ok' >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          docker exec mongo mongosh --quiet --eval \
+            'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:27017"}]})'
+
+          echo "Waiting for the member to become PRIMARY..."
+          for _ in $(seq 1 60); do
+            if [ "$(docker exec mongo mongosh --quiet --eval 'rs.status().myState')" = "1" ]; then
+              break
+            fi
+            sleep 1
+          done
+
+          docker exec mongo mongosh --quiet --eval \
+            'print("replica set ready: " + db.adminCommand("hello").setName)'
+
+      - name: Load RamHub's real data
+        # The same course catalog, faculty directory and club list the live
+        # site has, from the import files in this repository. Rambo's answers
+        # are graded against it.
+        run: |
+          python manage.py migrate --no-input
+          python manage.py seed_demo
+
+      - name: Run the evaluation suite
+        # Writes the report to this run's summary page and fails the job when a
+        # metric is below its threshold.
+        run: python -m evals.run
+
+      - name: Keep the full results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: eval-results
+          path: evals/results/
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # Stage 4b: only for pushes to main. Migrate the production database, deploy
   # to Vercel, then load real pages from the live site to prove it came up.
   # Every credential comes from GitHub Secrets; see "Secrets" in the README.
   # ---------------------------------------------------------------------------

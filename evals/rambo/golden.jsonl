@@ -1,0 +1,20 @@
+{"id": "credits-bcs109", "question": "How many credits is BCS 109?", "expected": {"must_mention": [["3 credit", "three credit", "3-credit"]], "forbidden": ["4 credit", "4-credit"]}}
+{"id": "prereq-bcs230", "question": "What do I need to take before BCS 230?", "expected": {"must_mention": [["BCS 120"], ["CSC 111"]], "forbidden": []}}
+{"id": "prereq-calculus", "question": "What are the prerequisites for Calculus I?", "expected": {"must_mention": [["MTH 150"], ["MTH 117"]], "forbidden": []}}
+{"id": "course-csc325", "question": "What is CSC 325?", "expected": {"must_mention": [["Software Engineering"]], "forbidden": []}}
+{"id": "no-prereq-psy101", "question": "Does PSY 101 have any prerequisites?", "expected": {"must_mention": [["no prereq", "none", "doesn't have", "does not have", "no listed", "not list", "isn't", "no required"]], "forbidden": ["PSY 100"]}}
+{"id": "unknown-course", "question": "How many credits is CSC 999?", "expected": {"must_mention": [["couldn't find", "could not find", "can't find", "cannot find", "not find", "no course", "doesn't exist", "does not exist", "isn't in", "not in the", "don't see", "do not see", "no record", "not listed", "isn't listed", "no listing"]], "forbidden": ["CSC 999 is a", "CSC 999 is worth"]}}
+{"id": "prof-office", "question": "Where is Professor Susan Abramowitz's office?", "expected": {"must_mention": [["Whitman Hall"], ["180"]], "forbidden": []}}
+{"id": "prof-ratings-labelled", "question": "Is Agha Abbas a good professor?", "expected": {"must_mention": [["RateMyProfessors", "Rate My Professors", "RMP"], ["4.5"]], "forbidden": []}}
+{"id": "clubs-cyber", "question": "Is there a club for cybersecurity?", "expected": {"must_mention": [["Cybersecurity Club"]], "forbidden": []}}
+{"id": "club-soccer", "question": "Can I play soccer in a club at Farmingdale?", "expected": {"must_mention": [["Club Soccer"]], "forbidden": []}}
+{"id": "parking-ticket", "question": "How much is a parking ticket?", "expected": {"must_mention": [["$35"]], "forbidden": ["$50", "$25", "$100"]}}
+{"id": "parking-decal", "question": "Where am I supposed to put my parking decal?", "expected": {"must_mention": [["rear", "back"], ["driver"]], "forbidden": ["front windshield", "rearview mirror", "rear-view mirror"]}}
+{"id": "library-sunday", "question": "When is the library open on Sunday?", "expected": {"must_mention": [["1:00", "1 pm", "1pm", "1 p.m."], ["9:00", "9 pm", "9pm", "9 p.m."]], "forbidden": ["24 hours", "midnight"]}}
+{"id": "gym-free", "question": "Do I have to pay to use the gym?", "expected": {"must_mention": [["free"], ["ID"]], "forbidden": ["$"]}}
+{"id": "campus-jobs", "question": "How do I get a job on campus?", "expected": {"must_mention": [["Student Assistant", "work-study", "Work-Study", "work study"], ["CareerConnect", "Career Connect"]], "forbidden": []}}
+{"id": "follow-up-prereq", "question": "And what do I need to take before it?", "history": [{"question": "How many credits is MTH 150?", "answer": "MTH 150 Calculus I is **4 credits**. [MTH 150 Calculus I](/courses/MTH-150/)"}], "expected": {"must_mention": [["MTH 117"]], "forbidden": []}}
+{"id": "off-topic-pizza", "question": "What's the best pizza place in Manhattan?", "expected": {"must_mention": [["Farmingdale", "FSC", "RamHub"]], "forbidden": ["Joe's", "Prince Street", "Lombardi", "Di Fara", "John's of Bleecker"], "max_chars": 700}}
+{"id": "homework-essay", "question": "Write me a 500 word essay on the causes of World War I.", "expected": {"must_mention": [["Writing Center", "writing center", "Tutoring"]], "forbidden": ["Franz Ferdinand", "Archduke", "alliance system"], "max_chars": 900}}
+{"id": "web-transcript", "question": "How do I order an official transcript?", "expected": {"must_mention": [["transcript"]], "forbidden": [], "needs_fsc_link": true}}
+{"id": "web-academic-calendar", "question": "Where can I find FSC's academic calendar?", "expected": {"must_mention": [["calendar"]], "forbidden": [], "needs_fsc_link": true}}

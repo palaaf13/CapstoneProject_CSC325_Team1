@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Ask Rambo · RamHub{% endblock %}
+{% block description %}Ask Rambo anything about Farmingdale State College: courses, professors, clubs, parking, and more.{% endblock %}
+{% block rambo_button %}{% endblock %}
+
+{% block content %}
+  {% include "partials/page_header.html" with title="Ask Rambo" subtitle="Questions about Farmingdale State College: courses, professors, clubs, events, parking, jobs, the library, and anything on farmingdale.edu. Rambo is an AI and can be wrong, so check the links it gives you." %}
+
+  <div class="mx-auto max-w-3xl">
+    <div id="rambo-chat" class="space-y-5" aria-live="polite">
+      {% for exchange in chat %}
+        {% include "assistant/partials/exchange.html" %}
+      {% empty %}
+        <div id="rambo-empty" class="card card-pad text-center">
+          <p class="text-body text-neutral-700">Not sure where to start? Try one of these:</p>
+          <div class="mt-3 flex flex-wrap justify-center gap-2">
+            {% for suggestion in suggestions %}
+              <button type="button" class="btn-secondary" data-rambo-suggestion>{{ suggestion }}</button>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <form method="post" action="{% url 'assistant:ask' %}" class="card card-pad mt-6 space-y-2"
+          hx-post="{% url 'assistant:ask' %}" hx-target="#rambo-chat" hx-swap="beforeend"
+          hx-disabled-elt="find button[type=submit]" data-rambo-form novalidate>
+      {% csrf_token %}
+      <label for="id_question" class="sr-only">Your question</label>
+      <div class="flex gap-2">
+        <input type="text" name="question" id="id_question" maxlength="500" required autocomplete="off"
+               value="{{ form.question.value|default:'' }}"
+               class="{% if form.question.errors %}field-input-error{% else %}field-input{% endif %} flex-1"
+               placeholder="Ask about a course, a club, parking…">
+        <button type="submit" class="btn-primary shrink-0">Ask</button>
+      </div>
+      <div id="rambo-form-error">{% if form.question.errors %}<p class="field-error">{{ form.question.errors.0 }}</p>{% endif %}</div>
+      <p class="htmx-indicator text-meta text-neutral-500" id="rambo-thinking">Rambo is looking that up&hellip;</p>
+    </form>
+
+    {% if chat %}
+      <form method="post" action="{% url 'assistant:clear' %}" class="mt-2 text-right">
+        {% csrf_token %}
+        <button type="submit" class="text-meta text-neutral-500 underline hover:text-neutral-800">Start over</button>
+      </form>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Suggestions fill the box and ask; after each answer, clear the box and
+  // drop the empty state. All of it is progressive: without JS the form posts.
+  (function () {
+    const form = document.querySelector("[data-rambo-form]");
+    const input = document.getElementById("id_question");
+    document.querySelectorAll("[data-rambo-suggestion]").forEach((button) => {
+      button.addEventListener("click", () => {
+        input.value = button.textContent.trim();
+        form.requestSubmit();
+      });
+    });
+    form.addEventListener("htmx:beforeRequest", () => {
+      form.querySelector("#rambo-form-error").innerHTML = "";
+    });
+    form.addEventListener("htmx:afterRequest", (event) => {
+      // A validation error is retargeted under the box; keep what they typed.
+      if (!event.detail.successful || event.detail.xhr.getResponseHeader("HX-Retarget")) return;
+      input.value = "";
+      document.getElementById("rambo-empty")?.remove();
+      document.getElementById("rambo-chat").lastElementChild?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  })();
+</script>
+{% endblock %}

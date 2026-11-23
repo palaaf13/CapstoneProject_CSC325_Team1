@@ -32,6 +32,20 @@ COLLEGE_EMAIL_DOMAIN = env.str("COLLEGE_EMAIL_DOMAIN", default="farmingdale.edu"
 LOGIN_URL = "login"
 
 # --------------------------------------------------------------------------
+# Rambo, the AI assistant (apps.assistant)
+# --------------------------------------------------------------------------
+# No key means no AI: Rambo answers with plain RamHub search results instead.
+# The key lives in Vercel's environment and in GitHub Secrets, never here.
+ANTHROPIC_API_KEY = env.str("ANTHROPIC_API_KEY", default="")
+RAMBO_MODEL = env.str("RAMBO_MODEL", default="claude-haiku-5-5")
+RAMBO_ENABLED = env.bool("RAMBO_ENABLED", default=True)
+# Seconds per API call. A question can take a few calls (look something up,
+# then answer), and the SDK retries once on a timeout or 5xx.
+AI_TIMEOUT_SECONDS = env.float("AI_TIMEOUT_SECONDS", default=20.0)
+# Questions one student can ask per hour. Every answer costs money.
+RAMBO_HOURLY_LIMIT = env.int("RAMBO_HOURLY_LIMIT", default=30)
+
+# --------------------------------------------------------------------------
 # Email
 # --------------------------------------------------------------------------
 MAILERS = {

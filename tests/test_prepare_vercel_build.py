@@ -65,6 +65,15 @@ def test_local_secrets_are_never_uploaded(checkout):
     assert {".env", ".env.*"} <= set(ignored)
 
 
+def test_the_ai_prompt_ships_with_the_site(checkout):
+    prepare_vercel_build.prepare(checkout)
+
+    ignored = (checkout / ".vercelignore").read_text().splitlines()
+    assert not any(line.startswith("prompts") for line in ignored)
+    assert "evals/" in ignored
+    assert "anthropic==2.8.0" in (checkout / "pyproject.toml").read_text()
+
+
 def test_loose_pins_stop_the_deploy(checkout):
     (checkout / "requirements.txt").write_text("Django>=6\n# Dev / CI\npytest==9.1.1\n")
 
