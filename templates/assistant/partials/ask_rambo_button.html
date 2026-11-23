@@ -1,0 +1,7 @@
+{% comment %}Floating "Ask Rambo" button on every page except Rambo's own.{% endcomment %}
+<a href="{% url 'assistant:rambo' %}"
+   class="fixed bottom-4 right-4 z-30 inline-flex items-center gap-2 rounded-full bg-accent-600 px-4 py-3 text-body font-semibold text-white shadow-lg hover:bg-accent-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600"
+   data-testid="ask-rambo">
+  {% include "partials/icons/sparkles.html" %}
+  Ask Rambo
+</a>

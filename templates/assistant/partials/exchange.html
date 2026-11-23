@@ -1,0 +1,45 @@
+{% load rambo_tags %}
+{% comment %}
+One question and Rambo's reply: the answer, or the fallback (plain RamHub
+links, no AI). exchange is the dict views.rambo_ask stores in the session.
+{% endcomment %}
+<div class="space-y-3" data-testid="rambo-exchange">
+  <div class="flex justify-end">
+    <p class="max-w-[85%] rounded-2xl rounded-br-sm bg-accent-600 px-4 py-2 text-body text-white">{{ exchange.question }}</p>
+  </div>
+
+  {% if exchange.answer %}
+    <div class="max-w-[90%] space-y-2 rounded-2xl rounded-bl-sm border border-neutral-200 bg-white px-4 py-3 text-body text-neutral-800" data-testid="rambo-answer">
+      {{ exchange.answer|rambo_markdown }}
+      {% if exchange.sources %}
+        <p class="border-t border-neutral-200 pt-2 text-meta text-neutral-500">
+          From farmingdale.edu:
+          {% for source in exchange.sources %}
+            <a href="{{ source.url }}" target="_blank" rel="noopener noreferrer" class="text-accent-700 underline">{{ source.title|truncatechars:60 }}</a>{% if not forloop.last %} &middot; {% endif %}
+          {% endfor %}
+        </p>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="max-w-[90%] rounded-2xl rounded-bl-sm border border-neutral-200 bg-white px-4 py-3" data-testid="rambo-fallback" data-reason="{{ exchange.reason }}">
+      {% if exchange.reason == "hourly_limit" %}
+        <p class="text-body font-semibold text-neutral-800">You've asked a lot this hour. Rambo needs a breather.</p>
+      {% else %}
+        <p class="text-body font-semibold text-neutral-800">Rambo can't answer right now.</p>
+      {% endif %}
+      {% if exchange.links %}
+        <p class="mt-1 text-meta text-neutral-500">These RamHub pages match your question:</p>
+        <ul class="mt-1 space-y-1">
+          {% for link in exchange.links %}
+            <li><a href="{{ link.url }}" class="text-body text-accent-700 underline">{{ link.label }}</a></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="mt-1 text-meta text-neutral-500">
+          Try <a href="{% url 'search' %}?q={{ exchange.question|urlencode }}" class="text-accent-700 underline">searching RamHub</a>
+          or <a href="https://www.farmingdale.edu/" target="_blank" rel="noopener noreferrer" class="text-accent-700 underline">farmingdale.edu</a>.
+        </p>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
