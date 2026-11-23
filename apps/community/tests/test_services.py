@@ -62,6 +62,16 @@ def test_votes_set_change_and_clear_the_score(make_post, make_user):
     assert Post.objects.get(pk=post.pk).score == 0
 
 
+def test_a_new_post_starts_upvoted_by_its_author(make_user):
+    author = make_user("author")
+    post = services.create_post(author=author, kind="question", title="Hi", body="", tags=[])
+
+    assert Post.objects.get(pk=post.pk).score == 1
+    assert services.votes_by(author, [post]) == {post.pk: 1}  # their arrow shows as pressed
+    # It is an ordinary vote: the author can take it back.
+    assert services.cast_vote(author, post, 0) == 0
+
+
 def test_votes_by_returns_only_this_users_votes(make_post, make_user):
     post, me, other = make_post(), make_user("me"), make_user("other")
     services.cast_vote(other, post, -1)

@@ -154,10 +154,17 @@ def create_post(
     professor: Professor | None = None,
     course: Course | None = None,
 ) -> Post:
-    """A new post. With `professor` or `course`, it is a thread on that page too."""
+    """
+    A new post, upvoted by its author. With `professor` or `course`, it is a
+    thread on that page too.
+
+    The author's upvote is a real Vote row, not a score that starts at 1, so
+    their arrow shows as pressed, they can take it back like any other vote,
+    and the score stays a recount of Vote rows.
+    """
     if professor is not None and course is not None:
         raise ValueError("A post can be about a professor or a course, not both.")
-    return Post.objects.create(
+    post = Post.objects.create(
         author=author,
         kind=kind,
         title=title,
@@ -166,6 +173,8 @@ def create_post(
         professor=professor,
         course=course,
     )
+    cast_vote(author, post, 1)
+    return post
 
 
 def edit_post(user, post: Post, *, kind: str, title: str, body: str, tags: list[str]) -> Post:
