@@ -3,7 +3,9 @@
 from collections.abc import Iterable, Mapping
 from typing import TypedDict
 
-from apps.catalog.models import ProfessorRatingSummary
+from apps.catalog.models import Course, CourseRatingSummary, ProfessorRatingSummary
+
+from .models import CourseRating
 
 RATING_MIN = 1
 RATING_MAX = 5
@@ -101,3 +103,52 @@ def summarize_professor_ratings(
         "source": source if values else "",
         "rank_score": ProfessorRatingSummary.compute_rank_score(overall, len(values)),
     }
+
+
+# -- writing ratings ---------------------------------------------------------
+def rate_course(
+    *,
+    user,
+    course: Course,
+    difficulty: int,
+    workload: int,
+    usefulness: int,
+    semester: str,
+    comment: str = "",
+) -> CourseRating:
+    """Save the student's one rating of this course (a second call edits it), then
+    refresh the course's stored averages so list pages and sorts see it."""
+    for score in (difficulty, workload, usefulness):
+        validate_rating_score(score)
+    rating, _ = CourseRating.objects.update_or_create(
+        user=user,
+        course=course,
+        defaults={
+            "difficulty": difficulty,
+            "workload": workload,
+            "usefulness": usefulness,
+            "semester": semester,
+            "comment": comment.strip(),
+        },
+    )
+    refresh_course_summary(course)
+    return rating
+
+
+def refresh_course_summary(course: Course) -> None:
+    """Recompute course.rating_summary from every rating of it."""
+    rows = CourseRating.objects.filter(course=course).values("difficulty", "workload", "usefulness")
+    course.rating_summary = CourseRatingSummary(**summarize_course_ratings(rows))
+    course.save(update_fields=["rating_summary"])
+
+
+def course_rating_by(user, course: Course) -> CourseRating | None:
+    if not user.is_authenticated:
+        return None
+    return CourseRating.objects.filter(user=user, course=course).first()
+
+
+def course_comments(course: Course, *, limit: int | None = None) -> list[CourseRating]:
+    """Ratings of this course that came with written advice, newest first."""
+    found = CourseRating.objects.filter(course=course).exclude(comment="").order_by("-updated_at")
+    return list(found[:limit] if limit else found)

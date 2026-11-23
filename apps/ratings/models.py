@@ -3,8 +3,11 @@
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 from apps.catalog.models import Course, Professor
+
+MAX_COMMENT_LENGTH = 1000
 
 
 class CourseRating(models.Model):
@@ -30,8 +33,15 @@ class CourseRating(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(5)]
     )
     semester = models.CharField(max_length=32)
+    # What the student wants the next person to know. Optional: the three
+    # scores are the rating; the comment is advice. The AI summary on the
+    # course page is built from these.
+    comment = models.TextField(max_length=MAX_COMMENT_LENGTH, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        ordering = ["-updated_at"]
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "course"],
