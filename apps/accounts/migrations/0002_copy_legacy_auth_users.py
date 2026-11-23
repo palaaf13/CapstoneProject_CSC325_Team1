@@ -43,26 +43,59 @@ def copy_legacy_auth_users(apps: StateApps, schema_editor: BaseDatabaseSchemaEdi
 
     # Check for conflicting records before writing so a partial copy cannot
     # silently assign one person's login details to another account.
+    identity_conflicts = []
     for legacy_user in legacy_users:
         existing_by_id = target_users.filter(pk=legacy_user.pk).first()
         if existing_by_id is not None:
+            mismatched_fields = []
             if existing_by_id.username != legacy_user.username:
-                raise RuntimeError(
-                    "Cannot copy legacy accounts: a custom user already has "
-                    f"the ID for {legacy_user.username!r} but a different username."
+                mismatched_fields.append("username")
+            if existing_by_id.email != legacy_user.email:
+                mismatched_fields.append("email")
+            if mismatched_fields:
+                identity_conflicts.append(
+                    "same primary key with conflicting identity fields "
+                    f"({', '.join(mismatched_fields)}): "
+                    f"legacy(pk={legacy_user.pk!r}, "
+                    f"username={legacy_user.username!r}, "
+                    f"email={legacy_user.email!r}); "
+                    f"target(pk={existing_by_id.pk!r}, "
+                    f"username={existing_by_id.username!r}, "
+                    f"email={existing_by_id.email!r})"
                 )
             continue
 
-        if target_users.filter(username=legacy_user.username).exists():
-            raise RuntimeError(
-                "Cannot copy legacy accounts: a custom user already has "
-                f"username {legacy_user.username!r} with a different ID."
+        existing_by_username = target_users.filter(
+            username=legacy_user.username
+        ).first()
+        if existing_by_username is not None:
+            identity_conflicts.append(
+                "username belongs to different primary keys: "
+                f"legacy(pk={legacy_user.pk!r}, "
+                f"username={legacy_user.username!r}, "
+                f"email={legacy_user.email!r}); "
+                f"target(pk={existing_by_username.pk!r}, "
+                f"username={existing_by_username.username!r}, "
+                f"email={existing_by_username.email!r})"
             )
-        if target_users.filter(email=legacy_user.email).exists():
-            raise RuntimeError(
-                "Cannot copy legacy accounts: a custom user already has "
-                f"the email for {legacy_user.username!r} with a different ID."
+        existing_by_email = target_users.filter(email=legacy_user.email).first()
+        if existing_by_email is not None:
+            identity_conflicts.append(
+                "email belongs to different primary keys: "
+                f"legacy(pk={legacy_user.pk!r}, "
+                f"username={legacy_user.username!r}, "
+                f"email={legacy_user.email!r}); "
+                f"target(pk={existing_by_email.pk!r}, "
+                f"username={existing_by_email.username!r}, "
+                f"email={existing_by_email.email!r})"
             )
+
+    if identity_conflicts:
+        raise RuntimeError(
+            "Cannot copy legacy accounts: resolve these identity conflicts "
+            "before applying the migration; no users or memberships were copied:\n- "
+            + "\n- ".join(identity_conflicts)
+        )
 
     for legacy_user in legacy_users:
         user = target_users.filter(pk=legacy_user.pk).first()

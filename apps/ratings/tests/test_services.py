@@ -1,10 +1,14 @@
-import pytest
+﻿import pytest
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 
 from apps.catalog.models import ProfessorRatingSummary
+from apps.ratings.models import CourseRating
 from apps.ratings.services import (
     calculate_average,
     summarize_course_ratings,
     summarize_professor_ratings,
+    submit_course_rating,
     validate_rating_score,
 )
 
@@ -68,6 +72,127 @@ def test_summarize_empty_course_ratings():
         "avg_usefulness": None,
         "count": 0,
     }
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("field", "score"),
+    [
+        ("difficulty", 0),
+        ("difficulty", 6),
+        ("workload", 0),
+        ("workload", 6),
+        ("usefulness", 0),
+        ("usefulness", 6),
+    ],
+)
+def test_submit_course_rating_rejects_invalid_scores_before_insert(
+    make_course, field, score
+):
+    user = get_user_model().objects.create_user(
+        username="rating-service-student",
+        email="rating-service-student@farmingdale.edu",
+        password="test-password-not-for-production",
+    )
+    course = make_course(code="CSC 246")
+    values = {
+        "difficulty": 4,
+        "workload": 3,
+        "usefulness": 5,
+        "semester": "Fall 2026",
+    }
+    values[field] = score
+
+    with pytest.raises(ValueError, match="whole numbers from 1 to 5"):
+        submit_course_rating(user=user, course=course, **values)
+
+    assert not CourseRating.objects.filter(user=user, course=course).exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("field", "score"),
+    [
+        ("difficulty", True),
+        ("difficulty", False),
+        ("workload", True),
+        ("workload", False),
+        ("usefulness", True),
+        ("usefulness", False),
+    ],
+)
+def test_submit_course_rating_rejects_boolean_scores_before_insert(
+    make_course, field, score
+):
+    user = get_user_model().objects.create_user(
+        username="rating-service-student",
+        email="rating-service-student@farmingdale.edu",
+        password="test-password-not-for-production",
+    )
+    course = make_course(code="CSC 249")
+    values = {
+        "difficulty": 4,
+        "workload": 3,
+        "usefulness": 5,
+        "semester": "Fall 2026",
+    }
+    values[field] = score
+
+    with pytest.raises(ValueError, match="whole numbers from 1 to 5"):
+        submit_course_rating(user=user, course=course, **values)
+
+    assert not CourseRating.objects.filter(user=user, course=course).exists()
+
+
+@pytest.mark.parametrize("semester", ["", "   ", "x" * 33, None])
+def test_submit_course_rating_rejects_invalid_semester_before_insert(
+    make_course, semester
+):
+    user = get_user_model().objects.create_user(
+        username="rating-service-student",
+        email="rating-service-student@farmingdale.edu",
+        password="test-password-not-for-production",
+    )
+    course = make_course(code="CSC 247")
+
+    with pytest.raises(ValidationError):
+        submit_course_rating(
+            user=user,
+            course=course,
+            difficulty=4,
+            workload=3,
+            usefulness=5,
+            semester=semester,
+        )
+
+    assert not CourseRating.objects.filter(user=user, course=course).exists()
+
+
+@pytest.mark.django_db
+def test_submit_course_rating_validates_and_saves_direct_service_call(make_course):
+    user = get_user_model().objects.create_user(
+        username="rating-service-student",
+        email="rating-service-student@farmingdale.edu",
+        password="test-password-not-for-production",
+    )
+    course = make_course(code="CSC 248")
+
+    rating = submit_course_rating(
+        user=user,
+        course=course,
+        difficulty=4,
+        workload=3,
+        usefulness=5,
+        semester="  Fall 2026  ",
+    )
+
+    assert rating.semester == "Fall 2026"
+    assert CourseRating.objects.filter(user=user, course=course).count() == 1
+    course.refresh_from_db()
+    assert course.rating_summary.avg_difficulty == 4.0
+    assert course.rating_summary.avg_workload == 3.0
+    assert course.rating_summary.avg_usefulness == 5.0
+    assert course.rating_summary.count == 1
 
 
 def test_summarize_professor_ratings():
