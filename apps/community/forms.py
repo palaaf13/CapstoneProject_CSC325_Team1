@@ -58,7 +58,14 @@ class FeedQueryForm(forms.Form):
 
 
 class PostForm(forms.Form):
-    kind = forms.ChoiceField(choices=PostKind.choices, initial=PostKind.DISCUSSION)
+    # RadioSelect, not the default <select>: the template draws one chip per
+    # choice, and iterating a <select> yields loose <option>s that submit nothing.
+    kind = forms.ChoiceField(
+        choices=PostKind.choices,
+        initial=PostKind.DISCUSSION,
+        widget=forms.RadioSelect,
+        error_messages={"required": "Pick a post type."},
+    )
     title = forms.CharField(max_length=Post._meta.get_field("title").max_length, strip=True)
     body = forms.CharField(
         required=False,

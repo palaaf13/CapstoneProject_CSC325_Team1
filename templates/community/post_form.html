@@ -20,13 +20,19 @@
     {% csrf_token %}
     {% if form.non_field_errors %}<p class="field-error">{{ form.non_field_errors.0 }}</p>{% endif %}
 
-    <fieldset>
+    {# Real radios, visually hidden; each label is the chip and carries the focus ring. #}
+    <fieldset class="min-w-0" {% if form.kind.errors %}aria-describedby="kind-error"{% endif %}>
       <legend class="field-label">Post type</legend>
-      <div class="flex flex-wrap gap-4">
+      <div class="flex flex-wrap gap-2">
         {% for choice in form.kind %}
-          <label class="flex items-center gap-2 text-body">{{ choice.tag }} {{ choice.choice_label }}</label>
+          <label class="relative">
+            <input type="radio" name="{{ choice.data.name }}" value="{{ choice.data.value }}" id="{{ choice.id_for_label }}"
+                   class="choice-chip-input sr-only" {% if choice.data.selected %}checked{% endif %} required>
+            <span class="choice-chip">{{ choice.choice_label }}</span>
+          </label>
         {% endfor %}
       </div>
+      {% if form.kind.errors %}<p id="kind-error" class="field-error">{{ form.kind.errors.0 }}</p>{% endif %}
     </fieldset>
 
     {% for field in form %}
