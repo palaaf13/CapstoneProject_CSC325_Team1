@@ -662,23 +662,34 @@ switch. Each student can ask 30 questions an hour (`RAMBO_HOURLY_LIMIT`). (Haiku
 
 ### The 3D Rambo
 
-The Ask Rambo page opens with Rambo in 3D, built in Three.js (0.170, the same pinned CDN build
-as the landing page's galaxy). He's an original character made from Three.js geometry, with no
-downloaded model and no college marks:
-- **Horns:** a `TubeGeometry` along a 3D spiral, tapered ring by ring, with growth ridges and a
-  light-to-dark green gradient.
-- **Wool:** a cloud of small icospheres.
-- **Lighting:** a `RoomEnvironment` reflection map and soft shadows.
+The Ask Rambo page opens with a realistic 3D bighorn ram, built entirely in code with Three.js
+(0.170, the same pinned CDN build as the landing page's galaxy). There's no downloaded model and
+no college marks. The one paid model we considered was licensed so it couldn't be shown in a
+browser or committed to a public repo.
+
+- **Head and bust are sculpted, not modelled.** Each is a signed distance field: skull, Roman
+  nose, muzzle, jaw, cheeks and horn bases, with eye sockets carved out, then neck, chest and
+  shoulders. The shapes are blended smoothly and turned into meshes with Three.js's
+  `MarchingCubes`. Colors are painted per vertex: a brown coat, a pale muzzle and throat, a dark
+  nose pad.
+- **Fur is shell-rendered.** Ten slightly larger copies of the head, and eight of the bust, each
+  keep fewer "strands" and are darker at the root, which gives the soft, fuzzy outline real fur
+  has.
+- **Horns follow a real bighorn's growth.** They go up and back off the skull, down behind the
+  ear, then forward around the cheek. They have a flattened, ridged cross-section, deeper annual
+  rings, and a tan-to-pale gradient.
+- **Eyes** are amber with a ram's horizontal pupil, under a clear-coated cornea, with eyelids
+  that blink.
 
 How he behaves:
-- He breathes, blinks, flicks an ear, and looks toward the cursor.
-- While Rambo is answering, he tilts his head and looks up, thinking, and the sparkles speed up.
-- When an answer arrives, he does a happy hop.
+- He breathes, blinks, flicks an ear, and turns toward the cursor.
+- While Rambo is answering, he tilts his head and looks up.
+- When an answer arrives, he nods.
 - Click him for a headbutt.
 
 The canvas is decorative (`aria-hidden`). It pauses when it's off screen or the tab is hidden,
-and holds still under `prefers-reduced-motion`. Without WebGL, the flat SVG Rambo from the
-landing page stays in its place.
+and holds still under `prefers-reduced-motion`. Phones and low-core laptops get fewer fur shells
+and fewer pixels. Without WebGL, the flat SVG Rambo from the landing page stays in its place.
 
 ### Prompt versioning
 
@@ -876,9 +887,17 @@ we found, and how:
 - **It pinned `actions/upload-artifact@v5`** for the Eval artifact. We had been burned before (see
   `actions/cache@v4` above), so we read the action's `action.yml`: v5 still runs on Node 20, which
   GitHub is retiring. We moved to `@v7`, which runs on Node 24.
-- **Its first 3D Rambo didn't read as a ram.** The horns curled in a plane facing sideways, so
-  from the front they were a thin edge, and the wool body swallowed the head. We saw it in the
-  browser preview, turned the horn spirals to face the camera, and fixed the proportions.
+- **Its 3D Rambo took several rounds in the browser to get right.** Every one of these was found
+  by looking at the live preview:
+  - The first, cartoon version had horns that faced sideways, so from the front they were a thin
+    edge.
+  - The realistic rebuild first rendered as a giant fuzzy blob. `MarchingCubes` leaves its normals
+    as raw field gradients, roughly 100 units long, and the fur shells were pushed along them. The
+    normals are now normalized.
+  - Then the nose came out sliced flat, showing as a white disc with "eyes", because the grid
+    skips its outer cells and the muzzle poked past them. Each grid is now centered on its shape.
+  - The horns first curled forward instead of back. Then a generic spiral hid behind the jaw, so
+    they now follow a path laid out the way a bighorn's horn grows.
 - **Something it had not caused but did surface:** the ratings app had never had a migration, so
   its collections did not exist in production. Adding the rating forms made the gap visible, and
   RH-19 adds `0001_initial`.
