@@ -83,8 +83,12 @@ class ProfessorRating(models.Model):
         related_name="professor_ratings",
     )
     semester = models.CharField(max_length=32)
+    comment = models.TextField(max_length=MAX_COMMENT_LENGTH, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        ordering = ["-updated_at"]
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "professor"],

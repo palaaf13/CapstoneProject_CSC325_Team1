@@ -3,9 +3,9 @@
 from collections.abc import Iterable, Mapping
 from typing import TypedDict
 
-from apps.catalog.models import Course, CourseRatingSummary, ProfessorRatingSummary
+from apps.catalog.models import Course, CourseRatingSummary, Professor, ProfessorRatingSummary
 
-from .models import CourseRating
+from .models import CourseRating, ProfessorRating
 
 RATING_MIN = 1
 RATING_MAX = 5
@@ -151,4 +151,67 @@ def course_rating_by(user, course: Course) -> CourseRating | None:
 def course_comments(course: Course, *, limit: int | None = None) -> list[CourseRating]:
     """Ratings of this course that came with written advice, newest first."""
     found = CourseRating.objects.filter(course=course).exclude(comment="").order_by("-updated_at")
+    return list(found[:limit] if limit else found)
+
+
+def rate_professor(
+    *,
+    user,
+    professor: Professor,
+    clarity: int,
+    helpfulness: int,
+    fairness: int,
+    semester: str,
+    course: Course | None = None,
+    comment: str = "",
+) -> ProfessorRating:
+    """Save the student's one rating of this professor (a second call edits it),
+    then refresh the professor's stored averages and rank score."""
+    for score in (clarity, helpfulness, fairness):
+        validate_rating_score(score)
+    rating, _ = ProfessorRating.objects.update_or_create(
+        user=user,
+        professor=professor,
+        defaults={
+            "clarity": clarity,
+            "helpfulness": helpfulness,
+            "fairness": fairness,
+            "semester": semester,
+            "course": course,
+            "comment": comment.strip(),
+        },
+    )
+    refresh_professor_summary(professor)
+    return rating
+
+
+def refresh_professor_summary(professor: Professor) -> None:
+    """Recompute professor.rating_summary from RamHub ratings.
+
+    Once a student has rated a professor here, the summary is RamHub's own and
+    import_rmp leaves it alone. The RateMyProfessors figures stay in the rmp_*
+    fields and keep their separately labelled panel.
+    """
+    rows = ProfessorRating.objects.filter(professor=professor).values(
+        "clarity", "helpfulness", "fairness"
+    )
+    professor.rating_summary = ProfessorRatingSummary(
+        **summarize_professor_ratings(rows, source=ProfessorRatingSummary.SOURCE_RAMHUB)
+    )
+    professor.save(update_fields=["rating_summary"])
+
+
+def professor_rating_by(user, professor: Professor) -> ProfessorRating | None:
+    if not user.is_authenticated:
+        return None
+    return ProfessorRating.objects.filter(user=user, professor=professor).first()
+
+
+def professor_comments(professor: Professor, *, limit: int | None = None) -> list[ProfessorRating]:
+    """Ratings of this professor that came with written advice, newest first."""
+    found = (
+        ProfessorRating.objects.filter(professor=professor)
+        .exclude(comment="")
+        .order_by("-updated_at")
+    )
     return list(found[:limit] if limit else found)

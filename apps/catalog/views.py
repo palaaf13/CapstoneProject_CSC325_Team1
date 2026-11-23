@@ -149,5 +149,7 @@ def professor_detail(request: HttpRequest, slug: str) -> HttpResponse:
             "professor": professor,
             "courses": services.courses_for_professor(professor),
             "is_saved": saved.is_saved(request.user, professor),
+            "my_rating": ratings.professor_rating_by(request.user, professor),
+            "comments": ratings.professor_comments(professor, limit=COMMENTS_SHOWN),
         },
     )

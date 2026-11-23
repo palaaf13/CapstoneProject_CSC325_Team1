@@ -75,3 +75,31 @@ class CourseRatingForm(RatingFormBase):
     usefulness = score_field("Usefulness", "not useful", "very useful")
 
     field_order = ["difficulty", "workload", "usefulness", "semester", "comment"]
+
+
+class ProfessorRatingForm(RatingFormBase):
+    SCORE_FIELDS = ("clarity", "helpfulness", "fairness")
+
+    clarity = score_field("Clarity", "hard to follow", "very clear")
+    helpfulness = score_field("Helpfulness", "not helpful", "very helpful")
+    fairness = score_field("Fairness", "unfair grading", "very fair")
+    course = forms.ChoiceField(label="Which course", required=False)
+
+    field_order = ["clarity", "helpfulness", "fairness", "course", "semester", "comment"]
+
+    def __init__(self, *args, courses=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.courses = {str(course.pk): course for course in courses}
+        if not self.courses:
+            # Most professors have no course assignments until schedule data
+            # arrives (RH-21). A dropdown with nothing to pick is noise.
+            del self.fields["course"]
+            return
+        self.fields["course"].choices = [
+            ("", "Not listed / prefer not to say"),
+            *((pk, f"{c.code} {c.title}") for pk, c in self.courses.items()),
+        ]
+
+    def clean_course(self):
+        """The chosen Course, or None. Only courses this professor teaches are offered."""
+        return self.courses.get(self.cleaned_data.get("course") or "")
