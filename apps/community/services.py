@@ -15,14 +15,15 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 
-from apps.catalog.models import Professor
+from apps.catalog import services as catalog
+from apps.catalog.models import Course, Professor
 
 from .forms import FeedQuery
 from .models import Comment, Post, Vote, VoteTarget
 
 PAGE_SIZE = 20
-# How many threads a professor's page shows before "See all" links to the feed.
-PROFESSOR_THREADS_SHOWN = 5
+# How many threads a professor or course page shows before "See all" links to the feed.
+THREADS_SHOWN = 5
 
 
 # -- permissions -----------------------------------------------------------
@@ -50,7 +51,7 @@ def can_remove_comment(user, comment: Comment) -> bool:
 def _visible_posts() -> QuerySet[Post]:
     """Every post a reader should see. A removed post stays only while it has comments."""
     return Post.objects.filter(Q(is_removed=False) | Q(comment_count__gt=0)).select_related(
-        "author", "professor"
+        "author", "professor", "course"
     )
 
 
@@ -61,13 +62,28 @@ def get_professor(slug: str) -> Professor | None:
     return Professor.objects.filter(slug=slug).first()
 
 
-def feed_posts(query: FeedQuery, professor: Professor | None = None) -> QuerySet[Post]:
-    """The feed for one set of filters, optionally narrowed to one professor's threads."""
-    posts = _visible_posts()
+def get_course(code: str) -> Course | None:
+    """The course with this code in URL form ("CSC-240"), or None."""
+    if not code:
+        return None
+    return catalog.get_course_by_code(code)
+
+
+def _about(posts: QuerySet[Post], professor: Professor | None, course: Course | None):
+    # Filter on the resolved object, not professor__slug or course__code: those
+    # would compile to a $lookup join across every post.
     if professor is not None:
-        # Filter on the resolved id, not professor__slug: a slug lookup would
-        # compile to a $lookup join across every post.
         posts = posts.filter(professor=professor)
+    if course is not None:
+        posts = posts.filter(course=course)
+    return posts
+
+
+def feed_posts(
+    query: FeedQuery, *, professor: Professor | None = None, course: Course | None = None
+) -> QuerySet[Post]:
+    """The feed for one set of filters, optionally narrowed to one professor or course."""
+    posts = _about(_visible_posts(), professor, course)
     if query.kind:
         posts = posts.filter(kind=query.kind)
     if query.tag:
@@ -81,17 +97,22 @@ def feed_posts(query: FeedQuery, professor: Professor | None = None) -> QuerySet
     return posts.order_by("-created_at")
 
 
-def professor_threads(professor: Professor) -> tuple[list[Post], int]:
-    """The newest threads about one professor, and how many there are in all."""
-    posts = _visible_posts().filter(professor=professor).order_by("-created_at")
-    return list(posts[:PROFESSOR_THREADS_SHOWN]), posts.count()
+def threads_about(
+    *, professor: Professor | None = None, course: Course | None = None
+) -> tuple[list[Post], int]:
+    """The newest threads about one professor or course, and how many there are in all."""
+    if (professor is None) == (course is None):
+        raise ValueError("Pass exactly one of professor or course.")
+    posts = _about(_visible_posts(), professor, course).order_by("-created_at")
+    return list(posts[:THREADS_SHOWN]), posts.count()
 
 
 def get_post(post_id: str) -> Post | None:
     """The post with this id, or None for a missing or malformed id."""
     if not ObjectId.is_valid(post_id):
         return None
-    return Post.objects.select_related("author", "professor").filter(pk=ObjectId(post_id)).first()
+    posts = Post.objects.select_related("author", "professor", "course")
+    return posts.filter(pk=ObjectId(post_id)).first()
 
 
 def votes_by(user, posts: Iterable[Post]) -> dict[ObjectId, int]:
@@ -131,10 +152,19 @@ def create_post(
     body: str,
     tags: list[str],
     professor: Professor | None = None,
+    course: Course | None = None,
 ) -> Post:
-    """A new post. With `professor`, it is a thread on that professor's page."""
+    """A new post. With `professor` or `course`, it is a thread on that page too."""
+    if professor is not None and course is not None:
+        raise ValueError("A post can be about a professor or a course, not both.")
     return Post.objects.create(
-        author=author, kind=kind, title=title, body=body, tags=tags, professor=professor
+        author=author,
+        kind=kind,
+        title=title,
+        body=body,
+        tags=tags,
+        professor=professor,
+        course=course,
     )
 
 

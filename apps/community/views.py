@@ -23,6 +23,8 @@ from django.urls import NoReverseMatch, reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from apps.catalog.models import Course, Professor
+
 from . import services
 from .forms import SORTS, CommentForm, FeedQuery, FeedQueryForm, PostForm, VoteForm
 from .models import Comment, Post, PostKind
@@ -71,11 +73,15 @@ def _page_url(query: FeedQuery, page_number: int) -> str:
 # -- reading ---------------------------------------------------------------
 def feed(request: HttpRequest) -> HttpResponse:
     query = FeedQueryForm(request.GET).to_query()
+    # A stale or mistyped professor slug or course code falls back to the whole
+    # feed, like a bad sort.
     professor = services.get_professor(query.professor)
-    if professor is None and query.professor:
-        # A stale or mistyped slug falls back to the whole feed, like a bad sort.
+    if professor is None:
         query = query._replace(professor="")
-    posts = services.feed_posts(query, professor)
+    course = services.get_course(query.course)
+    if course is None:
+        query = query._replace(course="")
+    posts = services.feed_posts(query, professor=professor, course=course)
     page = Paginator(posts, services.PAGE_SIZE).get_page(query.page)
     my_votes = services.votes_by(request.user, page.object_list)
     rows = [{"post": p, "my_vote": my_votes.get(p.pk, 0)} for p in page.object_list]
@@ -88,7 +94,9 @@ def feed(request: HttpRequest) -> HttpResponse:
         "sorts": SORTS,
         "kinds": PostKind.choices,
         "professor": professor,
-        "is_filtered": bool(query.q or query.kind or query.tag or professor),
+        "course": course,
+        "about": _about(professor=professor, course=course),
+        "is_filtered": bool(query.q or query.kind or query.tag or professor or course),
         "clear_url": reverse("community:feed"),
         "prev_url": _page_url(query, page.previous_page_number()) if page.has_previous() else None,
         "next_url": _page_url(query, page.next_page_number()) if page.has_next() else None,
@@ -141,18 +149,53 @@ def post_create(request: HttpRequest) -> HttpResponse:
     return render(request, "community/post_form.html", {"form": form, "post": None})
 
 
+def _about(*, professor: Professor | None = None, course: Course | None = None) -> dict | None:
+    """What a thread is about, in the shape the templates draw: name, link, example title."""
+    if professor is not None:
+        return {
+            "name": professor.full_name,
+            "url": reverse("catalog:professor_detail", args=[professor.slug]),
+            "placeholder": f"How are {professor.last_name}'s exams structured?",
+        }
+    if course is not None:
+        return {
+            "name": course.code,
+            "url": reverse("catalog:course_detail", args=[course.slug]),
+            "placeholder": f"Is {course.code} manageable alongside a part-time job?",
+        }
+    return None
+
+
+def _thread_create(
+    request: HttpRequest, *, professor: Professor | None = None, course: Course | None = None
+) -> HttpResponse:
+    """The shared body of the two "start a thread" views."""
+    form = PostForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        post = services.create_post(
+            author=request.user, professor=professor, course=course, **form.cleaned_data
+        )
+        return redirect("community:post_detail", post_id=post.pk)
+    context = {"form": form, "post": None, "about": _about(professor=professor, course=course)}
+    return render(request, "community/post_form.html", context)
+
+
 @login_required_for_feed
 def professor_post_create(request: HttpRequest, slug: str) -> HttpResponse:
     """Start a thread about one professor. The slug comes from the URL, checked here."""
     professor = services.get_professor(slug)
     if professor is None:
         raise Http404("No such professor.")
-    form = PostForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        post = services.create_post(author=request.user, professor=professor, **form.cleaned_data)
-        return redirect("community:post_detail", post_id=post.pk)
-    context = {"form": form, "post": None, "professor": professor}
-    return render(request, "community/post_form.html", context)
+    return _thread_create(request, professor=professor)
+
+
+@login_required_for_feed
+def course_post_create(request: HttpRequest, code: str) -> HttpResponse:
+    """Start a thread about one course. The code ("CSC-240") comes from the URL, checked here."""
+    course = services.get_course(code)
+    if course is None:
+        raise Http404("No such course.")
+    return _thread_create(request, course=course)
 
 
 @login_required_for_feed

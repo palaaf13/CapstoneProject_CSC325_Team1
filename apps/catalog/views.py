@@ -137,7 +137,7 @@ def course_detail(request: HttpRequest, code: str) -> HttpResponse:
 def professor_detail(request: HttpRequest, slug: str) -> HttpResponse:
     """One professor, keyed on the directory slug."""
     professor = get_object_or_404(Professor, slug=slug)
-    threads, thread_count = community.professor_threads(professor)
+    threads, thread_count = community.threads_about(professor=professor)
     my_votes = community.votes_by(request.user, threads)
     return render(
         request,

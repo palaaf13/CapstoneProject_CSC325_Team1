@@ -1,31 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}{% if post %}Edit post{% elif professor %}New thread about {{ professor.full_name }}{% else %}Write a post{% endif %} · Feed · RamHub{% endblock %}
+{% block title %}{% if post %}Edit post{% elif about %}New thread about {{ about.name }}{% else %}Write a post{% endif %} · Feed · RamHub{% endblock %}
 
 {% block content %}
   {% comment %}
   Three entry points share this form: a new feed post, a new thread about a
-  professor (`professor` set), and editing an existing post (`post` set).
+  professor or course (`about` set: name, url, placeholder), and editing an
+  existing post (`post` set).
   {% endcomment %}
   {% if post %}
     {% url 'community:post_detail' post.pk as back_url %}
-  {% elif professor %}
-    {% url 'catalog:professor_detail' professor.slug as back_url %}
+  {% elif about %}
+    {% firstof about.url as back_url %}
   {% else %}
     {% url 'community:feed' as back_url %}
   {% endif %}
 
   <nav aria-label="Breadcrumb" class="mb-3 text-meta">
     <a href="{{ back_url }}" class="rounded-sm text-neutral-500 hover:text-neutral-900 hover:underline">
-      &larr; {% if post %}Back to the post{% elif professor %}Back to {{ professor.full_name }}{% else %}Back to the feed{% endif %}
+      &larr; {% if post %}Back to the post{% elif about %}Back to {{ about.name }}{% else %}Back to the feed{% endif %}
     </a>
   </nav>
 
   {% if post %}
     {% include "partials/page_header.html" with title="Edit post" %}
-  {% elif professor %}
-    {% with title="Start a thread about "|add:professor.full_name %}
-      {% include "partials/page_header.html" with title=title subtitle="Ask what their classes are like or share advice from one you took. It also appears in the campus feed. Stick to what you experienced — see the community guidelines." %}
+  {% elif about %}
+    {% with title="Start a thread about "|add:about.name %}
+      {% include "partials/page_header.html" with title=title subtitle="Ask what to expect or share advice from your own experience. It also appears in the campus feed. Stick to what you experienced — see the community guidelines." %}
     {% endwith %}
   {% else %}
     {% include "partials/page_header.html" with title="Write a post" subtitle="Share notes, ask a question, or start a discussion. Keep it to what you actually experienced — see the community guidelines." %}
@@ -63,7 +64,7 @@
             <input type="text" name="{{ field.name }}" id="{{ field.id_for_label }}" value="{{ field.value|default:'' }}"
                    class="{% if field.errors %}field-input-error{% else %}field-input{% endif %}"
                    {% if field.errors %}aria-invalid="true"{% endif %}
-                   {% if field.name == "title" %}maxlength="200" required placeholder="{% if professor %}How are {{ professor.last_name }}'s exams structured?{% else %}Anyone have good notes for the CSC 325 midterm?{% endif %}"{% endif %}
+                   {% if field.name == "title" %}maxlength="200" required placeholder="{% if about %}{{ about.placeholder }}{% else %}Anyone have good notes for the CSC 325 midterm?{% endif %}"{% endif %}
                    autocomplete="off">
           {% endif %}
           {% if field.errors %}<p class="field-error">{{ field.errors.0 }}</p>

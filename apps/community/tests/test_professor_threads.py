@@ -34,20 +34,20 @@ def test_professor_threads_lists_only_that_professors_visible_threads(make_post,
     make_post("About someone else", professor=other)
     make_post("Deleted, no replies", professor=professor, is_removed=True)
 
-    threads, count = services.professor_threads(professor)
+    threads, count = services.threads_about(professor=professor)
 
     assert threads == [mine]
     assert count == 1
 
 
 def test_professor_threads_caps_the_list_but_counts_them_all(make_post, professor):
-    for i in range(services.PROFESSOR_THREADS_SHOWN + 2):
+    for i in range(services.THREADS_SHOWN + 2):
         make_post(f"Thread {i}", professor=professor)
 
-    threads, count = services.professor_threads(professor)
+    threads, count = services.threads_about(professor=professor)
 
-    assert len(threads) == services.PROFESSOR_THREADS_SHOWN
-    assert count == services.PROFESSOR_THREADS_SHOWN + 2
+    assert len(threads) == services.THREADS_SHOWN
+    assert count == services.THREADS_SHOWN + 2
 
 
 def test_feed_query_narrows_to_one_professor(make_post, professor):
@@ -55,7 +55,7 @@ def test_feed_query_narrows_to_one_professor(make_post, professor):
     make_post("Unrelated")
     query = FeedQueryForm({"professor": professor.slug}).to_query()
 
-    assert list(services.feed_posts(query, services.get_professor(query.professor))) == [thread]
+    assert list(services.feed_posts(query, professor=services.get_professor(query.professor))) == [thread]
 
 
 # -- views -----------------------------------------------------------------

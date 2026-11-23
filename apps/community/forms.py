@@ -31,8 +31,10 @@ class FeedQuery(NamedTuple):
     tag: str
     sort: str
     page: int
-    # A professor's directory slug: the feed narrowed to threads about them.
+    # A professor's directory slug, or a course code in URL form ("CSC-240"):
+    # the feed narrowed to threads about that professor or course.
     professor: str = ""
+    course: str = ""
 
 
 class FeedQueryForm(forms.Form):
@@ -42,6 +44,7 @@ class FeedQueryForm(forms.Form):
     sort = forms.CharField(required=False, max_length=10)
     page = forms.IntegerField(required=False, min_value=1, max_value=10_000)
     professor = forms.SlugField(required=False, max_length=120)
+    course = forms.CharField(required=False, max_length=16, strip=True)
 
     def to_query(self) -> FeedQuery:
         """Validated values, with anything invalid replaced by its default."""
@@ -58,6 +61,7 @@ class FeedQueryForm(forms.Form):
             sort=sort if sort in SORTS else "new",
             page=data.get("page") or 1,
             professor=data.get("professor") or "",
+            course=data.get("course") or "",
         )
 
 
