@@ -662,34 +662,30 @@ switch. Each student can ask 30 questions an hour (`RAMBO_HOURLY_LIMIT`). (Haiku
 
 ### The 3D Rambo
 
-The Ask Rambo page opens with a realistic 3D bighorn ram, built entirely in code with Three.js
-(0.170, the same pinned CDN build as the landing page's galaxy). There's no downloaded model and
-no college marks. The one paid model we considered was licensed so it couldn't be shown in a
-browser or committed to a public repo.
+The Ask Rambo page opens with **the landing page's Rambo, in 3D**: the same character as the SVG
+in [`templates/partials/rambo.html`](templates/partials/rambo.html), built with Three.js (0.170,
+the same pinned CDN build as the landing page's galaxy) in
+[`static/js/rambo3d.js`](static/js/rambo3d.js). There's no downloaded model and no college marks.
 
-- **Head and bust are sculpted, not modelled.** Each is a signed distance field: skull, Roman
-  nose, muzzle, jaw, cheeks and horn bases, with eye sockets carved out, then neck, chest and
-  shoulders. The shapes are blended smoothly and turned into meshes with Three.js's
-  `MarchingCubes`. Colors are painted per vertex: a brown coat, a pale muzzle and throat, a dark
-  nose pad.
-- **Fur is shell-rendered.** Ten slightly larger copies of the head, and eight of the bust, each
-  keep fewer "strands" and are darker at the root, which gives the soft, fuzzy outline real fur
-  has.
-- **Horns follow a real bighorn's growth.** They go up and back off the skull, down behind the
-  ear, then forward around the cheek. They have a flattened, ridged cross-section, deeper annual
-  rings, and a tan-to-pale gradient.
-- **Eyes** are amber with a ram's horizontal pupil, under a clear-coated cornea, with eyelids
-  that blink.
+- **The horns follow the SVG's own spiral paths**, coordinate for coordinate. They're extruded
+  into tapered, ridged tubes in the same accent-200 → accent-500 green, curled a little in depth.
+  They grow in when he appears, the way the SVG's horns draw on.
+- **The long, tapered face** is sculpted as a signed distance field, meshed with `MarchingCubes`,
+  and shaded like the SVG's dark radial gradient. The SVG's green outline becomes a green rim
+  light on every edge of the face, ears and snout.
+- **The features match the drawing:** white eyes with pupils that follow the cursor, eyelids that
+  blink, green brows, the snout with vertical nostrils and a green smile, and leaf-shaped ears
+  tucked under the horns.
 
 How he behaves:
-- He breathes, blinks, flicks an ear, and turns toward the cursor.
-- While Rambo is answering, he tilts his head and looks up.
-- When an answer arrives, he nods.
+- He floats and breathes.
+- While Rambo is answering, he tilts his head and looks up, and his brows lift.
+- When an answer arrives, he hops and nods.
 - Click him for a headbutt.
 
 The canvas is decorative (`aria-hidden`). It pauses when it's off screen or the tab is hidden,
-and holds still under `prefers-reduced-motion`. Phones and low-core laptops get fewer fur shells
-and fewer pixels. Without WebGL, the flat SVG Rambo from the landing page stays in its place.
+and holds still under `prefers-reduced-motion`. Without WebGL, the flat SVG Rambo stays in its
+place.
 
 ### Prompt versioning
 
@@ -888,17 +884,16 @@ we found, and how:
 - **It pinned `actions/upload-artifact@v5`** for the Eval artifact. We had been burned before (see
   `actions/cache@v4` above), so we read the action's `action.yml`: v5 still runs on Node 20, which
   GitHub is retiring. We moved to `@v7`, which runs on Node 24.
-- **Its 3D Rambo took several rounds in the browser to get right.** Every one of these was found
-  by looking at the live preview:
-  - The first, cartoon version had horns that faced sideways, so from the front they were a thin
-    edge.
-  - The realistic rebuild first rendered as a giant fuzzy blob. `MarchingCubes` leaves its normals
-    as raw field gradients, roughly 100 units long, and the fur shells were pushed along them. The
-    normals are now normalized.
-  - Then the nose came out sliced flat, showing as a white disc with "eyes", because the grid
-    skips its outer cells and the muzzle poked past them. Each grid is now centered on its shape.
-  - The horns first curled forward instead of back. Then a generic spiral hid behind the jaw, so
-    they now follow a path laid out the way a bighorn's horn grows.
+- **Its 3D Rambo took several rounds in the browser to get right.** We built three versions:
+  a cartoon, a realistic bighorn, and finally a 3D copy of the landing page's Rambo, so the
+  mascot is the same character everywhere. Every bug was found by looking at the live preview:
+  - Horns that faced sideways, so from the front they were a thin edge.
+  - A first realistic render that was a giant fuzzy blob. `MarchingCubes` leaves its normals as
+    raw field gradients, roughly 100 units long; they are now normalized.
+  - A nose sliced off flat, because the grid skips its outer cells. Each grid is now centered on
+    its shape.
+  - Horns that curled the wrong way. The final version avoids guessing by tracing the SVG's own
+    horn paths.
 - **Something it had not caused but did surface:** the ratings app had never had a migration, so
   its collections did not exist in production. Adding the rating forms made the gap visible, and
   RH-19 adds `0001_initial`.
