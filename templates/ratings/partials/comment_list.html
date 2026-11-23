@@ -1,0 +1,22 @@
+{% comment %}
+Written advice from ratings, newest first. Anonymous on purpose: the semester
+gives context without naming the student.
+  comments    CourseRating / ProfessorRating rows with a comment
+  empty_text  shown when there are none
+  show_course on professor pages, name the course each rating was for
+{% endcomment %}
+{% if comments %}
+  <ul class="divide-y divide-neutral-200" data-testid="comment-list">
+    {% for rating in comments %}
+      <li class="px-4 py-3">
+        <p class="whitespace-pre-line text-body text-neutral-800">{{ rating.comment }}</p>
+        <p class="mt-1 text-meta text-neutral-500">
+          A student{% if rating.semester %} &middot; {{ rating.semester }}{% endif %}
+          {% if show_course and rating.course %} &middot; {{ rating.course.code }}{% endif %}
+        </p>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="px-4 py-6 text-center text-meta text-neutral-500">{{ empty_text }}</p>
+{% endif %}
