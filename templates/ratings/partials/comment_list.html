@@ -4,16 +4,21 @@ gives context without naming the student.
   comments    CourseRating / ProfessorRating rows with a comment
   empty_text  shown when there are none
   show_course on professor pages, name the course each rating was for
+Each rating gets a Report button ({% report_link %}, apps/moderation).
 {% endcomment %}
+{% load moderation_tags %}
 {% if comments %}
   <ul class="divide-y divide-neutral-200" data-testid="comment-list">
     {% for rating in comments %}
       <li class="px-4 py-3">
         <p class="whitespace-pre-line text-body text-neutral-800">{{ rating.comment }}</p>
-        <p class="mt-1 text-meta text-neutral-500">
-          A student{% if rating.semester %} &middot; {{ rating.semester }}{% endif %}
-          {% if show_course and rating.course %} &middot; {{ rating.course.code }}{% endif %}
-        </p>
+        <div class="mt-1 flex flex-wrap items-center gap-2">
+          <p class="text-meta text-neutral-500">
+            A student{% if rating.semester %} &middot; {{ rating.semester }}{% endif %}
+            {% if show_course and rating.course %} &middot; {{ rating.course.code }}{% endif %}
+          </p>
+          <span class="ml-auto">{% report_link rating %}</span>
+        </div>
       </li>
     {% endfor %}
   </ul>

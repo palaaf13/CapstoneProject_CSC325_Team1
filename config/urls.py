@@ -17,6 +17,7 @@ urlpatterns = [
     path("", include("apps.saved.urls")),
     path("", include("apps.ratings.urls")),
     path("", include("apps.assistant.urls")),
+    path("", include("apps.moderation.urls")),
     # Site-level pages
     path("styleguide/", views.styleguide, name="styleguide"),
     path("styleguide/htmx-demo/", views.styleguide_htmx_demo, name="styleguide_htmx_demo"),
