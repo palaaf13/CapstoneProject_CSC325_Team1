@@ -1,8 +1,196 @@
-{% extends "base.html" %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#051a12">
+  <meta name="description" content="RamHub Parking: plan your arrival at Farmingdale State College.">
+  <title>RamHub Parking | Beat the Rush</title>
+  <link rel="stylesheet" href="{% static 'parking/vendor/maplibre-gl.css' %}">
+  <link rel="stylesheet" href="{% static 'parking/parking.css' %}">
+  <script src="{% static 'parking/vendor/maplibre-gl.js' %}" defer></script>
+  <script src="{% static 'parking/parking.js' %}" defer></script>
+</head>
+<body>
+<div class="parking-app" id="top" data-weather-url="{% url 'campus:parking_weather' %}">
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="RamHub Parking home">
+      <img src="{% static 'parking/logo-ram.png' %}" alt="" width="58" height="49">
+      <span><b>Ram<span>Hub</span></b> Parking</span>
+    </a>
+    <nav class="primary-nav" aria-label="Parking navigation">
+      <a href="#top" class="current">Home</a>
+      <a href="#plan">Plan Arrival</a>
+      <a href="#map">Parking Map</a>
+      <a href="#insights">Campus Insights</a>
+    </nav>
+    <a class="student-link" href="/" aria-label="Return to RamHub">Back to RamHub</a>
+  </header>
 
-{% block title %}Parking · RamHub{% endblock %}
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-art"><div class="windshield-shimmer" aria-hidden="true"></div><div class="drive-sparkle sparkle-one" aria-hidden="true"></div><div class="drive-sparkle sparkle-two" aria-hidden="true"></div>
+        <picture>
+          <source media="(prefers-reduced-motion: reduce)" srcset="{% static 'parking/student-still.webp' %}">
+          <img src="{% static 'parking/student-driving.gif' %}" alt="Anime-style FSC student driving, hands staying on the steering wheel during subtle steering corrections" class="driver-gif" width="439" height="439">
+        </picture>
+        <div class="art-caption"><span class="glow-dot"></span> FIND YOUR WAY · BEAT THE RUSH</div>
+      </div>
+      <div class="hero-copy"><div class="hero-starlight starlight-a" aria-hidden="true"></div><div class="hero-starlight starlight-b" aria-hidden="true"></div>
+        <div class="eyebrow">FARMINGDALE STATE COLLEGE · PARKING</div>
+        <h1 id="hero-title"><span class="hero-white">Beat the rush with</span><span class="hero-green">RamHub Parking.</span></h1>
+        <span class="draw-underline" aria-hidden="true"></span>
+        <p>Find an FSC parking lot before class so you can arrive on time.</p>
+        <div class="hero-actions">
+          <a class="cta cta-primary" href="#plan">Plan My Arrival</a>
+          <a class="cta cta-outline" href="#map">Explore Parking</a>
+        </div>
+        <div class="hero-footnote"><span class="verified-signal" aria-hidden="true"></span> REAL CAMPUS LOTS <span aria-hidden="true">·</span> NO FAKE SPACE COUNTS</div>
+      </div>
+      <aside class="hero-side">
+        <picture class="rambo-figure">
+          <source media="(prefers-reduced-motion: reduce)" srcset="{% static 'parking/rambo-still.webp' %}">
+          <img src="{% static 'parking/rambo-speaking.gif' %}" alt="Rambo the ram mascot inviting students to find parking" width="720" height="237">
+        </picture>
+        <div class="tips-card">
+          <div class="tips-head"><div class="lamp-dots" aria-hidden="true"><i></i><i></i><i></i></div><span>RAMHUB / PRO TIPS</span></div>
+          <div class="tips-body">
+            <div class="tip-current"><span class="mini-dot" aria-hidden="true"></span><span id="typingTip">Get to campus 20 minutes before class.</span><span class="type-caret" aria-hidden="true"></span></div>
+            <p>Time is money, people.</p><p>Save the rush, beat the clock.</p>
+          </div>
+        </div>
+      </aside>
+    </section>
 
-{% block content %}
-  {% include "partials/page_header.html" with title="Parking" subtitle="The lots, the permits, the rules — plus the timing tips that actually matter." %}
-  {% include "partials/empty_state.html" with icon="car" headline="No lots listed yet" description="Each lot will show its permit types, location, and rules, alongside student notes about when it fills up and which exit is faster." action_label="" %}
-{% endblock %}
+    <section class="live-strip" aria-label="Farmingdale local information">
+      <div class="info-card"><div class="card-icon" aria-hidden="true">▦</div><div><span class="card-label">DATE</span><strong id="dateValue">Loading…</strong></div></div>
+      <div class="info-card"><div class="card-icon" aria-hidden="true">▦</div><div><span class="card-label">DAY</span><strong id="dayValue">Loading…</strong></div></div>
+      <div class="info-card"><div class="card-icon" aria-hidden="true">◷</div><div><span class="card-label">TIME <em class="live-pill">LIVE</em></span><strong id="timeValue">Loading…</strong></div></div>
+      <div class="info-card weather-card"><div class="weather-glyph" id="weatherIcon" aria-hidden="true">☁</div><div><span class="card-label">FARMINGDALE WEATHER <em class="live-pill" id="weatherLive" hidden>LIVE</em></span><strong id="weatherValue">Checking conditions…</strong><small id="weatherNote">Using Open-Meteo</small><small id="weatherRain" class="rain-outlook" hidden></small><button class="weather-retry" id="weatherRetry" type="button" hidden>Retry forecast</button><a class="weather-external" id="weatherExternal" href="https://forecast.weather.gov/MapClick.php?lat=40.7524&amp;lon=-73.4280" target="_blank" rel="noopener noreferrer" hidden>Official forecast</a></div></div>
+    </section>
+
+    <section id="plan" class="section-block">
+      <div class="section-head"><div><span class="eyebrow">01 / ARRIVAL PLANNER</span><h2>Your next class, sorted.</h2><p>Save your usual building and check the college's published lot map before you leave.</p></div><span class="section-label">SAVED ON THIS DEVICE</span></div>
+      <div class="planner-grid">
+        <div class="panel planner-form">
+          <label for="destination">Where is your class?</label>
+          <select id="destination" aria-describedby="buildingDirectoryHint">
+  <option value="">Choose a campus building</option>
+  <optgroup label="Academic buildings &amp; classrooms">
+    <option>Cutler Hall</option>
+    <option>Gleeson Hall</option>
+    <option>Hale Hall</option>
+    <option>Hicks Hall</option>
+    <option>Knapp Hall</option>
+    <option>Laffin Hall</option>
+    <option>Lupton Hall</option>
+    <option>Memorial Hall</option>
+    <option>Roosevelt Hall</option>
+    <option>School of Business</option>
+    <option>Sinclair Hall</option>
+    <option>Thompson Hall</option>
+    <option>Ward Hall</option>
+    <option>Whitman Hall</option>
+  </optgroup>
+  <optgroup label="Campus life, libraries &amp; student services">
+    <option>Campus Center</option>
+    <option>Campus Commons</option>
+    <option>Greenley Library</option>
+    <option>Health &amp; Wellness Center</option>
+    <option>Hooper Hall</option>
+    <option>Horton Hall</option>
+    <option>Nold Hall</option>
+    <option>Quintyne Hall</option>
+    <option>University Police</option>
+  </optgroup>
+  <optgroup label="Residence halls">
+    <option>Alumni Hall</option>
+    <option>Dewey Hall</option>
+    <option>Orchard Hall</option>
+  </optgroup>
+  <optgroup label="Other mapped campus facilities">
+    <option>Agriculture Building</option>
+    <option>Capital Planning Trailer</option>
+    <option>Children’s Center</option>
+    <option>Conference Center</option>
+    <option>Custodial Building</option>
+    <option>Driving Range Office</option>
+    <option>Greenhouse</option>
+    <option>Hay Barn</option>
+    <option>Heating Plant</option>
+    <option>Poultry Building</option>
+    <option>Service Building</option>
+    <option>Smart Grid House</option>
+    <option>Storage Building</option>
+  </optgroup>
+  <optgroup label="Other FSC sites (check location)">
+    <option>Aviation Education Center</option>
+    <option>Broad Hollow Bioscience Park</option>
+    <option>Fred R. Harrison Service Complex</option>
+  </optgroup>
+</select>
+<p id="buildingDirectoryHint" class="building-directory-hint" style="font-size:12px;line-height:1.5;color:#b4d7c3;margin:10px 0 18px">FSC building directory based on published campus maps. Some specialty sites are off the main campus. <a href="https://tour.farmingdale.edu/" target="_blank" rel="noopener noreferrer" style="color:#7bffc1;text-decoration:underline">Verify location on the current official FSC campus map</a>. Selecting a building does not imply live parking availability.</p>
+          <label for="classTime">Class starts at</label><input id="classTime" type="time" value="09:00">
+          <div class="planner-buttons"><button id="saveDefault" class="small-primary" type="button">Save my default</button><a class="small-secondary" href="#map">View campus lots</a></div>
+          <p id="saveStatus" class="status-line" role="status">Default preferences are stored in this browser only.</p>
+        </div>
+        <div class="panel planner-advice">
+          <span class="eyebrow">RAMBO'S ARRIVAL NOTE</span><h3 id="plannerHeading">A little planning goes a long way.</h3>
+          <p id="plannerAdvice">Choose a building to see a verified parking-location reference. No fictional walking times or vacancy predictions.</p>
+          <div class="advice-footer">Campus permits and signs always take priority over suggestions.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="map" class="section-block map-section">
+      <div class="section-head"><div><span class="eyebrow">02 / CAMPUS PARKING</span><h2>See the campus. <span class="green">Choose your lot.</span></h2><p>An interactive, game-like 3D view using actual mapped buildings and real FSC parking-lot references. No invented space counts.</p></div><a href="https://map.farmingdale.edu/" class="section-source" target="_blank" rel="noopener noreferrer">Official FSC map</a></div>
+      <div class="map-layout">
+        <div class="panel map-panel">
+          <div class="map-toolbar"><span><span class="glow-dot"></span> FARMINGDALE STATE COLLEGE · 3D CAMPUS</span><span>REAL MAP GEOMETRY · 3D VIEW</span></div>
+          <div class="game-map-wrap">
+            <div id="campusGameMap" class="game-map-canvas" role="application" aria-label="Interactive 3D campus map with genuine OpenStreetMap buildings and official campus-plan building references"></div><div id="mapSourceFrameWrap" class="map-source-frame-wrap" hidden><iframe id="mapSourceFrame" title="Actual OpenStreetMap campus roads and buildings" loading="lazy" referrerpolicy="no-referrer-when-downgrade" data-src="https://www.openstreetmap.org/export/embed.html?bbox=-73.438%2C40.745%2C-73.419%2C40.761&amp;layer=mapnik" allowfullscreen></iframe><a href="https://www.openstreetmap.org/#map=16/40.7527/-73.4283" target="_blank" rel="noopener noreferrer">Open the real map in a new tab</a></div>
+            <div class="map-game-caption"><span class="caption-pulse"></span> FSC / CAMPUS EXPLORER <small>3D buildings from mapped footprints</small></div>
+            <div class="map-game-controls" aria-label="Map view controls">
+              <button id="map3d" type="button" class="is-on" aria-pressed="true">3D</button>
+              <button id="map2d" type="button" aria-pressed="false">2D map</button>
+              <button id="mapReset" type="button">Recenter</button>
+            </div>
+            <div class="map-game-help">Drag to explore · Scroll to zoom · Choose a documented lot</div>
+          </div>
+          <div id="mapFallback" class="map-fallback visible" aria-live="polite">
+            <div class="fallback-mark" aria-hidden="true">P</div><strong>Loading the 3D campus…</strong><p id="mapFallbackText">MapLibre is connecting to real OpenStreetMap building footprints. No fictional buildings or parking spaces are shown.</p>
+            <div class="fallback-link-row"><a href="https://map.farmingdale.edu/" target="_blank" rel="noopener noreferrer">Official FSC map</a><a href="https://www.openstreetmap.org/#map=16/40.7527/-73.4283" target="_blank" rel="noopener noreferrer">Open street map</a></div>
+            <a href="https://www.farmingdale.edu/capital-projects-and-construction/pdfs/2025aprilcampusmapduringconstruction.pdf" target="_blank" rel="noopener noreferrer" class="fallback-quiet">Check official lot numbers</a>
+          </div>
+          <div class="map-bottom">Actual map geometry © OpenStreetMap contributors · 3D visualized using MapLibre & OpenFreeMap. Lot pins are approximate source-backed references, <b>not live vacant spaces.</b></div>
+        </div>
+        <aside class="panel lot-sidebar">
+          <!-- RAMHUB_BUILDING_MAP_V1 -->
+          <div class="building-map-box">
+            <span class="building-eyebrow">CAMPUS DESTINATIONS / REAL MAP</span>
+            <h4>Find your classroom building.</h4>
+            <label for="mapBuildingPicker">Choose an FSC building</label>
+            <select id="mapBuildingPicker" aria-describedby="buildingMapStatus"></select>
+            <p id="buildingMapStatus" role="status">Choose a building to focus it on the 3D map.</p>
+            <div id="buildingNearbyLots" aria-live="polite"></div>
+          </div>
+<span class="eyebrow">SELECT A REAL LOT</span><h3>Choose your next stop.</h3><p>These numbers come from FSC's published map. Official lot numbers are listed; exact lot pins require verified FSC coordinates.</p><div id="lotButtons" class="lot-buttons" aria-label="Official student parking lots"></div>
+          <div id="lotDetails" class="lot-details"><strong>Choose a parking lot</strong><p>See the published map, a nearby campus landmark, and map pins where coordinates are available.</p></div>
+          <div class="data-honesty"><strong>Live vacancies: not published</strong><span>Individual available spaces cannot be shown without a verified FSC occupancy feed.</span></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="insights" class="section-block insights-section">
+      <div class="section-head"><div><span class="eyebrow">03 / STUDENT PARKING INSIGHTS</span><h2>How busy has parking felt?</h2><p>Historical observations, not made-up real-time occupancy. Students can save an observation after parking.</p></div><span class="section-label">BROWSER-STORED REPORTS</span></div>
+      <div class="insights-grid">
+        <div class="panel chart-panel"><div class="chart-top"><div><h3>Reports by arrival hour</h3><small id="chartSub">No reports yet</small></div><select id="chartLot" aria-label="Select a lot for the chart"></select></div><div id="chartArea" class="chart-area" role="img" aria-label="Hourly parking difficulty reports"></div><div class="chart-axis"><span>6 AM</span><span>Noon</span><span>6 PM</span><span>9 PM</span></div><p class="chart-note">Shows only your actual recorded or imported parking observations. This is <strong>not</strong> an official FSC occupancy measurement.</p><div class="records-toolbar"><label class="records-import" for="importReports">Import historical reports (.csv)</label><input id="importReports" type="file" accept=".csv,text/csv" aria-label="Import CSV parking reports"><button id="exportReports" type="button" class="records-export">Export my reports</button></div><p class="records-import-status" id="importStatus" role="status">CSV columns: <code>timestamp,lot,difficulty,arrival_hour</code> (hour optional; 1 easy–4 full)</p></div>
+        <form id="reportForm" class="panel report-panel"><span class="eyebrow">CONTRIBUTE TO THE REPORT</span><h3>How was parking?</h3><p>After parking safely, report what you experienced.</p><label for="reportLot">Parking lot</label><select id="reportLot"></select><label for="reportDifficulty">How easy was it?</label><select id="reportDifficulty"><option value="1">Easy to find a spot</option><option value="2">Some searching</option><option value="3">Very busy</option><option value="4">Could not find a space</option></select><button class="small-primary full-width" type="submit">Record my observation</button><p id="reportStatus" class="status-line" role="status"></p><button id="clearReports" type="button" class="text-button">Clear my locally saved reports</button></form>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer"><span>RamHub Parking · Student-built campus experience</span><span>FSC is the source of parking rules and lot labels. This is not a live space-count service.</span></footer>
+</div>
+</body>
+</html>
