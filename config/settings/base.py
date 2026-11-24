@@ -24,8 +24,12 @@ SECRET_KEY = env.str("SECRET_KEY", default="") or "django-insecure-dev-only-chan
 DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
-# RamHub: only email addresses at this domain may register (enforced in Phase 2).
-COLLEGE_EMAIL_DOMAIN = env.str("COLLEGE_EMAIL_DOMAIN", default="farmingdale.edu")
+# Who may register. Empty (the default) means any email address; every new
+# account still confirms its address by email before it can sign in. To limit
+# sign-up to a school again, list its domains, e.g. ALLOWED_EMAIL_DOMAINS=farmingdale.edu
+ALLOWED_EMAIL_DOMAINS = [
+    d.strip().casefold() for d in env.list("ALLOWED_EMAIL_DOMAINS", default=[]) if d.strip()
+]
 
 # Where @login_required sends a signed-out visitor. Django's default
 # (/accounts/login/) does not exist here.

@@ -120,7 +120,7 @@ def _safe_next_url(request: HttpRequest) -> str | None:
 
 
 def sign_in(request: HttpRequest) -> HttpResponse:
-    """Sign a confirmed student in with their college email and password."""
+    """Sign a confirmed student in with their email and password."""
     if request.user.is_authenticated:
         return redirect(_safe_next_url(request) or "profile")
 

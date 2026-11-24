@@ -1,8 +1,8 @@
 # RamHub
 
-A private, school-email-only community website for students of **Farmingdale State
-College**. Look up any course or professor, read honest advice from students who
-actually took it, and add your own.
+A community website for students of **Farmingdale State College**. Look up any
+course or professor, read honest advice from students who actually took it, and
+add your own. Anyone can sign up with any email address, once they've confirmed it.
 
 **Team 1, CSC 325:** Axel, Cole, Nick, Sara, Sinan, Shil. The original project proposal is in [docs/PROPOSAL.md](docs/PROPOSAL.md).
 
@@ -52,7 +52,7 @@ owns its models, views, services, and tests together.
 | App | Responsibility | State |
 | --- | --- | --- |
 | `catalog` | Course and Professor, both directories, detail pages, data imports | Built |
-| `accounts` | Custom user, FSC email verification, profiles | Planned |
+| `accounts` | Custom user, email verification, profiles | Planned |
 | `ratings` | Course and professor ratings, summary recomputation | Planned |
 | `community` | Posts, embedded comments, votes, tags, the feed | Planned |
 | `campus` | Clubs, jobs, parking, facilities | Placeholder pages |
@@ -109,8 +109,7 @@ the new code goes live; data imports are run from a developer's machine.
 **Figma:** [RamHub Prototype](https://www.figma.com/design/YPd5HXGVtHgMErfYGxEDvd/RamHub-Prototype?node-id=0-1)
 **Walkthrough video (1:50):** [RamHub — Figma UI/UX Prototype Walkthrough](https://www.youtube.com/watch?v=8xP8z4f6uhE)
 
-The prototype follows our product goal: **a private, `@farmingdale.edu`-only
-platform where FSC students look up courses and professors, read and share
+The prototype follows our product goal: **a platform where FSC students look up courses and professors, read and share
 honest advice from classmates, and find campus info in one place, so class
 knowledge doesn't disappear when students graduate.**
 
@@ -287,7 +286,7 @@ settings file.
 | `ALLOWED_HOSTS` | prod | Comma-separated hostnames. |
 | `MONGODB_URI` | **yes** | The full Atlas connection string. |
 | `MONGODB_NAME` | no | Database name inside the cluster. Defaults to `ramhub`. |
-| `COLLEGE_EMAIL_DOMAIN` | no | Domain allowed to register. Defaults to `farmingdale.edu`. |
+| `ALLOWED_EMAIL_DOMAINS` | no | Comma-separated domains allowed to register, e.g. `farmingdale.edu`. Empty (the default) lets **any** email register; every account still confirms its address first. (This replaced `COLLEGE_EMAIL_DOMAIN`, which is no longer read and can be deleted from Vercel.) |
 | `EMAIL_HOST` | prod | SMTP server used to send confirmation emails. |
 | `EMAIL_PORT` | no | SMTP port. Defaults to `587`. |
 | `EMAIL_HOST_USER` | no | SMTP username, if required by the provider. |
@@ -625,8 +624,8 @@ the pages he used. Examples: *"How do I order an official transcript?"*, *"Where
 Center?"*, *"How do I contact financial aid?"*, *"What's FSC's FAFSA code?"*
 
 He's on every page as an **Ask Rambo** button, and lives at `/rambo/`, where a 3D Rambo
-([below](#the-3d-rambo)) reacts to the conversation. You have to sign in, since RamHub is
-school-email only and every answer costs money.
+([below](#the-3d-rambo)) reacts to the conversation. You have to sign in, since every answer
+costs money and the hourly limit is per student.
 
 ```
 student ──► /rambo/ask/ ──► apps/assistant/services.py   hourly limit, logs the question (not its text)
