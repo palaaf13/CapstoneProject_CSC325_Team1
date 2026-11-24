@@ -1,7 +1,7 @@
 """Production settings. Every secret must come from the environment."""
 
 from .base import *  # noqa: F403
-from .base import env
+from .base import env, sender_address
 
 DEBUG = False
 
@@ -22,7 +22,7 @@ MAILERS = {
         },
     }
 }
-DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL")
+DEFAULT_FROM_EMAIL = sender_address(env.str("DEFAULT_FROM_EMAIL"))
 
 SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000

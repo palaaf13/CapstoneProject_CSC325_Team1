@@ -35,8 +35,17 @@ class RegistrationForm(UserCreationForm):
             {"class": "field-input", "autocomplete": "new-password"}
         )
 
+    # An old account that was never confirmed (say, its email never arrived)
+    # shouldn't lock its owner out of signing up again, so stale ones are
+    # released before Django checks that the username and email are free.
+    def clean_username(self):
+        services.release_unconfirmed(username=self.cleaned_data.get("username", ""))
+        return super().clean_username()
+
     def clean_email(self) -> str:
-        return self.cleaned_data["email"].strip().casefold()
+        email = self.cleaned_data["email"].strip().casefold()
+        services.release_unconfirmed(email=email)
+        return email
 
 
 class SignInForm(forms.Form):
