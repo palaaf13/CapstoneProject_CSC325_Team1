@@ -292,7 +292,7 @@ settings file.
 | `EMAIL_HOST_USER` | no | SMTP username, if required by the provider. |
 | `EMAIL_HOST_PASSWORD` | no | SMTP password, if required by the provider. |
 | `EMAIL_USE_TLS` | no | Whether SMTP uses TLS. Defaults to `True`. |
-| `DEFAULT_FROM_EMAIL` | prod | Sender address authorized by the mail provider. |
+| `DEFAULT_FROM_EMAIL` | prod | Sender address authorized by the mail provider, written `RamHub <ramhub.fsc@gmail.com>`. If the angle brackets are left out, the app puts them back; without that, the mail server rejected the address and sign-up failed. |
 
 In development, registration confirmation emails print in the `runserver`
 terminal. Production uses SMTP and requires `EMAIL_HOST` and

@@ -1,6 +1,7 @@
 """Account-related business operations."""
 
 import hashlib
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -24,6 +25,39 @@ email_confirmation_token = EmailConfirmationTokenGenerator()
 
 class EmailDeliveryError(RuntimeError):
     """Raised when the configured backend does not accept the confirmation email."""
+
+
+# An unconfirmed account older than this no longer holds its username or email:
+# registering again replaces it. Short enough to rescue a sign-up whose email
+# never arrived, long enough that nobody can knock out a pending confirmation
+# that is on its way.
+UNCONFIRMED_HOLD = timedelta(minutes=15)
+
+
+def release_unconfirmed(*, username: str = "", email: str = "") -> int:
+    """Delete stale, never-confirmed accounts using this username or email.
+
+    Never touches an account that was confirmed (is_active) or ever signed in.
+    Returns how many were removed."""
+    from django.db.models import Q
+    from django.utils import timezone
+
+    match = Q()
+    if username:
+        match |= Q(username__iexact=username)
+    if email:
+        match |= Q(email__iexact=email.strip())
+    if not match:
+        return 0
+    stale = User.objects.filter(
+        match,
+        is_active=False,
+        last_login__isnull=True,
+        date_joined__lt=timezone.now() - UNCONFIRMED_HOLD,
+    )
+    count = stale.count()
+    stale.delete()
+    return count
 
 
 def register_user(

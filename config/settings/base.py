@@ -67,7 +67,27 @@ MAILERS = {
         },
     }
 }
-DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="RamHub <noreply@localhost>")
+
+
+def sender_address(value: str) -> str:
+    """The From address, with the angle brackets put back if they were left out.
+
+    "RamHub ramhub@example.com" is a common way to mistype "RamHub
+    <ramhub@example.com>", and the SMTP backend rejects it, which broke
+    sign-up in production. Anything else is passed through unchanged.
+    """
+    import re
+
+    value = value.strip()
+    match = re.fullmatch(r"(?P<name>[^<>@]*\S)\s+(?P<addr>[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+)", value)
+    if "<" not in value and match:
+        return f"{match['name']} <{match['addr']}>"
+    return value
+
+
+DEFAULT_FROM_EMAIL = sender_address(
+    env.str("DEFAULT_FROM_EMAIL", default="RamHub <noreply@localhost>")
+)
 
 # --------------------------------------------------------------------------
 # Applications
