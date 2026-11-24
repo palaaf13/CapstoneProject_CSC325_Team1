@@ -12,7 +12,9 @@ Built as layered SVG so each part can move at its own depth:
 The whole character is a <button>, so the "nudge" interaction works from the
 keyboard (Enter / Space) as well as a click, and screen readers get a label.
 {% endcomment %}
-<button type="button" class="rambo" data-rambo aria-label="Say hi to Rambo, the RamHub mascot">
+{% comment %}Pass href to make a click take you there after his nudge (the landing page sends you to the chat).{% endcomment %}
+<button type="button" class="rambo" data-rambo
+        {% if href %}data-rambo-href="{{ href }}" aria-label="Ask Rambo, RamHub's AI assistant"{% else %}aria-label="Say hi to Rambo, the RamHub mascot"{% endif %}>
   <svg viewBox="20 70 360 275" class="rambo-svg" aria-hidden="true" focusable="false">
     <defs>
       <radialGradient id="rambo-face" cx="50%" cy="38%" r="65%">

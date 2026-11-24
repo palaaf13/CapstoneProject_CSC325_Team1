@@ -29,10 +29,18 @@
     return lines[lineIndex];
   }
 
+  // On the landing page Rambo is the way into the AI chat: a click nudges him
+  // and then goes there. Without motion it goes straight away.
+  var href = rambo.getAttribute("data-rambo-href");
+  function goToChat(delay) {
+    if (href) window.setTimeout(function () { window.location.href = href; }, delay);
+  }
+
   // Without motion, a nudge is just the next line.
   if (!animated) {
     rambo.addEventListener("click", function () {
       bubble.textContent = nextLine();
+      goToChat(0);
     });
     return;
   }
@@ -118,6 +126,8 @@
   rambo.addEventListener("click", function () {
     if (nudging) return;
     nudging = true;
+    // Leave right after the headbutt lands, before the slow settle.
+    goToChat(1000);
 
     var line = nextLine();
     gsap
