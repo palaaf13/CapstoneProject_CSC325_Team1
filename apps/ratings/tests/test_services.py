@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
@@ -6,9 +6,9 @@ from apps.catalog.models import ProfessorRatingSummary
 from apps.ratings.models import CourseRating
 from apps.ratings.services import (
     calculate_average,
+    submit_course_rating,
     summarize_course_ratings,
     summarize_professor_ratings,
-    submit_course_rating,
     validate_rating_score,
 )
 
@@ -86,9 +86,7 @@ def test_summarize_empty_course_ratings():
         ("usefulness", 6),
     ],
 )
-def test_submit_course_rating_rejects_invalid_scores_before_insert(
-    make_course, field, score
-):
+def test_submit_course_rating_rejects_invalid_scores_before_insert(make_course, field, score):
     user = get_user_model().objects.create_user(
         username="rating-service-student",
         email="rating-service-student@farmingdale.edu",
@@ -121,9 +119,7 @@ def test_submit_course_rating_rejects_invalid_scores_before_insert(
         ("usefulness", False),
     ],
 )
-def test_submit_course_rating_rejects_boolean_scores_before_insert(
-    make_course, field, score
-):
+def test_submit_course_rating_rejects_boolean_scores_before_insert(make_course, field, score):
     user = get_user_model().objects.create_user(
         username="rating-service-student",
         email="rating-service-student@farmingdale.edu",
@@ -145,9 +141,7 @@ def test_submit_course_rating_rejects_boolean_scores_before_insert(
 
 
 @pytest.mark.parametrize("semester", ["", "   ", "x" * 33, None])
-def test_submit_course_rating_rejects_invalid_semester_before_insert(
-    make_course, semester
-):
+def test_submit_course_rating_rejects_invalid_semester_before_insert(make_course, semester):
     user = get_user_model().objects.create_user(
         username="rating-service-student",
         email="rating-service-student@farmingdale.edu",
