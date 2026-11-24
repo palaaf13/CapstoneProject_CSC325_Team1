@@ -4,6 +4,8 @@ Django==6.1.1
 django-mongodb-backend==6.1.0
 djangorestframework==3.18.1
 django-environ==0.14.0
+# The AI review summary (apps/assistant). Never called by the unit tests.
+anthropic==2.8.0
 
 # Dev / CI
 pytest==9.1.1

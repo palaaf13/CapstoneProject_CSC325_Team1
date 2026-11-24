@@ -7,10 +7,16 @@ from django_mongodb_backend.models import EmbeddedModel
 
 
 def validate_college_email(value: str) -> None:
+    """Allow any email unless ALLOWED_EMAIL_DOMAINS lists the domains to accept.
+
+    (The name is historical: migration 0001 refers to it, so it stays.)"""
+    allowed = settings.ALLOWED_EMAIL_DOMAINS
+    if not allowed:
+        return
     domain = value.rpartition("@")[2].casefold()
-    if domain != settings.COLLEGE_EMAIL_DOMAIN.casefold():
+    if domain not in allowed:
         raise ValidationError(
-            "Use your Farmingdale State College email address.",
+            f"Use an email address at {' or '.join(allowed)}.",
             code="college_email_domain",
         )
 

@@ -1,6 +1,7 @@
 """Account-related business operations."""
 
 import hashlib
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -26,6 +27,39 @@ class EmailDeliveryError(RuntimeError):
     """Raised when the configured backend does not accept the confirmation email."""
 
 
+# An unconfirmed account older than this no longer holds its username or email:
+# registering again replaces it. Short enough to rescue a sign-up whose email
+# never arrived, long enough that nobody can knock out a pending confirmation
+# that is on its way.
+UNCONFIRMED_HOLD = timedelta(minutes=15)
+
+
+def release_unconfirmed(*, username: str = "", email: str = "") -> int:
+    """Delete stale, never-confirmed accounts using this username or email.
+
+    Never touches an account that was confirmed (is_active) or ever signed in.
+    Returns how many were removed."""
+    from django.db.models import Q
+    from django.utils import timezone
+
+    match = Q()
+    if username:
+        match |= Q(username__iexact=username)
+    if email:
+        match |= Q(email__iexact=email.strip())
+    if not match:
+        return 0
+    stale = User.objects.filter(
+        match,
+        is_active=False,
+        last_login__isnull=True,
+        date_joined__lt=timezone.now() - UNCONFIRMED_HOLD,
+    )
+    count = stale.count()
+    stale.delete()
+    return count
+
+
 def register_user(
     *,
     username: str,
@@ -33,7 +67,8 @@ def register_user(
     display_name: str,
     password: str,
 ) -> User:
-    """Create an account only for an address at the configured college domain."""
+    """Create an inactive account; it activates when the email is confirmed.
+    Any address is accepted unless ALLOWED_EMAIL_DOMAINS limits it."""
     normalized_email = email.strip().casefold()
     validate_college_email(normalized_email)
     return User.objects.create_user(
@@ -58,7 +93,7 @@ def activate_user(user: User, token: str) -> bool:
 def authenticate_by_email(request: HttpRequest, email: str, password: str) -> User | None:
     """Return the active account matching this email and password, or None.
 
-    Students sign in with their college email, but Django's ModelBackend looks
+    Students sign in with their email address, but Django's ModelBackend looks
     accounts up by username, so the email is translated first. An unknown email
     still goes through authenticate() so it costs the same password-hash time
     as a wrong password and doesn't reveal which emails have accounts.

@@ -24,12 +24,30 @@ SECRET_KEY = env.str("SECRET_KEY", default="") or "django-insecure-dev-only-chan
 DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
-# RamHub: only email addresses at this domain may register (enforced in Phase 2).
-COLLEGE_EMAIL_DOMAIN = env.str("COLLEGE_EMAIL_DOMAIN", default="farmingdale.edu")
+# Who may register. Empty (the default) means any email address; every new
+# account still confirms its address by email before it can sign in. To limit
+# sign-up to a school again, list its domains, e.g. ALLOWED_EMAIL_DOMAINS=farmingdale.edu
+ALLOWED_EMAIL_DOMAINS = [
+    d.strip().casefold() for d in env.list("ALLOWED_EMAIL_DOMAINS", default=[]) if d.strip()
+]
 
 # Where @login_required sends a signed-out visitor. Django's default
 # (/accounts/login/) does not exist here.
 LOGIN_URL = "login"
+
+# --------------------------------------------------------------------------
+# Rambo, the AI assistant (apps.assistant)
+# --------------------------------------------------------------------------
+# No key means no AI: Rambo answers with plain RamHub search results instead.
+# The key lives in Vercel's environment and in GitHub Secrets, never here.
+ANTHROPIC_API_KEY = env.str("ANTHROPIC_API_KEY", default="")
+RAMBO_MODEL = env.str("RAMBO_MODEL", default="claude-haiku-5-5")
+RAMBO_ENABLED = env.bool("RAMBO_ENABLED", default=True)
+# Seconds per API call. A question can take a few calls (look something up,
+# then answer), and the SDK retries once on a timeout or 5xx.
+AI_TIMEOUT_SECONDS = env.float("AI_TIMEOUT_SECONDS", default=20.0)
+# Questions one student can ask per hour. Every answer costs money.
+RAMBO_HOURLY_LIMIT = env.int("RAMBO_HOURLY_LIMIT", default=30)
 
 # --------------------------------------------------------------------------
 # Email
@@ -49,7 +67,27 @@ MAILERS = {
         },
     }
 }
-DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="RamHub <noreply@localhost>")
+
+
+def sender_address(value: str) -> str:
+    """The From address, with the angle brackets put back if they were left out.
+
+    "RamHub ramhub@example.com" is a common way to mistype "RamHub
+    <ramhub@example.com>", and the SMTP backend rejects it, which broke
+    sign-up in production. Anything else is passed through unchanged.
+    """
+    import re
+
+    value = value.strip()
+    match = re.fullmatch(r"(?P<name>[^<>@]*\S)\s+(?P<addr>[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+)", value)
+    if "<" not in value and match:
+        return f"{match['name']} <{match['addr']}>"
+    return value
+
+
+DEFAULT_FROM_EMAIL = sender_address(
+    env.str("DEFAULT_FROM_EMAIL", default="RamHub <noreply@localhost>")
+)
 
 # --------------------------------------------------------------------------
 # Applications

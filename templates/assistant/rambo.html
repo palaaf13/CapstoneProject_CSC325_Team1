@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Ask Rambo · RamHub{% endblock %}
+{% block description %}Ask Rambo anything about Farmingdale State College: courses, professors, clubs, parking, and more.{% endblock %}
+{% block rambo_button %}{% endblock %}
+
+{% block extra_head %}
+  {% comment %}
+  Three.js for the 3D Rambo, from a CDN at the same pinned version as the
+  landing page. Each file has a Subresource Integrity hash: if the CDN ever
+  served different code, the browser refuses to run it (browsers without
+  import-map integrity support load it as before). To change versions, re-hash:
+    curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A
+  {% endcomment %}
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      },
+      "integrity": {
+        "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js": "sha384-IDC7sAMAIMB/TZ6dgKKPPAKZ2bXXXP8+FBMBC8cU319eBhKITx+PaalhfDkDNH28",
+        "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/environments/RoomEnvironment.js": "sha384-9ItPPH2vgKbkvgrqTKq7ptGYe+WuAnqlZtlqleJW4/CJjnM5R7C+efD6iS7ADPJ9",
+        "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/objects/MarchingCubes.js": "sha384-j6MQ+4tROPfoG01YLkZzswNB+66fuwtNYSEBRs9nqqggZX6WIHGiq5PllKss2Cnh"
+      }
+    }
+  </script>
+  <style>
+    .rambo-stage { height: clamp(220px, 34vh, 340px); }
+    .rambo-stage .rambo-3d-canvas { display: block; width: 100%; height: 100%; cursor: pointer; }
+    .rambo-stage.is-3d .rambo-fallback { display: none; }
+    .rambo-stage .rambo-fallback .rambo { width: min(220px, 60%); }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <section class="mb-6 grid items-center gap-2 border-b border-neutral-200 pb-4 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+    {# The 3D Rambo (static/js/rambo3d.js). The flat SVG Rambo shows until WebGL is ready, and stays if it isn't. #}
+    <div class="rambo-stage relative overflow-hidden rounded-2xl bg-gradient-to-b from-accent-50 to-white" data-rambo-3d>
+      <div class="rambo-fallback flex h-full items-center justify-center" aria-hidden="true">
+        {% include "partials/rambo.html" %}
+      </div>
+    </div>
+    <div>
+      <h1 class="text-h1">Ask Rambo</h1>
+      <p class="mt-2 max-w-xl text-body text-neutral-600">
+        Questions about Farmingdale State College? Rambo searches the official site,
+        <strong>farmingdale.edu</strong>, and links the pages his answer comes from.
+        He's an AI and can be wrong, so check the link before you act on it.
+      </p>
+    </div>
+  </section>
+
+  <div class="mx-auto max-w-3xl">
+    <div id="rambo-chat" class="space-y-5" aria-live="polite">
+      {% for exchange in chat %}
+        {% include "assistant/partials/exchange.html" %}
+      {% empty %}
+        <div id="rambo-empty" class="card card-pad text-center">
+          <p class="text-body text-neutral-700">Not sure where to start? Try one of these:</p>
+          <div class="mt-3 flex flex-wrap justify-center gap-2">
+            {% for suggestion in suggestions %}
+              <button type="button" class="btn-secondary" data-rambo-suggestion>{{ suggestion }}</button>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <form method="post" action="{% url 'assistant:ask' %}" class="card card-pad mt-6 space-y-2"
+          hx-post="{% url 'assistant:ask' %}" hx-target="#rambo-chat" hx-swap="beforeend"
+          hx-disabled-elt="find button[type=submit]" data-rambo-form novalidate>
+      {% csrf_token %}
+      <label for="id_question" class="sr-only">Your question</label>
+      <div class="flex gap-2">
+        <input type="text" name="question" id="id_question" maxlength="500" required autocomplete="off"
+               value="{{ form.question.value|default:'' }}"
+               class="{% if form.question.errors %}field-input-error{% else %}field-input{% endif %} flex-1"
+               placeholder="Ask about a course, a club, parking…">
+        <button type="submit" class="btn-primary shrink-0">Ask</button>
+      </div>
+      <div id="rambo-form-error">{% if form.question.errors %}<p class="field-error">{{ form.question.errors.0 }}</p>{% endif %}</div>
+      <p class="htmx-indicator text-meta text-neutral-500" id="rambo-thinking">Rambo is looking that up&hellip;</p>
+    </form>
+
+    {% if chat %}
+      <form method="post" action="{% url 'assistant:clear' %}" class="mt-2 text-right">
+        {% csrf_token %}
+        <button type="submit" class="text-meta text-neutral-500 underline hover:text-neutral-800">Start over</button>
+      </form>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script type="module" src="{% static 'js/rambo3d.js' %}"></script>
+<script>
+  // Suggestions fill the box and ask; after each answer, clear the box and
+  // drop the empty state. All of it is progressive: without JS the form posts.
+  (function () {
+    const form = document.querySelector("[data-rambo-form]");
+    const input = document.getElementById("id_question");
+    document.querySelectorAll("[data-rambo-suggestion]").forEach((button) => {
+      button.addEventListener("click", () => {
+        input.value = button.textContent.trim();
+        form.requestSubmit();
+      });
+    });
+    const mood = (name) => window.dispatchEvent(new CustomEvent("rambo:mood", { detail: name }));
+    form.addEventListener("htmx:beforeRequest", () => {
+      form.querySelector("#rambo-form-error").innerHTML = "";
+      mood("thinking");
+    });
+    form.addEventListener("htmx:afterRequest", (event) => {
+      // A validation error is retargeted under the box; keep what they typed.
+      if (!event.detail.successful || event.detail.xhr.getResponseHeader("HX-Retarget")) {
+        mood("idle");
+        return;
+      }
+      mood(event.detail.xhr.responseText.includes("rambo-answer") ? "happy" : "idle");
+      input.value = "";
+      document.getElementById("rambo-empty")?.remove();
+      document.getElementById("rambo-chat").lastElementChild?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  })();
+</script>
+{% endblock %}

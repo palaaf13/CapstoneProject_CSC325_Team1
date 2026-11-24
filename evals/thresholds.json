@@ -1,0 +1,9 @@
+{
+  "_comment": "Minimum pass rates for `python -m evals.run`. Any metric below its threshold fails the run and the CI Eval stage. Change these only in a reviewed PR, with the reason in the PR description.",
+  "valid_answer_rate": 0.95,
+  "fact_accuracy": 0.8,
+  "hallucination_free_rate": 0.9,
+  "consistency_rate": 0.75,
+  "counterfactual_parity": 0.83,
+  "linked_pages_readable": 0.5
+}

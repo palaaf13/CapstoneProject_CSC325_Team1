@@ -1,0 +1,11 @@
+{% comment %}
+Rendered by {% report_link obj %} (apps/moderation/templatetags). Not included directly.
+{% endcomment %}
+{% if show %}
+  {% if already %}
+    <span class="px-2 py-1 text-meta text-neutral-500" data-testid="reported">Reported</span>
+  {% else %}
+    <a href="{{ target.report_url }}" class="btn-ghost btn-sm text-neutral-600"
+       aria-label="Report this {{ target.noun }}" data-testid="report-link">Report</a>
+  {% endif %}
+{% endif %}

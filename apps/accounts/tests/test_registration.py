@@ -51,11 +51,20 @@ def test_registration_form_accepts_and_normalizes_college_email():
     assert form.cleaned_data["email"] == "student@farmingdale.edu"
 
 
-def test_registration_form_rejects_non_college_email():
+def test_any_email_address_can_register_by_default():
+    for email in ("student@example.com", "someone@gmail.com", "Person@Outlook.COM"):
+        form = RegistrationForm(data=valid_registration_data(email))
+        assert form.is_valid(), (email, form.errors)
+        assert form.cleaned_data["email"] == email.casefold()
+
+
+def test_registration_form_rejects_other_domains_when_limited(settings):
+    settings.ALLOWED_EMAIL_DOMAINS = ["farmingdale.edu"]
     form = RegistrationForm(data=valid_registration_data("student@example.com"))
 
     assert not form.is_valid()
     assert "email" in form.errors
+    assert RegistrationForm(data=valid_registration_data("student@farmingdale.edu")).is_valid()
 
 
 def test_login_page_links_to_registration(client):
@@ -82,10 +91,11 @@ def test_registration_service_creates_user_with_hashed_password():
     assert not user.is_active
 
 
-def test_registration_service_rejects_non_college_email():
+def test_registration_service_rejects_other_domains_when_limited(settings):
+    settings.ALLOWED_EMAIL_DOMAINS = ["farmingdale.edu"]
     data = valid_registration_data("student@example.com")
 
-    with pytest.raises(ValidationError, match="Farmingdale State College email address"):
+    with pytest.raises(ValidationError, match="Use an email address at farmingdale.edu"):
         register_user(
             username=data["username"],
             email=data["email"],
@@ -112,14 +122,30 @@ def test_registration_view_emails_confirmation_and_keeps_account_inactive(client
     assert re.search(r"https?://\S+/confirm-email/[^/]+/[^/\s]+/", mail.outbox[0].body)
 
 
-def test_registration_view_shows_error_for_non_college_email(client):
+def test_registration_view_shows_error_for_other_domains_when_limited(client, settings):
+    settings.ALLOWED_EMAIL_DOMAINS = ["farmingdale.edu"]
     data = valid_registration_data("student@example.com")
 
     response = client.post(reverse("register"), data)
 
     assert response.status_code == 200
-    assert b"Use your Farmingdale State College email address." in response.content
+    assert b"Use an email address at farmingdale.edu." in response.content
     assert not get_user_model().objects.filter(username=data["username"]).exists()
+
+
+def test_anyone_can_register_confirm_and_sign_in_with_a_non_school_email(client):
+    """The whole path for an outside address: register, confirm by email, sign in."""
+    data = valid_registration_data("new.student@gmail.com")
+    assert client.post(reverse("register"), data).status_code == 302
+    link = re.search(r"https?://\S+(/confirm-email/[^/]+/[^/\s]+/)", mail.outbox[0].body).group(1)
+    client.get(link)
+    assert get_user_model().objects.get(username=data["username"]).is_active
+
+    response = client.post(
+        reverse("login"), {"email": "New.Student@gmail.com", "password": data["password1"]}
+    )
+    assert response.status_code == 302
+    assert "_auth_user_id" in client.session
 
 
 def test_confirmation_link_activates_account(client):

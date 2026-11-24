@@ -28,6 +28,7 @@ view tests for pages that only *read* — the catalog directories query on every
 request.
 """
 
+import anthropic
 import pytest
 from django.utils.text import slugify
 
@@ -37,6 +38,22 @@ from apps.catalog.models import (
     Professor,
     ProfessorRatingSummary,
 )
+
+
+class _NoRealAnthropicClient:
+    def __init__(self, *args, **kwargs):
+        raise AssertionError(
+            "A unit test tried to create a real Anthropic client. Unit tests must use a "
+            "mocked AI response; the real API is only called by the eval suite (evals/)."
+        )
+
+
+@pytest.fixture(autouse=True)
+def no_real_ai(settings, monkeypatch):
+    """Every test runs with AI calls impossible: no key, and constructing a real
+    client fails the test. Tests that exercise the AI pass in a fake client."""
+    settings.ANTHROPIC_API_KEY = ""
+    monkeypatch.setattr(anthropic, "Anthropic", _NoRealAnthropicClient)
 
 
 @pytest.fixture

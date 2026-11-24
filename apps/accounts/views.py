@@ -1,7 +1,6 @@
 """Student account views: registration, sign-in, profiles, and password reset."""
 
 import logging
-from smtplib import SMTPException
 
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
@@ -65,7 +64,10 @@ def register(request: HttpRequest) -> HttpResponse:
                 confirmation_url = request.build_absolute_uri(confirmation_path)
                 try:
                     services.send_registration_confirmation(user, confirmation_url)
-                except (OSError, SMTPException, services.EmailDeliveryError):
+                except Exception:
+                    # Any failure here (the mail server, a bad sender address, a
+                    # timeout) means no email went out, so the account can never
+                    # be confirmed: remove it and say so, rather than a 500.
                     logger.exception("Could not send confirmation email for user %s", user.pk)
                     user.delete()
                     form.add_error(
@@ -75,7 +77,7 @@ def register(request: HttpRequest) -> HttpResponse:
                 else:
                     messages.success(
                         request,
-                        "Check your Farmingdale email for a link to confirm your account.",
+                        "Check your email for a link to confirm your account.",
                     )
                     return redirect("login")
     else:
@@ -120,7 +122,7 @@ def _safe_next_url(request: HttpRequest) -> str | None:
 
 
 def sign_in(request: HttpRequest) -> HttpResponse:
-    """Sign a confirmed student in with their college email and password."""
+    """Sign a confirmed student in with their email and password."""
     if request.user.is_authenticated:
         return redirect(_safe_next_url(request) or "profile")
 
