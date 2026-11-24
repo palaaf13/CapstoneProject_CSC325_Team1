@@ -45,6 +45,13 @@ def test_normal_pages_get_the_frame_and_the_ticker(client, data, url):
     assert 'class="ticker"' in body and "LOVELACE" in body
 
 
+def test_the_cursor_paints_the_frame_on_normal_pages_only(client, data):
+    page = client.get("/clubs/").content.decode()
+    assert "js/frame-cursor.js" in page
+    assert "data-frame-glow" in page and "data-frame-aura" in page
+    assert "frame-cursor.js" not in client.get(reverse("home")).content.decode()
+
+
 def test_the_landing_page_keeps_its_own_look(client, data):
     body = client.get(reverse("home")).content.decode()
     assert "star-frame" not in body and 'class="ticker"' not in body

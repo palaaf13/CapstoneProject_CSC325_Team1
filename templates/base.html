@@ -20,8 +20,21 @@
     Skip to main content
   </a>
 
-  {# The landing page's starry gradient behind every other page (CSS only; see .star-frame). #}
-  {% block backdrop %}<div class="star-frame" aria-hidden="true"></div>{% endblock %}
+  {% comment %}
+  The landing page's starry gradient behind every other page (.star-frame).
+  Like the landing page, the cursor paints it: the gradient shifts as the
+  cursor crosses the screen, a glow follows it, and three watercolor pools
+  trail behind (static/js/frame-cursor.js). It all sits behind the page's
+  content sheet, so only the starry sides change.
+  {% endcomment %}
+  {% block backdrop %}
+    <div class="star-frame" aria-hidden="true">
+      <div class="frame-wash-b" data-frame-wash-b></div>
+      <div class="frame-glow" data-frame-glow></div>
+      <div class="frame-aura" data-frame-aura></div>
+    </div>
+    <script src="{% static 'js/frame-cursor.js' %}" defer></script>
+  {% endblock %}
 
   {% include "partials/nav.html" %}
 
