@@ -10,7 +10,7 @@
   <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
 </head>
 {# hx-headers puts Django's CSRF token on every htmx request, so POSTs work. #}
-<body class="flex min-h-full flex-col {% block body_class %}bg-neutral-50{% endblock %}"
+<body class="flex min-h-full flex-col {% block body_class %}frame{% endblock %}"
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
   <a href="#main"
@@ -20,10 +20,28 @@
     Skip to main content
   </a>
 
+  {% comment %}
+  The landing page's starry gradient behind every other page (.star-frame).
+  Like the landing page, the cursor paints it: the gradient shifts as the
+  cursor crosses the screen, a glow follows it, and three watercolor pools
+  trail behind (static/js/frame-cursor.js). It all sits behind the page's
+  content sheet, so only the starry sides change.
+  {% endcomment %}
+  {% block backdrop %}
+    <div class="star-frame" aria-hidden="true">
+      <div class="frame-wash-b" data-frame-wash-b></div>
+      <div class="frame-glow" data-frame-glow></div>
+      <div class="frame-aura" data-frame-aura></div>
+    </div>
+    <script src="{% static 'js/frame-cursor.js' %}" defer></script>
+  {% endblock %}
+
   {% include "partials/nav.html" %}
 
+  {% block ticker %}{% include "partials/ticker.html" %}{% endblock %}
+
   {% block main %}
-  <main id="main" class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+  <main id="main" class="frame-sheet mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
     {% if messages %}
       <div class="mb-4 space-y-2">
         {% for message in messages %}

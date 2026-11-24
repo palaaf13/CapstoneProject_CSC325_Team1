@@ -49,6 +49,17 @@ class _NoRealAnthropicClient:
 
 
 @pytest.fixture(autouse=True)
+def fresh_cache():
+    """Django's cache is in-process memory: clear it so one test's cached ticker
+    or sign-in lockout can't leak into the next."""
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()
+
+
+@pytest.fixture(autouse=True)
 def no_real_ai(settings, monkeypatch):
     """Every test runs with AI calls impossible: no key, and constructing a real
     client fails the test. Tests that exercise the AI pass in a fake client."""

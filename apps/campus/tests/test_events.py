@@ -233,6 +233,8 @@ def test_club_page_shows_only_that_clubs_events(client, make_club):
     make_event(robotics, title="Robot build day")
 
     html = client.get(reverse("campus:club_detail", args=[chess.slug])).content.decode()
+    # The site-wide ticker lists every upcoming event; check the page itself.
+    html = html.split("<main", 1)[1]
 
     assert "Chess night" in html
     assert "Robot build day" not in html

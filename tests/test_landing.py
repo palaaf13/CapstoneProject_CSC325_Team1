@@ -107,7 +107,8 @@ def test_landing_css_is_scoped_so_it_cannot_leak_into_directories():
 @pytest.mark.django_db
 def test_rambo_section_renders_as_an_accessible_button(client):
     body = client.get("/").content
-    assert b'data-rambo aria-label="Say hi to Rambo, the RamHub mascot"' in body
+    # On the landing page he's the way into the AI chat (data-rambo-href).
+    assert b'data-rambo-href="/rambo/" aria-label="Ask Rambo, RamHub\'s AI assistant"' in body
     assert b"<button" in body
     assert b"Meet" in body and b"Rambo." in body
 
@@ -173,7 +174,8 @@ def test_interactive_scripts_load_only_on_the_landing_page(client):
     assert b"js/rambo.js" in client.get("/").content
     for url in ("/courses/", "/professors/", "/feed/"):
         body = client.get(url).content
-        assert b"cursor.js" not in body and b"rambo.js" not in body, url
+        # frame-cursor.js (the starry frame's own, lighter script) is expected there.
+        assert b"/js/cursor.js" not in body and b"/js/rambo.js" not in body, url
 
 
 # -- cursor watercolor ------------------------------------------------------

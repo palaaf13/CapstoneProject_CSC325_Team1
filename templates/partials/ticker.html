@@ -1,0 +1,27 @@
+{% comment %}
+The stock-board ticker under the top bar (config/ticker.py). The list is drawn
+twice so the loop is seamless; the copy is hidden from screen readers and from
+the tab order. It pauses on hover and keyboard focus, so its links are easy to
+click, and holds still for people who turn off animations.
+{% endcomment %}
+{% if ticker_items %}
+  <div class="ticker" role="region" aria-label="RamHub right now">
+    <div class="ticker-track" style="--ticker-seconds: {% widthratio ticker_items|length 1 5 %}s">
+      {% for copy in "ab" %}
+        <ul class="ticker-list" {% if forloop.last %}aria-hidden="true"{% endif %}>
+          {% for item in ticker_items %}
+            <li class="ticker-item">
+              <a href="{{ item.url }}" class="ticker-link" {% if forloop.parentloop.last %}tabindex="-1"{% endif %}>
+                <span class="ticker-symbol">{{ item.symbol }}</span>
+                {% if item.value %}<span class="ticker-value">{{ item.value }}</span>{% endif %}
+                {% if item.trend == "up" %}<span class="ticker-up" aria-label="high">▲</span>
+                {% elif item.trend == "down" %}<span class="ticker-down" aria-label="low">▼</span>
+                {% elif item.trend == "flat" %}<span class="ticker-flat" aria-label="middle">▬</span>{% endif %}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
