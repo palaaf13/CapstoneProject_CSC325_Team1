@@ -1,10 +1,11 @@
-"""Factory helpers for the moderation tests: people, and one of each reportable thing."""
+"""Factory helpers for the moderation tests: people, reports, and one of each reportable thing."""
 
 import pytest
 from django.contrib.auth import get_user_model
 
 from apps.community import services as community
 from apps.community.models import Post
+from apps.moderation import services as moderation
 from apps.ratings.models import CourseRating, ProfessorRating
 
 
@@ -63,3 +64,27 @@ def professor_rating(author, make_professor):
         semester="Fall 2026",
         comment="Something rude.",
     )
+
+
+# -- RH-14: moderators and reports ---------------------------------------------
+@pytest.fixture
+def moderator(make_user):
+    return make_user("moddy", role="MODERATOR")
+
+
+@pytest.fixture
+def admin_user(make_user):
+    return make_user("boss", role="ADMIN")
+
+
+@pytest.fixture
+def make_report(make_user):
+    """File a report on a Post, Comment (pass ``post``), or rating, from a new student."""
+    counter = iter(range(1000))
+
+    def _make(obj, *, post=None, reason="spam", note="", reporter=None):
+        reporter = reporter or make_user(f"reporter{next(counter)}")
+        target = moderation.target_for(obj, post=post)
+        return moderation.file_report(reporter, target, reason=reason, note=note)
+
+    return _make

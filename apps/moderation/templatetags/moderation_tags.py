@@ -10,11 +10,14 @@ Draws nothing for signed-out visitors, on your own content, and on removed
 content; shows "Reported" for things you already reported. Those decisions
 live in services.py, so templates never repeat them. The server enforces the
 same rules again when the form is submitted.
+
+``{% if user|can_moderate %}`` — whether to show moderator-only links. The
+rule lives in ``queue.can_moderate``; the views check it again.
 """
 
 from django import template
 
-from apps.moderation import services
+from apps.moderation import queue, services
 
 register = template.Library()
 
@@ -32,3 +35,8 @@ def report_link(context, obj, post=None) -> dict:
         "target": target,
         "already": (target.type, target.id) in services.reported_keys(request),
     }
+
+
+@register.filter
+def can_moderate(user) -> bool:
+    return queue.can_moderate(user)

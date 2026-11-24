@@ -37,6 +37,9 @@ class CourseRating(models.Model):
     # scores are the rating; the comment is advice. The AI summary on the
     # course page is built from these.
     comment = models.TextField(max_length=MAX_COMMENT_LENGTH, blank=True)
+    # Set only by a moderator (apps/moderation). A removed rating is kept so it
+    # can be restored, but it leaves the advice list and the averages.
+    is_removed = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -84,6 +87,9 @@ class ProfessorRating(models.Model):
     )
     semester = models.CharField(max_length=32)
     comment = models.TextField(max_length=MAX_COMMENT_LENGTH, blank=True)
+    # Set only by a moderator (apps/moderation). A removed rating is kept so it
+    # can be restored, but it leaves the advice list and the averages.
+    is_removed = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 

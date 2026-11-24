@@ -136,8 +136,12 @@ def rate_course(
 
 
 def refresh_course_summary(course: Course) -> None:
-    """Recompute course.rating_summary from every rating of it."""
-    rows = CourseRating.objects.filter(course=course).values("difficulty", "workload", "usefulness")
+    """Recompute course.rating_summary from every rating of it a moderator hasn't removed."""
+    rows = (
+        CourseRating.objects.filter(course=course)
+        .exclude(is_removed=True)
+        .values("difficulty", "workload", "usefulness")
+    )
     course.rating_summary = CourseRatingSummary(**summarize_course_ratings(rows))
     course.save(update_fields=["rating_summary"])
 
@@ -150,7 +154,12 @@ def course_rating_by(user, course: Course) -> CourseRating | None:
 
 def course_comments(course: Course, *, limit: int | None = None) -> list[CourseRating]:
     """Ratings of this course that came with written advice, newest first."""
-    found = CourseRating.objects.filter(course=course).exclude(comment="").order_by("-updated_at")
+    found = (
+        CourseRating.objects.filter(course=course)
+        .exclude(comment="")
+        .exclude(is_removed=True)
+        .order_by("-updated_at")
+    )
     return list(found[:limit] if limit else found)
 
 
@@ -192,8 +201,10 @@ def refresh_professor_summary(professor: Professor) -> None:
     import_rmp leaves it alone. The RateMyProfessors figures stay in the rmp_*
     fields and keep their separately labelled panel.
     """
-    rows = ProfessorRating.objects.filter(professor=professor).values(
-        "clarity", "helpfulness", "fairness"
+    rows = (
+        ProfessorRating.objects.filter(professor=professor)
+        .exclude(is_removed=True)
+        .values("clarity", "helpfulness", "fairness")
     )
     professor.rating_summary = ProfessorRatingSummary(
         **summarize_professor_ratings(rows, source=ProfessorRatingSummary.SOURCE_RAMHUB)
@@ -212,6 +223,7 @@ def professor_comments(professor: Professor, *, limit: int | None = None) -> lis
     found = (
         ProfessorRating.objects.filter(professor=professor)
         .exclude(comment="")
+        .exclude(is_removed=True)
         .order_by("-updated_at")
     )
     return list(found[:limit] if limit else found)
