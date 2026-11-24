@@ -101,7 +101,7 @@ def target_for(obj, post: Post | None = None) -> Target:
             type=TargetType.COURSE_RATING,
             id=obj.pk,
             owner_id=obj.user_id,
-            is_removed=False,
+            is_removed=obj.is_removed,
             noun="rating",
             preview=obj.comment,
             obj=obj,
@@ -111,7 +111,7 @@ def target_for(obj, post: Post | None = None) -> Target:
             type=TargetType.PROFESSOR_RATING,
             id=obj.pk,
             owner_id=obj.user_id,
-            is_removed=False,
+            is_removed=obj.is_removed,
             noun="rating",
             preview=obj.comment,
             obj=obj,
@@ -124,8 +124,18 @@ def _oid(value) -> ObjectId | None:
     return ObjectId(value) if ObjectId.is_valid(value) else None
 
 
-def find_target(target_type: str, target_id: str, parent_id: str | None = None) -> Target | None:
-    """The live item these ids point at, or None if it is missing, removed, or malformed."""
+def find_target(
+    target_type: str,
+    target_id: str,
+    parent_id: str | None = None,
+    *,
+    include_removed: bool = False,
+) -> Target | None:
+    """The live item these ids point at, or None if it is missing, removed, or malformed.
+
+    The moderator queue passes ``include_removed=True``: it has to find hidden
+    content in order to restore it.
+    """
     oid = _oid(target_id)
     if oid is None:
         return None
@@ -146,7 +156,7 @@ def find_target(target_type: str, target_id: str, parent_id: str | None = None) 
     if obj is None:
         return None
     target = target_for(obj, post=post)
-    return None if target.is_removed else target
+    return None if target.is_removed and not include_removed else target
 
 
 # -- the rules --------------------------------------------------------------

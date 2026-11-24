@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% comment %}
+The moderator queue (RH-14). Moderators and admins only; the view returns 403
+to everyone else.
+  items   queue.QueueItem — one row per reported item, open reports only
+  hidden  queue.HiddenItem — content a moderator hid, each with Restore
+  log     queue.LogEntry — the most recent moderator actions
+Every button posts to moderation:queue_action, which checks the role again.
+{% endcomment %}
+
+{% block title %}Moderation queue · RamHub{% endblock %}
+
+{% block content %}
+  {% include "partials/page_header.html" with title="Moderation queue" count=items|length subtitle="Open reports, one row per reported item. Hiding takes the content off the site and can be undone below. Every action is logged." %}
+
+  {# -- Open reports ------------------------------------------------------- #}
+  <section aria-labelledby="open-heading" class="mb-8">
+    <h2 id="open-heading" class="mb-2 text-h3">Open reports</h2>
+    {% if items %}
+      <ul class="card divide-y divide-neutral-200" data-testid="queue-items">
+        {% for item in items %}
+          <li class="px-4 py-3" data-testid="queue-item">
+            <div class="flex flex-wrap items-center gap-2 text-meta text-neutral-500">
+              <span class="badge-danger">{{ item.count }} report{{ item.count|pluralize }}</span>
+              <span class="font-medium text-neutral-800">{{ item.label }}</span>
+              <span aria-hidden="true">&middot;</span>
+              <span>first reported {{ item.first_reported|timesince }} ago</span>
+              {% if item.target %}
+                <a href="{{ item.target.back_url }}" class="ml-auto rounded-sm text-accent-700 hover:underline">View in context</a>
+              {% endif %}
+            </div>
+
+            {% if item.target %}
+              {% if item.target.is_removed %}
+                <p class="mt-2 text-meta text-neutral-500">Already removed by its author. Dismiss the reports to close them.</p>
+              {% endif %}
+              <blockquote class="mt-2 border-l-2 border-neutral-300 pl-3 whitespace-pre-line break-words text-body text-neutral-800">{{ item.text|truncatechars:400 }}</blockquote>
+            {% else %}
+              <p class="mt-2 text-meta text-neutral-500">The content was deleted. Dismiss the reports to close them.</p>
+            {% endif %}
+
+            <div class="mt-2 flex flex-wrap gap-1">
+              {% for reason, count in item.reasons %}
+                <span class="badge-neutral">{{ reason }}{% if count > 1 %} &times;{{ count }}{% endif %}</span>
+              {% endfor %}
+            </div>
+            {% if item.notes %}
+              <ul class="mt-2 space-y-1 text-meta text-neutral-600">
+                {% for note in item.notes %}<li class="break-words">&ldquo;{{ note }}&rdquo;</li>{% endfor %}
+              </ul>
+            {% endif %}
+
+            <form method="post" action="{% url 'moderation:queue_action' %}"
+                  class="mt-3 flex flex-wrap items-end gap-2">
+              {% csrf_token %}
+              <input type="hidden" name="target_type" value="{{ item.target_type }}">
+              <input type="hidden" name="target_id" value="{{ item.target_id }}">
+              <input type="hidden" name="parent_id" value="{{ item.parent_id|default_if_none:'' }}">
+              <div class="min-w-0 flex-1 basis-56">
+                <label for="note-{{ item.target_id }}" class="field-label">Note for the log (optional)</label>
+                <input type="text" name="note" id="note-{{ item.target_id }}" maxlength="{{ note_max }}" class="field-input">
+              </div>
+              <div class="flex shrink-0 gap-2">
+                {% if item.target and not item.target.is_removed %}
+                  <button type="submit" name="action" value="hide" class="btn-danger">Hide</button>
+                {% endif %}
+                <button type="submit" name="action" value="dismiss" class="btn-secondary">Dismiss</button>
+              </div>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="card card-pad text-center" data-testid="queue-empty">
+        <p class="text-body text-neutral-800">No open reports. You're all caught up.</p>
+        <p class="mt-1 text-meta text-neutral-500">When a student reports a post, comment, or rating, it shows up here.</p>
+        <a href="{% url 'community:feed' %}" class="btn-secondary mt-3">Go to the feed</a>
+      </div>
+    {% endif %}
+  </section>
+
+  {# -- Hidden by moderators ---------------------------------------------- #}
+  <section aria-labelledby="hidden-heading" class="mb-8">
+    <h2 id="hidden-heading" class="mb-2 text-h3">Hidden by moderators</h2>
+    {% if hidden %}
+      <ul class="card divide-y divide-neutral-200" data-testid="hidden-items">
+        {% for row in hidden %}
+          <li class="px-4 py-3" data-testid="hidden-item">
+            <div class="flex flex-wrap items-center gap-2 text-meta text-neutral-500">
+              <span class="font-medium text-neutral-800">{{ row.label }}</span>
+              <span aria-hidden="true">&middot;</span>
+              <span>hidden by {% firstof row.hide.actor.get_username "a deleted account" %} {{ row.hide.created_at|timesince }} ago</span>
+              <a href="{{ row.target.back_url }}" class="ml-auto rounded-sm text-accent-700 hover:underline">View in context</a>
+            </div>
+            <blockquote class="mt-2 border-l-2 border-neutral-300 pl-3 whitespace-pre-line break-words text-body text-neutral-700">{{ row.text|truncatechars:400 }}</blockquote>
+            {% if row.hide.note %}<p class="mt-1 text-meta text-neutral-600">Note: {{ row.hide.note }}</p>{% endif %}
+            <form method="post" action="{% url 'moderation:queue_action' %}"
+                  class="mt-3 flex flex-wrap items-end gap-2">
+              {% csrf_token %}
+              <input type="hidden" name="target_type" value="{{ row.target.type }}">
+              <input type="hidden" name="target_id" value="{{ row.target.id }}">
+              <input type="hidden" name="parent_id" value="{{ row.target.parent_id|default_if_none:'' }}">
+              <div class="min-w-0 flex-1 basis-56">
+                <label for="restore-note-{{ row.target.id }}" class="field-label">Note for the log (optional)</label>
+                <input type="text" name="note" id="restore-note-{{ row.target.id }}" maxlength="{{ note_max }}" class="field-input">
+              </div>
+              <button type="submit" name="action" value="restore" class="btn-secondary">Restore</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="card card-pad text-meta text-neutral-500" data-testid="hidden-empty">Nothing is hidden right now. Content you hide appears here so you can restore it.</p>
+    {% endif %}
+  </section>
+
+  {# -- Log ----------------------------------------------------------------- #}
+  <section aria-labelledby="log-heading">
+    <h2 id="log-heading" class="mb-2 text-h3">Recent actions</h2>
+    {% if log %}
+      <ul class="card divide-y divide-neutral-200 text-meta" data-testid="mod-log">
+        {% for entry in log %}
+          <li class="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-4 py-2">
+            <time datetime="{{ entry.action.created_at|date:'c' }}" class="text-neutral-500">{{ entry.action.created_at|date:"M j, g:i a" }}</time>
+            <span class="badge-neutral">{{ entry.action.get_action_display }}</span>
+            <span class="text-neutral-800">{{ entry.label }}</span>
+            <span class="text-neutral-500">by {% firstof entry.action.actor.get_username "a deleted account" %}</span>
+            {% if entry.action.note %}<span class="w-full break-words text-neutral-600 sm:w-auto">&mdash; {{ entry.action.note }}</span>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="card card-pad text-meta text-neutral-500" data-testid="log-empty">No moderator actions yet.</p>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,4 +1,4 @@
-"""One view serves every kind of report. The kind is fixed here, per URL."""
+"""Reporting (one view for every kind; the kind is fixed here, per URL) and the moderator queue."""
 
 from django.urls import path
 
@@ -35,4 +35,7 @@ urlpatterns = [
         {"target_type": T.PROFESSOR_RATING},
         name="report_professor_rating",
     ),
+    # The moderator queue (RH-14). The action URL accepts POST only.
+    path("moderation/queue/", views.queue_page, name="queue"),
+    path("moderation/queue/act/", views.queue_action, name="queue_action"),
 ]

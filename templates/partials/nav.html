@@ -1,7 +1,10 @@
 {% comment %}
 Top navigation. Tabs come from config.context_processors.navigation, which also
 decides which one is active. Below 768px the tabs move into #mobile-menu.
+The moderator strip at the bottom shows only for MODERATOR and ADMIN
+(apps/moderation's can_moderate filter); the queue's view enforces the same rule.
 {% endcomment %}
+{% load moderation_tags %}
 <header class="sticky top-0 z-40 border-b border-neutral-200 bg-white">
   <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 sm:px-6">
 
@@ -121,4 +124,16 @@ decides which one is active. Below 768px the tabs move into #mobile-menu.
       </div>
     </nav>
   </div>
+
+  {# Moderator strip — its own row, because the main row is full at 768px and 1280px #}
+  {% if user|can_moderate %}
+    <nav class="border-t border-neutral-200 bg-neutral-50" aria-label="Moderator tools">
+      <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-1 text-meta sm:px-6">
+        <span class="text-neutral-500">Moderator tools</span>
+        <span aria-hidden="true" class="text-neutral-400">&middot;</span>
+        <a href="{% url 'moderation:queue' %}" class="rounded-sm font-medium text-accent-700 hover:underline"
+           {% if request.resolver_match.view_name == 'moderation:queue' %}aria-current="page"{% endif %}>Moderation queue</a>
+      </div>
+    </nav>
+  {% endif %}
 </header>
