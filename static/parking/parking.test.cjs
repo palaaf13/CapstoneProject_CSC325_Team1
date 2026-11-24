@@ -1,0 +1,14 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const s=fs.readFileSync(__dirname+'/parking.js','utf8');
+const section=(a,b)=>s.slice(s.indexOf(a),s.indexOf(b,s.indexOf(a)));
+const ctx=vm.createContext({});
+vm.runInContext(section('  const ALL_LOTS','  // FSC campus lot')+section('  const fmt =','  let map =') .replace('timeZone:ZONE','timeZone:"America/New_York"')+section('  function parseObservation','  // Import recorded')+section('  const fscBuildingGroups','  const fscOfficialTour')+section('  const fscNameKey','  let fscMapShown')+';this.parse=parseObservation;this.resolve=fscResolveName;this.names=fscBuildingNames;',ctx);
+for(const [stamp,h] of [['2026-07-01T14:00:00Z',10],['2026-01-01T14:00:00Z',9],['2026-07-01T10:00:00-04:00',10],['2026-07-01 10:00',10],['2026-11-01T01:30',1]])test(stamp,()=>assert.equal(ctx.parse(stamp,'7','2').hour,h));
+for(const stamp of ['2026-02-30T10:00','2026-03-08T02:30','2026-07-01T10:99','2026-07-01T10:00junk','2026-07-01T24:00'])test('reject '+stamp,()=>assert.equal(ctx.parse(stamp,'7','2'),null));
+test('invalid lot, difficulty and conflicting hour',()=>{assert.equal(ctx.parse('2026-07-01T10:00','99','2'),null);assert.equal(ctx.parse('2026-07-01T10:00','7','2.5'),null);assert.equal(ctx.parse('2026-07-01T10:00','7','2','11'),null);});
+test('round trip',()=>{const r=ctx.parse('2026-07-01T14:00:00Z','7','2');assert.equal(ctx.parse(r.at,r.lot,String(r.difficulty),String(r.hour)).hour,10);});
+test('42 unique directory names',()=>{assert.equal(ctx.names.length,42);assert.equal(new Set(ctx.names).size,42);for(const n of ctx.names)assert.equal(ctx.resolve(n),n);});
+test('aliases and unknown names',()=>{assert.equal(ctx.resolve('Nold Athletic Complex'),'Nold Hall');assert.equal(ctx.resolve("Children's Center"),'Children’s Center');assert.equal(ctx.resolve('Business School'),'School of Business');assert.equal(ctx.resolve('not a building'),null);});
