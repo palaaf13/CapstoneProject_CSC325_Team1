@@ -1,0 +1,41 @@
+{% extends "accounts/profile_base.html" %}
+
+{% block title %}Account · RamHub{% endblock %}
+
+{% block profile_content %}
+  <div class="max-w-xl space-y-6">
+    <section aria-labelledby="sessions-title">
+      <h2 id="sessions-title" class="text-h3">Sign out of other devices</h2>
+      <div class="card card-pad mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <p class="text-body text-neutral-700">
+          Signed in on a lab computer or a friend’s phone? End every session except this one.
+        </p>
+        <form action="{% url 'sign_out_other_devices' %}" method="post" class="shrink-0">
+          {% csrf_token %}
+          <button type="submit" class="btn-secondary w-full sm:w-auto">Sign out others</button>
+        </form>
+      </div>
+    </section>
+
+    <section aria-labelledby="delete-title">
+      <h2 id="delete-title" class="text-h3">Delete account</h2>
+      <div class="card card-pad mt-2 border-danger-600 sm:p-6">
+        <p class="text-body text-neutral-700">
+          Your profile, email address, and saved items are erased, and you’re signed out everywhere.
+          Your posts, comments, and ratings stay so threads and averages still make sense, but they
+          show as “Former student” instead of your name.
+        </p>
+        <form action="{% url 'delete_account' %}" method="post" class="mt-4 space-y-4" novalidate>
+          {% csrf_token %}
+          {% include "accounts/partials/form_errors.html" with form=delete_form %}
+          {% for field in delete_form %}
+            {% include "accounts/partials/settings_field.html" %}
+          {% endfor %}
+          <div class="flex justify-end">
+            <button type="submit" class="btn-danger">Delete my account</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+{% endblock %}

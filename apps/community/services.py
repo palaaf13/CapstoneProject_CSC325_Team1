@@ -90,10 +90,10 @@ def comment_authors(post: Post) -> dict[ObjectId, object]:
 
 
 def display_name(user) -> str:
-    """How a person is named in the feed until profiles add display_name."""
+    """How a person is named in the feed: their profile's display name, else username."""
     if user is None:
         return "A former student"
-    return user.get_full_name() or user.get_username()
+    return user.public_name
 
 
 # -- writing ---------------------------------------------------------------

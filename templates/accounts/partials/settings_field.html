@@ -1,0 +1,29 @@
+{% comment %}
+One field in the profile/settings style: label, input, hint, errors.
+Checkboxes put the label beside the box.
+{% endcomment %}
+{% if field.widget_type == "checkbox" %}
+  <div>
+    <div class="flex items-start gap-2">
+      <input type="checkbox" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
+             class="mt-1 size-4 accent-accent-600"
+             {% if field.value %}checked{% endif %}
+             {% if field.errors %}aria-invalid="true" aria-describedby="{{ field.auto_id }}-error"{% endif %}>
+      <label for="{{ field.id_for_label }}" class="text-body text-neutral-900">{{ field.label }}</label>
+    </div>
+    {% for error in field.errors %}
+      <p class="field-error" id="{{ field.auto_id }}-error">{{ error }}</p>
+    {% endfor %}
+  </div>
+{% else %}
+  <div>
+    <label for="{{ field.id_for_label }}" class="field-label">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}
+      <div class="field-hint">{{ field.help_text }}</div>
+    {% endif %}
+    {% for error in field.errors %}
+      <p class="field-error" id="{{ field.auto_id }}-error">{{ error }}</p>
+    {% endfor %}
+  </div>
+{% endif %}

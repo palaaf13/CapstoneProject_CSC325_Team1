@@ -28,13 +28,22 @@ def profile_data(**overrides) -> dict:
         "major": "Computer Science",
         "grad_year": str(timezone.now().year + 2),
         "bio": "Ask me about CSC 325.",
-        "is_profile_public": "on",
     }
     data.update(overrides)
     return data
 
 
-@pytest.mark.parametrize("url_name", ["profile", "profile_edit"])
+@pytest.mark.parametrize(
+    "url_name",
+    [
+        "profile",
+        "profile_posts",
+        "profile_edit",
+        "profile_privacy",
+        "profile_password",
+        "profile_account",
+    ],
+)
 def test_profile_pages_send_signed_out_visitors_to_sign_in(client, url_name):
     response = client.get(reverse(url_name))
 
@@ -63,6 +72,16 @@ def test_empty_profile_shows_prompts_instead_of_blanks(client):
     assert b"Add a bio" in response.content
 
 
+def test_edit_form_no_longer_carries_the_visibility_toggle(client):
+    student = make_student(is_profile_public=True)
+    client.force_login(student)
+
+    client.post(reverse("profile_edit"), profile_data())
+
+    student.refresh_from_db()
+    assert student.is_profile_public, "editing the profile must not reset Privacy"
+
+
 def test_editing_saves_the_profile_and_returns_to_it(client):
     student = make_student()
     client.force_login(student)
@@ -74,7 +93,6 @@ def test_editing_saves_the_profile_and_returns_to_it(client):
     student.refresh_from_db()
     assert student.display_name == "Ram Student"
     assert student.major == "Computer Science"
-    assert student.is_profile_public
 
 
 def test_editing_cannot_change_email_username_or_role(client):

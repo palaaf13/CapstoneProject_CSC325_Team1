@@ -258,6 +258,23 @@
            border-l-2 border-accent-600 rounded-l-none;
   }
 
+  /* Profile section nav: a scrolling tab row on phones, a sidebar from md. */
+  .profile-nav-link,
+  .profile-nav-link-active {
+    @apply block shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-body font-medium
+           transition-colors;
+  }
+
+  .profile-nav-link {
+    @apply text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900;
+  }
+
+  /* Color is not the only cue: a bottom bar on phones, a left bar from md. */
+  .profile-nav-link-active {
+    @apply rounded-b-none border-b-2 border-accent-600 bg-accent-50 text-accent-700
+           md:rounded-md md:rounded-l-none md:border-b-0 md:border-l-2;
+  }
+
   /* --- Ratings: the visual anchor on rows and detail headers ------------- */
   /* A number plus a proportional bar. Never stars — a 1-5 scale of difficulty
      is not an endorsement, and star clip art reads as one. */
@@ -341,6 +358,22 @@
   .club-mark-2 { @apply border-accent-200 bg-accent-50 text-accent-800; }
   .club-mark-3 { @apply border-transparent bg-neutral-900 text-white; }
   .club-mark-4 { @apply border-neutral-300 bg-neutral-100 text-neutral-800; }
+
+  /* --- Avatar: a student's initials ------------------------------------ */
+  /* Photo uploads don't exist yet, so a student's picture is their initials
+     on one of the same four tones the club tiles use — round, so a person
+     never reads as a club. The tone is decoration and means nothing. */
+  .avatar {
+    @apply inline-flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full
+           border font-mono text-meta font-semibold;
+  }
+
+  .avatar-lg { @apply h-16 w-16 text-h3; }
+
+  .avatar-1 { @apply border-transparent bg-accent-600 text-white; }
+  .avatar-2 { @apply border-accent-200 bg-accent-50 text-accent-800; }
+  .avatar-3 { @apply border-transparent bg-neutral-900 text-white; }
+  .avatar-4 { @apply border-neutral-300 bg-neutral-100 text-neutral-800; }
 
   /* --- Card: the unit of the club grid ---------------------------------- */
   .club-card {

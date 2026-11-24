@@ -1,0 +1,18 @@
+{% comment %}
+One of the student's own posts, as a compact row: kind, title, age, score,
+comments. No vote buttons — this is a list of your own writing, not the feed.
+{% endcomment %}
+<li class="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
+  <div class="min-w-0 flex-1">
+    <div class="flex flex-wrap items-center gap-2 text-meta text-neutral-500">
+      {% include "community/partials/kind_badge.html" with kind=post.kind label=post.get_kind_display %}
+      <time datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|timesince }} ago</time>
+    </div>
+    <a href="{% url 'community:post_detail' post.pk %}"
+       class="mt-1 block truncate rounded-sm text-body font-medium text-neutral-900 hover:text-accent-700 hover:underline">{{ post.title }}</a>
+  </div>
+  <p class="flex shrink-0 gap-3 text-meta text-neutral-500">
+    <span>{{ post.score }} point{{ post.score|pluralize }}</span>
+    <span>{{ post.comment_count }} comment{{ post.comment_count|pluralize }}</span>
+  </p>
+</li>
