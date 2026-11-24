@@ -42,7 +42,7 @@ def test_course_rating_form_rejects_scores_outside_one_to_five(field, value):
     assert field in form.errors
 
 
-@pytest.mark.parametrize("semester", ["", "x" * 33])
+@pytest.mark.parametrize("semester", ["", "   ", "x" * 33])
 def test_course_rating_form_requires_a_valid_semester(semester):
     form = CourseRatingForm(
         {

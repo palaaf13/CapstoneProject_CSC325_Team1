@@ -2,7 +2,6 @@
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
@@ -42,12 +41,12 @@ def course_rating_create(request, code: str) -> HttpResponse:
         )
 
     try:
-        services.submit_course_rating(
+        services.submit_course_rating_transactional(
             user=request.user,
             course=course,
             **form.cleaned_data,
         )
-    except IntegrityError:
+    except services.CourseRatingAlreadyExists:
         # The unique constraint handles two requests racing past the check above.
         messages.error(request, "You have already rated this course.")
     else:
