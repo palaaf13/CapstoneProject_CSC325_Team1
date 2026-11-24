@@ -1,4 +1,4 @@
-"""Signing in with a college email, signing out, and the per-IP lockout."""
+"""Signing in with an email, signing out, and the per-IP lockout."""
 
 from uuid import uuid4
 

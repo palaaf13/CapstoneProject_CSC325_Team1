@@ -33,7 +33,8 @@ def register_user(
     display_name: str,
     password: str,
 ) -> User:
-    """Create an account only for an address at the configured college domain."""
+    """Create an inactive account; it activates when the email is confirmed.
+    Any address is accepted unless ALLOWED_EMAIL_DOMAINS limits it."""
     normalized_email = email.strip().casefold()
     validate_college_email(normalized_email)
     return User.objects.create_user(
@@ -58,7 +59,7 @@ def activate_user(user: User, token: str) -> bool:
 def authenticate_by_email(request: HttpRequest, email: str, password: str) -> User | None:
     """Return the active account matching this email and password, or None.
 
-    Students sign in with their college email, but Django's ModelBackend looks
+    Students sign in with their email address, but Django's ModelBackend looks
     accounts up by username, so the email is translated first. An unknown email
     still goes through authenticate() so it costs the same password-hash time
     as a wrong password and doesn't reveal which emails have accounts.

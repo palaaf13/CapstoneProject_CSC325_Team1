@@ -1,7 +1,6 @@
 """The account pages use Sara's login design and still work as real forms."""
 
 import pytest
-from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.urls import reverse
 
@@ -55,7 +54,7 @@ def test_sign_in_links_to_reset_and_register(client):
 def test_wrong_password_error_shows_in_the_new_layout(client):
     response = client.post(
         reverse("login"),
-        {"email": f"nobody@{settings.COLLEGE_EMAIL_DOMAIN}", "password": "not-it"},
+        {"email": "nobody@example.com", "password": "not-it"},
     )
     html = response.content.decode()
 

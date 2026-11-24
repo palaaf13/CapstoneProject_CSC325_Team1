@@ -40,7 +40,7 @@ class RegistrationForm(UserCreationForm):
 
 
 class SignInForm(forms.Form):
-    """Sign in with a college email and password.
+    """Sign in with an email and password.
 
     Pass ``locked_out=True`` while the visitor's IP is locked out; the form is
     then always invalid. On success, ``get_user()`` returns the authenticated
@@ -50,12 +50,12 @@ class SignInForm(forms.Form):
     """
 
     email = forms.EmailField(
-        label="College email",
+        label="Email",
         widget=forms.EmailInput(
             attrs={
                 "class": "field-input",
                 "autocomplete": "email",
-                "placeholder": "name@farmingdale.edu",
+                "placeholder": "you@example.com",
             }
         ),
     )
@@ -153,16 +153,16 @@ class ProfileForm(forms.ModelForm):
 
 
 class RamHubPasswordResetForm(PasswordResetForm):
-    """Ask for the college email to send a reset link to."""
+    """Ask for the account's email to send a reset link to."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["email"].label = "College email"
+        self.fields["email"].label = "Email"
         self.fields["email"].widget.attrs.update(
             {
                 "class": "field-input",
                 "autocomplete": "email",
-                "placeholder": "name@farmingdale.edu",
+                "placeholder": "you@example.com",
                 "autofocus": True,
             }
         )
