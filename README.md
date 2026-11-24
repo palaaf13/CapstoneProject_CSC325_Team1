@@ -401,9 +401,14 @@ Setup ──► Dependencies ──► Test ────┤
 | **Eval** | Runs [Rambo's evaluation suite](#evaluation-suite) against the real Claude API (`python -m evals.run`). Writes the report to the run's summary page. The only job that calls the API, and the only one with `ANTHROPIC_API_KEY`. | Any eval metric falls below its threshold in [`evals/thresholds.json`](evals/thresholds.json), or the key is missing. |
 | **Deploy** | Applies migrations to the production database, writes the Vercel build files into its own checkout (see below), deploys with `vercel deploy --prod`, then loads `/` and `/courses/` from the live site and expects `200`. | A deploy secret is missing, a migration fails, the Vercel build fails, or the live site does not answer `200`. |
 
-Pull requests run Setup, Dependencies, Test and Eval. Deploy appears as
-*skipped* on a PR; it runs when the PR merges, because merging is a push to
-`main`. Eval is skipped on that push, because the PR already ran it. The live
+Pull requests run Setup, Dependencies and Test, plus Eval **when the PR changes
+something Rambo's answers depend on**: `apps/assistant/`, `prompts/`, `evals/`,
+`requirements.txt`, or the workflow itself. Each Eval run calls the real Claude
+API (about $1), so a PR that only touches, say, the feed shows Eval as
+*skipped*. Setup's "Does this pull request change anything Rambo's answers
+depend on?" step lists the files that triggered it. Deploy appears as *skipped*
+on a PR; it runs when the PR merges, because merging is a push to `main`. Eval
+is skipped on that push, because the PR already ran it. The live
 site is **<https://ramhub-seven.vercel.app>**, and each production run links to
 it from the run's summary page.
 
@@ -831,8 +836,10 @@ Every Eval run in CI also puts its report on that run's summary page.
 
 ### Eval stage in the pipeline
 
-The **Eval** job ([`ci.yml`](.github/workflows/ci.yml)) runs after Test on every pull request into
-`main`, and every Monday on a schedule. It:
+The **Eval** job ([`ci.yml`](.github/workflows/ci.yml)) runs after Test on pull requests into `main`
+that change Rambo's code, prompt, eval suite, SDK pin or the workflow, every Monday on a schedule,
+and whenever it's started by hand (*Actions → CI/CD → Run workflow*). Other pull requests skip it,
+because each run costs real API money. It:
 1. checks the key is set;
 2. restores the virtualenv;
 3. runs `python -m evals.run`;

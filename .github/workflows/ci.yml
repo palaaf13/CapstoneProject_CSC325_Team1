@@ -4,8 +4,10 @@
 # Test and then Eval (Rambo's evaluation suite, against the real API). A push
 # to main — which, with the branch ruleset on, only happens when a reviewed PR
 # merges — skips Eval (the PR already ran it) and goes on to Deploy.
-# A weekly scheduled run repeats Eval so a change on the model provider's side
-# shows up even in a week with no pull requests.
+# A pull request runs Eval only when it changes Rambo's code, prompt, eval
+# suite, SDK pin, or this workflow, since each run calls the real API. A weekly
+# scheduled run repeats Eval so a change on the model provider's side shows up
+# even in a week with no such pull requests.
 #
 # Branch protection requires the "Test" job by name. Rename it and the ruleset
 # in .github/rulesets/protect-main.json has to change too.
@@ -56,6 +58,7 @@ jobs:
     outputs:
       python-version: ${{ steps.python.outputs.python-version }}
       venv-key: ${{ steps.key.outputs.venv-key }}
+      rambo-changed: ${{ steps.rambo.outputs.changed }}
     steps:
       - name: Check out the code (full history, for the secret scan)
         uses: actions/checkout@v5
@@ -93,6 +96,29 @@ jobs:
           python --version
           git --version
           echo "Event: ${{ github.event_name }}  Ref: ${{ github.ref }}  Commit: ${{ github.sha }}"
+
+      - name: Does this pull request change anything Rambo's answers depend on?
+        # The Eval stage calls the real Claude API (about $1 a run), so a pull
+        # request only runs it when it touches Rambo's code, his prompt, the
+        # eval suite, the Anthropic SDK pin, or this workflow. The weekly
+        # schedule and manual runs always run it.
+        id: rambo
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files="$(git diff --name-only "$BASE_SHA" HEAD)"
+          if echo "$files" | grep -qE '^(apps/assistant/|evals/|prompts/|requirements\.txt$|\.github/workflows/ci\.yml$)'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Rambo-related files changed; Eval will run:"
+            echo "$files" | grep -E '^(apps/assistant/|evals/|prompts/|requirements\.txt$|\.github/workflows/ci\.yml$)'
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing Rambo depends on changed; Eval will be skipped."
+          fi
 
   # ---------------------------------------------------------------------------
   # Stage 2: install Python and Node packages, check they resolve cleanly, and
@@ -264,7 +290,9 @@ jobs:
   eval:
     name: Eval
     needs: [setup, dependencies, test]
-    if: github.event_name != 'push'
+    # Not on pushes to main (the PR already ran it), and on a pull request only
+    # when it changes something Rambo's answers depend on (see Setup).
+    if: github.event_name != 'push' && needs.setup.outputs.rambo-changed == 'true'
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     env:
