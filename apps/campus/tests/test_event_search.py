@@ -100,6 +100,8 @@ def test_see_all_link_filters_the_events_page(client, make_club):
 
     html = search_page(client, "tournament")
     events_page = client.get(reverse("campus:events"), {"q": "tournament"}).content.decode()
+    # The site-wide ticker lists upcoming events too; check the page itself.
+    events_page = events_page.split("<main", 1)[1]
 
     assert "See all 7 upcoming events" in html
     assert f"{reverse('campus:events')}?q=tournament" in html

@@ -10,7 +10,7 @@
   <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
 </head>
 {# hx-headers puts Django's CSRF token on every htmx request, so POSTs work. #}
-<body class="flex min-h-full flex-col {% block body_class %}bg-neutral-50{% endblock %}"
+<body class="flex min-h-full flex-col {% block body_class %}frame{% endblock %}"
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
   <a href="#main"
@@ -20,10 +20,15 @@
     Skip to main content
   </a>
 
+  {# The landing page's starry gradient behind every other page (CSS only; see .star-frame). #}
+  {% block backdrop %}<div class="star-frame" aria-hidden="true"></div>{% endblock %}
+
   {% include "partials/nav.html" %}
 
+  {% block ticker %}{% include "partials/ticker.html" %}{% endblock %}
+
   {% block main %}
-  <main id="main" class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+  <main id="main" class="frame-sheet mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
     {% if messages %}
       <div class="mb-4 space-y-2">
         {% for message in messages %}
