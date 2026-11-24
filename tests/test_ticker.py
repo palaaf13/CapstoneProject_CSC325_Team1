@@ -90,5 +90,5 @@ def test_landing_page_rambo_leads_to_the_ai_chat(client):
     body = client.get(reverse("home")).content.decode()
     assert 'href="/rambo/" class="btn-luxe"' in body
     assert 'data-rambo-href="/rambo/"' in body
-    assert "Ask Rambo, RamHub&#x27;s AI assistant" in body or "Ask Rambo, RamHub's AI assistant" in body
+    assert "Ask Rambo, RamHub's AI assistant" in body
     assert "arrives in a later sprint" not in body
