@@ -16,12 +16,13 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
+from apps.community import services as community
 from apps.ratings import services as ratings
 from apps.saved import services as saved
 
 from . import services
 from .forms import CourseDirectoryForm, DirectoryQuery, ProfessorDirectoryForm
-from .models import Professor
+from .models import Course, Professor
 from .services import COURSE_SORTS, PAGE_SIZE, PROFESSOR_SORTS
 
 # Written advice shown on a detail page, newest first.
@@ -135,6 +136,7 @@ def course_detail(request: HttpRequest, code: str) -> HttpResponse:
             "is_saved": saved.is_saved(request.user, course),
             "my_rating": ratings.course_rating_by(request.user, course),
             "comments": ratings.course_comments(course, limit=COMMENTS_SHOWN),
+            **_threads_context(request, course=course),
         },
     )
 
@@ -151,5 +153,26 @@ def professor_detail(request: HttpRequest, slug: str) -> HttpResponse:
             "is_saved": saved.is_saved(request.user, professor),
             "my_rating": ratings.professor_rating_by(request.user, professor),
             "comments": ratings.professor_comments(professor, limit=COMMENTS_SHOWN),
+            **_threads_context(request, professor=professor),
         },
     )
+
+
+def _threads_context(
+    request: HttpRequest, *, professor: Professor | None = None, course: Course | None = None
+) -> dict:
+    """What community/partials/entity_threads.html needs, for one professor or course."""
+    threads, thread_count = community.threads_about(professor=professor, course=course)
+    my_votes = community.votes_by(request.user, threads)
+    if professor is not None:
+        new_thread_url = reverse("community:professor_post_create", args=[professor.slug])
+        feed_filter = {"professor": professor.slug}
+    else:
+        new_thread_url = reverse("community:course_post_create", args=[course.slug])
+        feed_filter = {"course": course.slug}
+    return {
+        "thread_rows": [{"post": p, "my_vote": my_votes.get(p.pk, 0)} for p in threads],
+        "thread_count": thread_count,
+        "new_thread_url": new_thread_url,
+        "all_threads_url": f"{reverse('community:feed')}?{urlencode(feed_filter)}",
+    }

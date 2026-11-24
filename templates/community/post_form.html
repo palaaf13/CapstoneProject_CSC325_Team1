@@ -1,17 +1,33 @@
 {% extends "base.html" %}
 
-{% block title %}{% if post %}Edit post{% else %}Write a post{% endif %} · Feed · RamHub{% endblock %}
+{% block title %}{% if post %}Edit post{% elif about %}New thread about {{ about.name }}{% else %}Write a post{% endif %} · Feed · RamHub{% endblock %}
 
 {% block content %}
+  {% comment %}
+  Three entry points share this form: a new feed post, a new thread about a
+  professor or course (`about` set: name, url, placeholder), and editing an
+  existing post (`post` set).
+  {% endcomment %}
+  {% if post %}
+    {% url 'community:post_detail' post.pk as back_url %}
+  {% elif about %}
+    {% firstof about.url as back_url %}
+  {% else %}
+    {% url 'community:feed' as back_url %}
+  {% endif %}
+
   <nav aria-label="Breadcrumb" class="mb-3 text-meta">
-    <a href="{% if post %}{% url 'community:post_detail' post.pk %}{% else %}{% url 'community:feed' %}{% endif %}"
-       class="rounded-sm text-neutral-500 hover:text-neutral-900 hover:underline">
-      &larr; {% if post %}Back to the post{% else %}Back to the feed{% endif %}
+    <a href="{{ back_url }}" class="rounded-sm text-neutral-500 hover:text-neutral-900 hover:underline">
+      &larr; {% if post %}Back to the post{% elif about %}Back to {{ about.name }}{% else %}Back to the feed{% endif %}
     </a>
   </nav>
 
   {% if post %}
     {% include "partials/page_header.html" with title="Edit post" %}
+  {% elif about %}
+    {% with title="Start a thread about "|add:about.name %}
+      {% include "partials/page_header.html" with title=title subtitle="Ask what to expect or share advice from your own experience. It also appears in the campus feed. Stick to what you experienced — see the community guidelines." %}
+    {% endwith %}
   {% else %}
     {% include "partials/page_header.html" with title="Write a post" subtitle="Share notes, ask a question, or start a discussion. Keep it to what you actually experienced — see the community guidelines." %}
   {% endif %}
@@ -20,13 +36,19 @@
     {% csrf_token %}
     {% if form.non_field_errors %}<p class="field-error">{{ form.non_field_errors.0 }}</p>{% endif %}
 
-    <fieldset>
+    {# Real radios, visually hidden; each label is the chip and carries the focus ring. #}
+    <fieldset class="min-w-0" {% if form.kind.errors %}aria-describedby="kind-error"{% endif %}>
       <legend class="field-label">Post type</legend>
-      <div class="flex flex-wrap gap-4">
+      <div class="flex flex-wrap gap-2">
         {% for choice in form.kind %}
-          <label class="flex items-center gap-2 text-body">{{ choice.tag }} {{ choice.choice_label }}</label>
+          <label class="relative">
+            <input type="radio" name="{{ choice.data.name }}" value="{{ choice.data.value }}" id="{{ choice.id_for_label }}"
+                   class="choice-chip-input sr-only" {% if choice.data.selected %}checked{% endif %} required>
+            <span class="choice-chip">{{ choice.choice_label }}</span>
+          </label>
         {% endfor %}
       </div>
+      {% if form.kind.errors %}<p id="kind-error" class="field-error">{{ form.kind.errors.0 }}</p>{% endif %}
     </fieldset>
 
     {% for field in form %}
@@ -42,7 +64,7 @@
             <input type="text" name="{{ field.name }}" id="{{ field.id_for_label }}" value="{{ field.value|default:'' }}"
                    class="{% if field.errors %}field-input-error{% else %}field-input{% endif %}"
                    {% if field.errors %}aria-invalid="true"{% endif %}
-                   {% if field.name == "title" %}maxlength="200" required placeholder="Anyone have good notes for the CSC 325 midterm?"{% endif %}
+                   {% if field.name == "title" %}maxlength="200" required placeholder="{% if about %}{{ about.placeholder }}{% else %}Anyone have good notes for the CSC 325 midterm?{% endif %}"{% endif %}
                    autocomplete="off">
           {% endif %}
           {% if field.errors %}<p class="field-error">{{ field.errors.0 }}</p>
@@ -52,7 +74,7 @@
     {% endfor %}
 
     <div class="flex flex-wrap justify-end gap-2 border-t border-neutral-200 pt-4">
-      <a href="{% if post %}{% url 'community:post_detail' post.pk %}{% else %}{% url 'community:feed' %}{% endif %}" class="btn-ghost">Cancel</a>
+      <a href="{{ back_url }}" class="btn-ghost">Cancel</a>
       <button type="submit" class="btn-primary">{% if post %}Save changes{% else %}Post{% endif %}</button>
     </div>
   </form>

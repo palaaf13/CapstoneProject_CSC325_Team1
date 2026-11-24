@@ -84,6 +84,8 @@
         </div>
         {% include "ratings/partials/comment_list.html" with comments=comments empty_text="No written advice yet. Took this course? Your rating and a sentence or two help the next student." %}
       </section>
+
+      {% include "community/partials/entity_threads.html" with name=course.code hide="course" empty_description="Ask what to expect, or share advice from when you took it: workload, exams, which section worked for you. Keep it to your own experience." %}
     </div>
 
     <aside class="space-y-6">

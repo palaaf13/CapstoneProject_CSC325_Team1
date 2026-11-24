@@ -102,3 +102,21 @@ def test_unknown_or_malformed_post_is_404(client):
     assert client.get(reverse("community:post_detail", args=["nope"])).status_code == 404
     url = reverse("community:post_detail", args=["000000000000000000000000"])
     assert client.get(url).status_code == 404
+
+
+def test_post_form_renders_a_real_radio_per_post_type(client, make_user):
+    # The template once iterated a <select>, which printed loose <option>s:
+    # every type showed twice and none of them submitted a value.
+    client.force_login(make_user("poster"))
+    body = client.get(reverse("community:post_create")).content.decode()
+    assert body.count('type="radio" name="kind"') == 3
+    assert "<option" not in body.split("Post type", 1)[1].split("</fieldset>", 1)[0]
+    assert 'value="discussion" id="id_kind_0"' in body and "checked" in body
+
+
+def test_missing_post_type_says_so(client, make_user):
+    client.force_login(make_user("poster"))
+    response = client.post(reverse("community:post_create"), {"title": "No type"})
+    assert response.status_code == 200
+    assert b"Pick a post type." in response.content
+    assert Post.objects.count() == 0

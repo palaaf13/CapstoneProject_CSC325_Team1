@@ -78,6 +78,8 @@
         </div>
         {% include "ratings/partials/comment_list.html" with comments=comments show_course=True empty_text="No written reviews on RamHub yet. Took a class with this instructor? Rate how they teach and leave a tip for the next student." %}
       </section>
+
+      {% include "community/partials/entity_threads.html" with name=professor.full_name hide="professor" empty_description="Ask what a class with this instructor is like, or share advice from one you took. Keep it to your own experience." %}
     </div>
 
     <aside class="space-y-6">

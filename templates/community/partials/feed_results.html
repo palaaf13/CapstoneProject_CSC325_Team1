@@ -5,7 +5,7 @@ rendered inline on first load, so both paths produce identical markup.
 <div id="feed-results">
   {% if rows %}
     <p class="mb-2 text-meta text-neutral-500" role="status" aria-live="polite">
-      {{ total }} post{{ total|pluralize }}{% if query.tag %} tagged #{{ query.tag }}{% endif %}{% if query.q %} matching &ldquo;{{ query.q }}&rdquo;{% endif %}
+      {{ total }} post{{ total|pluralize }}{% if about %} about {{ about.name }}{% endif %}{% if query.tag %} tagged #{{ query.tag }}{% endif %}{% if query.q %} matching &ldquo;{{ query.q }}&rdquo;{% endif %}
     </p>
     <div class="card overflow-hidden">
       {% for row in rows %}

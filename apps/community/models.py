@@ -11,7 +11,12 @@ Three MongoDB decisions shape this file (see CLAUDE.md):
 2. ``score`` and ``comment_count`` are denormalized onto the Post so the feed
    can sort and render rows without touching Vote or unpacking every thread.
    ``services`` keeps them in step; nothing else should write them.
-3. Votes are their own collection keyed on (user, target_type, target_id), as
+3. A post may be about one professor (``Post.professor``) or one course
+   (``Post.course``) — never both. These are real ForeignKeys because each is
+   an independent record, and they are the entity link from CLAUDE.md's data
+   model. Posts with neither are general feed posts. ``services.create_post``
+   enforces "at most one"; club and job links will join the same rule.
+4. Votes are their own collection keyed on (user, target_type, target_id), as
    in CLAUDE.md's data model, so the same table can carry comment votes later.
 
 User content is soft-deleted (``is_removed``) so thread structure survives.
@@ -60,6 +65,23 @@ class Post(models.Model):
     title = models.CharField(max_length=200)
     body = models.TextField(max_length=5000, blank=True)
     tags = ArrayField(models.CharField(max_length=MAX_TAG_LENGTH), default=list, blank=True)
+    # What the thread is about: at most one of these. Both null for a general
+    # feed post. SET_NULL so a professor or course leaving the directory never
+    # deletes students' threads.
+    professor = models.ForeignKey(
+        "catalog.Professor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="posts",
+    )
+    course = models.ForeignKey(
+        "catalog.Course",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="posts",
+    )
     comments = EmbeddedModelArrayField(Comment, default=list, blank=True)
 
     # Denormalized — written only by services.py.
@@ -75,6 +97,8 @@ class Post(models.Model):
         indexes = [
             models.Index(fields=["-created_at"], name="community_post_new_idx"),
             models.Index(fields=["-score", "-created_at"], name="community_post_top_idx"),
+            models.Index(fields=["professor", "-created_at"], name="community_post_prof_idx"),
+            models.Index(fields=["course", "-created_at"], name="community_post_course_idx"),
         ]
 
     def __str__(self) -> str:

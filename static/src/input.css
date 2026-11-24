@@ -432,6 +432,24 @@
     @apply outline-2 outline-offset-2 outline-accent-600;
   }
 
+  /* --- Choice chips ------------------------------------------------------ */
+  /* A small radio group drawn as chips, e.g. a post's type. The radio is
+     visually hidden; the chip shows the selection with a fill, not hue alone,
+     and takes the focus ring. */
+  .choice-chip {
+    @apply flex cursor-pointer items-center rounded-full border border-neutral-300 bg-white
+           px-3 py-1.5 text-meta font-medium text-neutral-700 transition-colors duration-100
+           hover:border-neutral-400 hover:bg-neutral-50;
+  }
+
+  .choice-chip-input:checked + .choice-chip {
+    @apply border-accent-600 bg-accent-600 text-white hover:border-accent-700 hover:bg-accent-700;
+  }
+
+  .choice-chip-input:focus-visible + .choice-chip {
+    @apply outline-2 outline-offset-2 outline-accent-600;
+  }
+
   /* --- Results region ---------------------------------------------------- */
   /* Dims while a search is in flight; htmx adds .htmx-request via hx-indicator.
      The scroll margin is for static/js/ui.js, which scrolls a new set of results
