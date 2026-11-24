@@ -452,12 +452,19 @@ def apply_schema(connection, database, plan, expected):
             if table == USER_TABLE:
                 raise RuntimeError("Refusing to create or replace accounts_user.")
             database.create_collection(table)
+    from pymongo import IndexModel
+
     for table, item in plan["collections"].items():
         collection = database[table]
         missing_names = {index["name"] for index in item["missing_expected_indexes"]}
-        for name, index_model in expected[table].items():
+        for name, index_definition in expected[table].items():
             if name in missing_names and name != "_id_":
-                collection.create_indexes([index_model])
+                index_options = {
+                    key: value for key, value in index_definition.items() if key != "key"
+                }
+                collection.create_indexes(
+                    [IndexModel(list(index_definition["key"].items()), **index_options)]
+                )
     # Verify from fresh server metadata; do not record migration state here.
     fresh_plan, _ = build_plan(connection, database)
     if not fresh_plan["schema_complete"]:
